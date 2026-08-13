@@ -62,8 +62,9 @@ export function OverlaySheet({
 
   useEffect(() => {
     if (!onClose) return;
+    const close = onClose;
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") close();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
