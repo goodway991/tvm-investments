@@ -13,6 +13,7 @@ service cloud.firestore {
     // entitlements/{uid}
     //   uid: string, role: "client"|"admin", plan: "free"|"pro"
     //   watchlistLimit: int, cooldownDays: int
+    //   Complimentary Pro is role "client" + plan "pro" (admin-granted, no Stripe)
     //   createdAt: timestamp (immutable), updatedAt: timestamp
     //
     // watchlists/{uid}
@@ -136,6 +137,41 @@ service cloud.firestore {
         && data.cooldownDays == 0
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
+    }
+
+    // Complimentary Pro: client role, full Pro limits, no payment.
+    // Only the bootstrap admin may write this shape. Recipients may later
+    // stamp giftAckedAt after they dismiss the gift notice.
+    // `source` is optional so older admin clients can still grant Pro.
+    function validCompProEntitlement(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "role", "plan", "watchlistLimit", "cooldownDays",
+          "createdAt", "updatedAt", "source", "giftAckedAt", "giftedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "role", "plan", "watchlistLimit", "cooldownDays",
+          "createdAt", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && data.role == "client"
+        && data.plan == "pro"
+        && data.watchlistLimit == 100
+        && data.cooldownDays == 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (
+          !data.keys().hasAny(["source"])
+          || data.source == "comp"
+        )
+        && (
+          !data.keys().hasAny(["giftAckedAt"])
+          || data.giftAckedAt is timestamp
+        )
+        && (
+          !data.keys().hasAny(["giftedAt"])
+          || data.giftedAt is timestamp
+        );
     }
 
     function allowedSymbols() {
@@ -313,7 +349,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isOwner(uid);
+      allow read: if isOwner(uid) || isBootstrapAdmin();
       allow create: if isOwner(uid)
         && validUser(request.resource.data, uid)
         && request.resource.data.keys().hasAll([
@@ -354,14 +390,35 @@ service cloud.firestore {
         )
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
-      allow update: if isBootstrapAdmin()
-        && (
-          validFreeEntitlement(request.resource.data, uid)
-          || validAdminEntitlement(request.resource.data, uid)
+      allow update: if (
+          isBootstrapAdmin()
+          && (
+            validFreeEntitlement(request.resource.data, uid)
+            || validCompProEntitlement(request.resource.data, uid)
+            || (
+              validAdminEntitlement(request.resource.data, uid)
+              && resource.data.role == "admin"
+            )
+          )
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.updatedAt == request.time
         )
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.updatedAt == request.time;
+        || (
+          isOwner(uid)
+          && resource.data.plan == "pro"
+          && resource.data.role == "client"
+          && (
+            !resource.data.keys().hasAny(["source"])
+            || resource.data.source == "comp"
+          )
+          && !resource.data.keys().hasAny(["giftAckedAt"])
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["giftAckedAt", "updatedAt"])
+          && request.resource.data.giftAckedAt is timestamp
+          && request.resource.data.updatedAt == request.time
+          && validCompProEntitlement(request.resource.data, uid)
+        );
       allow delete: if false;
     }
 

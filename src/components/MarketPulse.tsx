@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { useUpgrade } from "@/components/UpgradeProvider";
 import { HorizonForecastChart } from "@/components/HorizonForecastChart";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import type { ChartPoint, ChartRange } from "@/lib/chart-series";
@@ -102,6 +103,8 @@ export function MarketPulse({
   stocks: StockCandidate[];
 }) {
   const { entitlement, watchlist, portfolio } = useAuth();
+  const { openUpgrade } = useUpgrade();
+  const isPro = entitlement.plan === "pro";
   const [index, setIndex] = useState(0);
   const [range, setRange] = useState<ChartRange>("month");
   const [predicting, setPredicting] = useState(false);
@@ -139,6 +142,10 @@ export function MarketPulse({
   useEffect(() => {
     setPredicting(false);
   }, [index]);
+
+  useEffect(() => {
+    if (!isPro) setPredicting(false);
+  }, [isPro]);
 
   const current = deck[Math.min(index, Math.max(deck.length - 1, 0))];
 
@@ -185,6 +192,10 @@ export function MarketPulse({
 
   async function onPredict() {
     if (!current) return;
+    if (!isPro) {
+      openUpgrade();
+      return;
+    }
     if (predicting) {
       setPredicting(false);
       return;
@@ -273,7 +284,7 @@ export function MarketPulse({
               : "bg-violet text-white hover:bg-violet/90"
           }`}
         >
-          {predicting ? "Hide prediction" : "Short term predict"}
+          {predicting ? "Hide prediction" : isPro ? "Short term predict" : "Short term predict · Pro"}
         </button>
       </div>
 

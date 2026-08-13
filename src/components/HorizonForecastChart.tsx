@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo } from "react";
+import { useChartDrawKey } from "@/lib/use-chart-draw";
 import {
   Area,
   CartesianGrid,
@@ -69,6 +70,9 @@ export function HorizonForecastChart({
 }) {
   const palette = tone === "dark" ? DARK : LIGHT;
   const fillId = `forecastFill-${useId().replace(/:/g, "")}`;
+  const drawKey = useChartDrawKey(
+    `${history[0]?.label}-${history[history.length - 1]?.label}-${history.length}`,
+  );
   const { points, stats } = useMemo(
     () => buildHorizonChart(history, horizonDays, statsOverride),
     [history, horizonDays, statsOverride],
@@ -124,7 +128,11 @@ export function HorizonForecastChart({
         </div>
       )}
 
-      <div className={compact ? "chart-stage" : "chart-stage mt-4"} style={{ height }}>
+      <div
+        key={drawKey}
+        className={compact ? "chart-stage" : "chart-stage mt-4"}
+        style={{ height }}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>

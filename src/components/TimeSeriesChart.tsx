@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { useChartDrawKey } from "@/lib/use-chart-draw";
 import {
   Area,
   AreaChart,
@@ -30,6 +31,9 @@ export function TimeSeriesChart({
   rangeLabel?: string;
 }) {
   const gradientId = `pulseFill-${useId().replace(/:/g, "")}`;
+  const drawKey = useChartDrawKey(
+    `${data[0]?.label}-${data[data.length - 1]?.label}-${data.length}`,
+  );
 
   if (data.length < 2) {
     return (
@@ -43,11 +47,7 @@ export function TimeSeriesChart({
   }
 
   return (
-    <div
-      className="chart-stage"
-      style={{ height }}
-      key={`${data[0]?.label}-${data[data.length - 1]?.label}-${data.length}`}
-    >
+    <div className="chart-stage" style={{ height }} key={drawKey}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
@@ -92,8 +92,7 @@ export function TimeSeriesChart({
             fill={`url(#${gradientId})`}
             dot={false}
             activeDot={{ r: 4, fill: color }}
-            animationDuration={850}
-            animationEasing="ease-out"
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

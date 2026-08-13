@@ -22,6 +22,7 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
+  updateDoc,
   type DocumentData,
 } from "firebase/firestore";
 import {
@@ -77,7 +78,9 @@ interface AuthContextValue {
   positions: PortfolioPosition[];
   loading: boolean;
   error: string;
+  giftPending: boolean;
   logout: () => Promise<void>;
+  acknowledgeGift: () => Promise<void>;
   updateWatchlist: (symbols: string[]) => Promise<void>;
   updatePortfolio: (cash: number, totalValue: number) => Promise<void>;
   savePosition: (position: Omit<PortfolioPosition, "currentPrice"> & { currentPrice?: number }) => Promise<void>;
@@ -108,6 +111,32 @@ function asDate(value: unknown) {
     return Number.isFinite(parsed) ? new Date(parsed) : null;
   }
   return null;
+}
+
+function giftSeenKey(uid: string) {
+  return `tvm-gift-seen:${uid}`;
+}
+
+function readGiftSeen(uid: string) {
+  try {
+    return window.localStorage.getItem(giftSeenKey(uid));
+  } catch {
+    return null;
+  }
+}
+
+function writeGiftSeen(uid: string, grantId: string) {
+  try {
+    window.localStorage.setItem(giftSeenKey(uid), grantId);
+  } catch {
+    /* private mode */
+  }
+}
+
+function grantIdFrom(data: DocumentData) {
+  const gifted = asDate(data.giftedAt);
+  if (gifted) return String(gifted.getTime());
+  return "comp";
 }
 
 function profileFrom(data: DocumentData): AccountProfile {
@@ -188,6 +217,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [giftPending, setGiftPending] = useState(false);
+  const [giftGrantId, setGiftGrantId] = useState("comp");
 
   useEffect(() => {
     const auth = getClientAuth();
@@ -216,6 +247,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setWatchlist(defaultWatchlist);
         setPortfolio({ cash: 0, totalValue: 0 });
         setPositions([]);
+        setGiftPending(false);
+        setGiftGrantId("comp");
         setLoading(false);
         return;
       }
@@ -238,6 +271,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               watchlistLimit: Number(data.watchlistLimit) || 10,
               cooldownDays: Number(data.cooldownDays) || 0,
             });
+            const grantId = grantIdFrom(data);
+            setGiftGrantId(grantId);
+            setGiftPending(
+              data.role === "client" &&
+                data.plan === "pro" &&
+                data.source === "comp" &&
+                !data.giftAckedAt &&
+                readGiftSeen(nextUser.uid) !== grantId,
+            );
           }),
           onSnapshot(doc(db, "watchlists", nextUser.uid), (snapshot) => {
             if (!snapshot.exists()) {
@@ -300,6 +342,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const auth = getClientAuth();
     if (auth) await signOut(auth);
   }, []);
+
+  const acknowledgeGift = useCallback(async () => {
+    const db = getClientFirestore();
+    if (!user) return;
+    writeGiftSeen(user.uid, giftGrantId);
+    setGiftPending(false);
+    if (!db) return;
+    try {
+      await updateDoc(doc(db, "entitlements", user.uid), {
+        giftAckedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (ackError) {
+      console.error(ackError);
+    }
+  }, [giftGrantId, user]);
 
   const updateWatchlist = useCallback(
     async (symbols: string[]) => {
@@ -425,7 +483,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       positions,
       loading,
       error,
+      giftPending,
       logout,
+      acknowledgeGift,
       updateWatchlist,
       updatePortfolio,
       savePosition,
@@ -434,8 +494,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [
       entitlement,
       error,
+      giftPending,
       loading,
       logout,
+      acknowledgeGift,
       portfolio,
       positions,
       profile,

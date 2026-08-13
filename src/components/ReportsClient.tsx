@@ -56,7 +56,32 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
         </section>
       )}
 
-      <BacktestTrackRecord />
+      {isPro ? (
+        <BacktestTrackRecord />
+      ) : (
+        <section>
+          <h2 className="font-display text-2xl text-ink">Full backtest track record</h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            Pro shows logged pick returns versus the S&amp;P 500 across this desk.
+          </p>
+          <div className="mt-4">
+            <PaywallLock locked intensity="soft" cta="Upgrade to Pro">
+              <div className="glass rounded-2xl p-6">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {["1-Day Avg Return", "1-Week Avg Return", "1-Month Avg Return"].map(
+                    (label) => (
+                      <div key={label} className="rounded-2xl bg-[#f7f8fc] p-4">
+                        <p className="text-xs text-ink-soft">{label}</p>
+                        <p className="mt-1 font-display text-2xl font-bold text-ink">—</p>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+            </PaywallLock>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -332,18 +332,15 @@ export function SettingsPanel() {
       <div className="mt-6 rounded-2xl bg-[#f7f8fc] p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Plan</p>
         <p className="mt-1">
-          You are on <span className="font-semibold text-ink">{entitlement.plan}</span>.
-          Pro is $8/month or $60/year.
+          You are on <span className="font-semibold capitalize text-ink">{entitlement.plan}</span>.
         </p>
-        {entitlement.plan !== "pro" ? (
-          <button
-            type="button"
-            onClick={openUpgrade}
-            className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
-          >
-            Upgrade to Pro
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={openUpgrade}
+          className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          View plan
+        </button>
       </div>
 
       <div className="mt-6 rounded-2xl bg-[#f7f8fc] p-4 text-sm leading-relaxed text-ink-soft">

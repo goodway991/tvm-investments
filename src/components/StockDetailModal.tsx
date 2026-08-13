@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { CompanyReport, NewsHeadline, StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { MiniChart } from "@/components/MiniChart";
+import { OverlaySheet } from "@/components/OverlaySheet";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import { TVMIcon } from "@/components/TVMBrand";
 import { sparklineValues, type ChartRange } from "@/lib/chart-series";
@@ -38,20 +39,6 @@ export function StockDetailModal({
     "loading",
   );
   const [range, setRange] = useState<ChartRange>("month");
-  const screenRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.body.style.overflow = "hidden";
-    screenRef.current?.scrollTo(0, 0);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [onClose, stock.symbol]);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,16 +70,12 @@ export function StockDetailModal({
   );
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={`stock-dialog-${stock.symbol}`}
-      ref={screenRef}
-      className="fixed inset-0 z-50 overflow-y-auto bg-[#f7f8fc]"
-    >
-      <div className="mx-auto min-h-full w-full max-w-3xl px-5 pb-16 sm:px-6">
-        <div className="sticky top-0 z-10 -mx-5 flex items-start justify-between gap-4 bg-[#f7f8fc] px-5 py-4 sm:-mx-6 sm:px-6">
-          <div>
+    <OverlaySheet
+      labelledBy={`stock-dialog-${stock.symbol}`}
+      onClose={onClose}
+      header={
+        <div className="mx-auto flex w-full max-w-3xl items-start justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-violet">
               {stock.sector} · {stock.industry}
             </p>
@@ -102,19 +85,31 @@ export function StockDetailModal({
             >
               {stock.symbol}
             </h2>
-            <p className="text-sm text-ink-soft">{stock.name}</p>
+            <p className="truncate text-sm text-ink-soft">{stock.name}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-white hover:text-violet"
-            aria-label="Close"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-[0_8px_20px_-12px_rgba(52,41,120,0.45)] hover:bg-violet/10 hover:text-violet"
           >
-            <TVMIcon name="close" />
+            <TVMIcon name="close" size={16} />
+            Close
           </button>
         </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      }
+      footer={
+        <div className="mx-auto flex w-full max-w-3xl justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="glass-violet rounded-full px-6 py-3 text-sm font-semibold text-white"
+          >
+            Close
+          </button>
+        </div>
+      }
+    >
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <div className="glass rounded-2xl p-4">
             <p className="text-xs text-ink-soft">Price</p>
             <p className="font-display text-xl font-bold text-ink">
@@ -294,8 +289,7 @@ export function StockDetailModal({
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </OverlaySheet>
   );
 }
 

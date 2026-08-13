@@ -46,6 +46,7 @@ export const PLAN_FEATURES: Array<{
   { name: "Full sector deep-dive deck", free: false, pro: true },
   { name: "Ticker news on watched names", free: true, pro: true },
   { name: "Portfolio tracker and scenario calculator", free: true, pro: true },
+  { name: "Short-term path prediction", free: false, pro: true },
   { name: "Horizon Suite (coming soon)", free: false, pro: true },
   { name: "Watchlist of 10 symbols", free: true, pro: true },
   { name: "Watchlist of 100 symbols", free: false, pro: true },

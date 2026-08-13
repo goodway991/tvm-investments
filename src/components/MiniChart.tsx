@@ -1,3 +1,7 @@
+"use client";
+
+import { useChartDrawKey } from "@/lib/use-chart-draw";
+
 interface MiniChartProps {
   values: number[];
   id: string;
@@ -35,9 +39,11 @@ export function MiniChart({
   const points = chartPoints(values, width, height);
   const areaPoints = `0,${height} ${points} ${width},${height}`;
   const gradientId = `chart-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const drawKey = useChartDrawKey(id);
 
   return (
     <svg
+      key={drawKey}
       viewBox={`0 0 ${width} ${height}`}
       className="w-full"
       preserveAspectRatio="none"
@@ -62,6 +68,7 @@ export function MiniChart({
       <polyline
         className="mini-chart-line"
         points={points}
+        pathLength={1}
         fill="none"
         stroke={color}
         strokeWidth="2.6"

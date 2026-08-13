@@ -192,8 +192,23 @@ button {
   animation: page-enter 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.sheet-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: auto;
+  touch-action: pan-y;
+}
+
 .chart-stage {
-  animation: chart-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  overflow: hidden;
+  touch-action: pan-y;
+  animation: chart-draw-ltr 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.chart-stage .recharts-wrapper,
+.chart-stage .recharts-surface {
+  touch-action: pan-y;
 }
 
 .chart-skeleton {
@@ -209,14 +224,17 @@ button {
 }
 
 .mini-chart-line {
-  stroke-dasharray: 900;
-  stroke-dashoffset: 900;
-  animation: chart-draw 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: chart-draw 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .mini-chart-area {
   opacity: 0;
-  animation: fade-in 0.7s ease 0.18s forwards;
+  clip-path: inset(0 100% 0 0);
+  animation:
+    chart-draw-ltr 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    fade-in 0.55s ease 0.12s forwards;
 }
 
 .archive-widget-live {
@@ -253,19 +271,19 @@ button {
   }
 }
 
-@keyframes chart-reveal {
+@keyframes chart-draw-ltr {
   from {
-    opacity: 0;
-    transform: translateY(10px) scaleY(0.97);
-    transform-origin: bottom center;
+    clip-path: inset(0 100% 0 0);
   }
   to {
-    opacity: 1;
-    transform: none;
+    clip-path: inset(0 0 0 0);
   }
 }
 
 @keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
   to {
     stroke-dashoffset: 0;
   }
@@ -547,6 +565,28 @@ button:not(:disabled):hover .archive-flow-node {
     box-shadow:
       0 0 18px rgba(244, 113, 116, 0.9),
       0 0 0 4px rgba(244, 113, 116, 0.24);
+  }
+}
+
+.plan-col-current {
+  background: rgba(91, 61, 245, 0.1);
+  box-shadow:
+    inset 0 0 0 1px rgba(91, 61, 245, 0.35),
+    0 0 18px rgba(91, 61, 245, 0.22);
+  animation: plan-col-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes plan-col-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(91, 61, 245, 0.28),
+      0 0 12px rgba(91, 61, 245, 0.16);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 2px rgba(91, 61, 245, 0.55),
+      0 0 26px rgba(91, 61, 245, 0.32);
   }
 }
 
