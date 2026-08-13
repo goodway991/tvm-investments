@@ -8,22 +8,21 @@ function useLockBody(locked: boolean) {
     if (!locked) return;
     const html = document.documentElement;
     const { body } = document;
-    const scrollY = window.scrollY;
     const prevHtmlOverflow = html.style.overflow;
-    const prevBody = body.style.cssText;
+    const prevHtmlOverscroll = html.style.overscrollBehavior;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyOverscroll = body.style.overscrollBehavior;
 
     html.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
+    html.style.overscrollBehavior = "none";
     body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
 
     return () => {
       html.style.overflow = prevHtmlOverflow;
-      body.style.cssText = prevBody;
-      window.scrollTo(0, scrollY);
+      html.style.overscrollBehavior = prevHtmlOverscroll;
+      body.style.overflow = prevBodyOverflow;
+      body.style.overscrollBehavior = prevBodyOverscroll;
     };
   }, [locked]);
 }
@@ -70,7 +69,7 @@ export function OverlaySheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  if (!mounted) return null;
+  if (!mounted || typeof document === "undefined") return null;
 
   const sheet =
     variant === "screen" ? (
@@ -78,10 +77,10 @@ export function OverlaySheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className={`fixed inset-0 ${zIndexClass} flex h-dvh max-h-dvh flex-col bg-[#f7f8fc]`}
-        style={{ height: "100dvh" }}
+        className={`fixed inset-0 ${zIndexClass} flex flex-col overflow-hidden bg-[#f7f8fc]`}
+        style={{ inset: 0, width: "100%", height: "100svh", maxHeight: "100svh" }}
       >
-        <div className="shrink-0 border-b border-ink/[0.08] bg-[#f7f8fc]/95 px-4 py-3 sm:px-6">
+        <div className="shrink-0 border-b border-ink/[0.08] bg-[#f7f8fc] px-4 py-3 sm:px-6">
           {header}
         </div>
         <div
@@ -91,45 +90,42 @@ export function OverlaySheet({
           <div className="mx-auto w-full max-w-3xl pb-10">{children}</div>
         </div>
         {footer ? (
-          <div className="shrink-0 border-t border-ink/[0.08] bg-[#f7f8fc]/95 px-4 py-3 sm:px-6">
+          <div className="shrink-0 border-t border-ink/[0.08] bg-[#f7f8fc] px-4 py-3 sm:px-6">
             {footer}
           </div>
         ) : null}
       </div>
     ) : (
       <div
-        className={`fixed inset-0 ${zIndexClass} flex h-dvh max-h-dvh items-center justify-center p-4`}
-        style={{ height: "100dvh" }}
+        className={`fixed inset-0 ${zIndexClass} overflow-y-auto overscroll-contain p-4 sm:p-6`}
+        style={{ inset: 0, width: "100%", height: "100svh", maxHeight: "100svh" }}
       >
         {onClose && closeOnBackdrop ? (
           <button
             type="button"
-            className="absolute inset-0 bg-ink/20"
+            className="fixed inset-0 bg-ink/20"
             aria-label="Close"
             onClick={onClose}
           />
         ) : (
-          <div className="absolute inset-0 bg-ink/20" />
+          <div className="fixed inset-0 bg-ink/20" />
         )}
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby={labelledBy}
-          className="glass-strong relative z-10 flex h-[min(90dvh,880px)] w-[min(920px,100%)] flex-col overflow-hidden rounded-[28px]"
+          className="glass-strong relative z-10 mx-auto w-full max-w-[920px] rounded-[28px]"
         >
-          <div className="shrink-0 px-5 pt-5 sm:px-8 sm:pt-7">{header}</div>
-          <div
-            ref={scrollRef}
-            className="sheet-scroll min-h-0 flex-1 overflow-y-scroll px-5 py-5 sm:px-8"
-          >
+          <div className="px-5 pt-5 sm:px-8 sm:pt-7">{header}</div>
+          <div ref={scrollRef} className="px-5 py-5 sm:px-8">
             {children}
           </div>
           {footer ? (
-            <div className="shrink-0 px-5 pb-5 sm:px-8 sm:pb-7">{footer}</div>
+            <div className="px-5 pb-5 sm:px-8 sm:pb-7">{footer}</div>
           ) : null}
         </div>
       </div>
     );
 
-  return createPortal(sheet, document.body);
+  return createPortal(sheet, document.documentElement);
 }
