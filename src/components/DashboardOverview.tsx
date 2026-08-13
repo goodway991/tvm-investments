@@ -70,21 +70,25 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       value: topPick ? signedPercent(topPick.changePercent) : "—",
       chart: topPick ? sparklineValues(topPick.ohlcv, 8) : [],
       gradient: true,
+      onOpen: topPick ? () => setSelectedSymbol(topPick.symbol) : undefined,
     },
     {
       label: "Names screened",
       value: snapshot.scanUniverse.combined.toLocaleString(),
       badge: "universe",
+      href: "/dashboard/screener",
     },
     {
       label: "Daily movers",
       value: snapshot.topMovers.length.toLocaleString(),
       badge: "ranked",
+      href: "/dashboard/movers",
     },
     {
       label: "Composite avg",
       value: `${averageScore.toFixed(0)} / 100`,
       gradient: true,
+      href: "#flagged-picks",
     },
   ];
 
@@ -121,41 +125,72 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       </div>
 
       <div className="mt-7 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {overviewCards.map((card, index) => (
-          <article
-            key={card.label}
-            className={`rounded-[22px] p-5 ${
-              card.gradient ? "glass-violet text-white" : "glass-strong"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className={`text-xs ${card.gradient ? "text-white/80" : "text-ink-soft"}`}>
-                {card.label}
-              </span>
-              {card.badge && (
-                <span className="text-[11px] font-semibold text-emerald-600">{card.badge}</span>
-              )}
-            </div>
-            <div
-              className={`mt-1 font-display text-2xl font-bold ${
-                card.gradient ? "text-white" : "text-ink"
-              }`}
-            >
-              {card.value}
-            </div>
-            {card.chart && card.chart.length > 1 && (
-              <div className="-mb-1 mt-1">
-                <MiniChart
-                  values={card.chart}
-                  id={`overview-${index}`}
-                  color={card.gradient ? "#ffffff" : "#5b3df5"}
-                  height={38}
-                  area={!card.gradient}
-                />
+        {overviewCards.map((card, index) => {
+          const className = `rounded-[22px] p-5 text-left transition-transform ${
+            card.gradient ? "glass-violet text-white" : "glass-strong"
+          } ${
+            card.href || card.onOpen
+              ? "cursor-pointer hover:-translate-y-0.5"
+              : ""
+          }`;
+          const body = (
+            <>
+              <div className="flex items-center justify-between">
+                <span className={`text-xs ${card.gradient ? "text-white/80" : "text-ink-soft"}`}>
+                  {card.label}
+                </span>
+                {card.badge && (
+                  <span className="text-[11px] font-semibold text-emerald-600">{card.badge}</span>
+                )}
               </div>
-            )}
-          </article>
-        ))}
+              <div
+                className={`mt-1 font-display text-2xl font-bold ${
+                  card.gradient ? "text-white" : "text-ink"
+                }`}
+              >
+                {card.value}
+              </div>
+              {card.chart && card.chart.length > 1 && (
+                <div className="-mb-1 mt-1">
+                  <MiniChart
+                    values={card.chart}
+                    id={`overview-${index}`}
+                    color={card.gradient ? "#ffffff" : "#5b3df5"}
+                    height={38}
+                    area={!card.gradient}
+                  />
+                </div>
+              )}
+            </>
+          );
+
+          if (card.href) {
+            return (
+              <Link key={card.label} href={card.href} className={className}>
+                {body}
+              </Link>
+            );
+          }
+
+          if (card.onOpen) {
+            return (
+              <button
+                key={card.label}
+                type="button"
+                onClick={card.onOpen}
+                className={className}
+              >
+                {body}
+              </button>
+            );
+          }
+
+          return (
+            <article key={card.label} className={className}>
+              {body}
+            </article>
+          );
+        })}
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.7fr_1fr]">
@@ -257,7 +292,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
           </div>
         </article>
 
-        <article className="glass-strong rounded-[24px] p-6">
+        <article id="flagged-picks" className="glass-strong scroll-mt-8 rounded-[24px] p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold text-ink">
               Today&apos;s flagged picks
