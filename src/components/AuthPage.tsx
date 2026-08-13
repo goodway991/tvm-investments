@@ -1,0 +1,370 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FirebaseError } from "firebase/app";
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  setPersistence,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { type FormEvent, useState } from "react";
+import { MiniChart } from "@/components/MiniChart";
+import { PublicShell } from "@/components/PublicShell";
+import { TVMBrand } from "@/components/TVMBrand";
+import {
+  getClientAuth,
+  isFirebaseConfigured,
+} from "@/lib/firebase/client";
+
+type AuthMode = "login" | "signup";
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
+
+export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
+  const router = useRouter();
+  const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const firebaseConfigured = isFirebaseConfigured();
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+
+    if (!firebaseConfigured) {
+      router.push("/dashboard");
+      return;
+    }
+
+    if (mode === "signup" && password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (mode === "signup" && !email.includes("@")) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    const auth = getClientAuth();
+    if (!auth) {
+      setError("Firebase Authentication is not configured.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const credentialEmail =
+        mode === "login" && email.trim().toUpperCase() === "ADMIN"
+          ? ADMIN_EMAIL
+          : email.trim();
+      await setPersistence(
+        auth,
+        remember ? browserLocalPersistence : browserSessionPersistence,
+      );
+
+      if (mode === "login") {
+        await signInWithEmailAndPassword(auth, credentialEmail, password);
+      } else {
+        await createUserWithEmailAndPassword(auth, credentialEmail, password);
+      }
+      router.push("/dashboard");
+    } catch (authError) {
+      if (authError instanceof FirebaseError) {
+        const messages: Record<string, string> = {
+          "auth/email-already-in-use": "An account already exists for this email.",
+          "auth/invalid-credential": "The email or password is incorrect.",
+          "auth/invalid-email": "Enter a valid email address.",
+          "auth/weak-password": "Use a password with at least eight characters.",
+          "auth/too-many-requests": "Too many attempts. Please try again later.",
+          "auth/operation-not-allowed":
+            "Email/password sign-in has not been enabled for this Firebase project.",
+        };
+        setError(messages[authError.code] ?? "Authentication failed. Please try again.");
+      } else {
+        setError("Authentication failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resetPassword() {
+    setError("");
+    setMessage("");
+
+    if (!firebaseConfigured) {
+      setMessage("Password recovery is unavailable in demo mode.");
+      return;
+    }
+    if (!email) {
+      setError("Enter your email address first.");
+      return;
+    }
+    const resetEmail =
+      email.trim().toUpperCase() === "ADMIN" ? ADMIN_EMAIL : email.trim();
+    if (!resetEmail.includes("@")) {
+      setError("Enter a valid email address first.");
+      return;
+    }
+
+    const auth = getClientAuth();
+    if (!auth) {
+      setError("Firebase Authentication is not configured.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setMessage("Password reset email sent.");
+    } catch {
+      setError("Unable to send a password reset email. Check the address and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const isLogin = mode === "login";
+
+  return (
+    <PublicShell>
+      <main className="animate-rise">
+        <div className="grid min-h-screen lg:grid-cols-2">
+          <div className="relative hidden flex-col justify-between overflow-hidden p-14 lg:flex">
+            <Link href="/" className="w-fit" aria-label="TVM Investments home">
+              <TVMBrand size={32} />
+            </Link>
+            <div className="relative">
+              <div
+                className="glass-strong max-w-sm rounded-[26px] p-6"
+                style={{ animation: "floaty 7s ease-in-out infinite" }}
+              >
+                <div className="flex items-center justify-between text-sm text-ink-soft">
+                  <span>Portfolio</span>
+                  <span className="rounded-full bg-emerald-400/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-600">
+                    +12.4%
+                  </span>
+                </div>
+                <div className="mt-1 font-display text-3xl font-bold text-ink">$128,540</div>
+                <MiniChart
+                  values={[12, 20, 15, 25, 18, 31, 24, 38, 35, 46]}
+                  id="auth-portfolio"
+                  height={110}
+                />
+              </div>
+              <h2 className="mt-10 max-w-md font-display text-4xl font-bold leading-tight text-ink">
+                The market, decoded every day.
+              </h2>
+              <p className="mt-4 max-w-md leading-relaxed text-ink-soft">
+                Sign in to see today&apos;s flagged picks, run the eight-signal screener, and track
+                your projected returns.
+              </p>
+            </div>
+            <p className="text-xs text-ink-soft">
+              © {new Date().getFullYear()} TVM Investments, LLC · Research use only
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center p-6 pt-28 sm:p-14 sm:pt-32 lg:pt-14">
+            <div className="glass-strong w-full max-w-md rounded-[28px] p-8 sm:p-10">
+              <div className="mb-8 lg:hidden">
+                <TVMBrand />
+              </div>
+
+              <div className="glass mb-8 flex rounded-full p-1 text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                    setMessage("");
+                  }}
+                  className={`flex-1 cursor-pointer rounded-full py-2.5 transition-all ${
+                    isLogin ? "glass-violet text-white" : "text-ink-soft hover:text-ink"
+                  }`}
+                >
+                  Log in
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("signup");
+                    setError("");
+                    setMessage("");
+                  }}
+                  className={`flex-1 cursor-pointer rounded-full py-2.5 transition-all ${
+                    !isLogin ? "glass-violet text-white" : "text-ink-soft hover:text-ink"
+                  }`}
+                >
+                  Create account
+                </button>
+              </div>
+
+              <h1 className="font-display text-2xl font-bold text-ink">
+                {isLogin ? "Welcome back" : "Create your account"}
+              </h1>
+              <p className="mt-1.5 text-sm text-ink-soft">
+                {isLogin
+                  ? "Sign in to your TVM workspace."
+                  : "Start screening the market in minutes."}
+              </p>
+
+              {!firebaseConfigured && (
+                <p className="mt-4 rounded-xl bg-violet/5 px-3 py-2 text-xs text-ink-soft">
+                  Demo mode: Firebase is not configured, so credentials are not stored.
+                </p>
+              )}
+
+              <form className="mt-7 space-y-4" onSubmit={submit}>
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-medium text-ink">
+                    {isLogin ? "Email or username" : "Email address"}
+                  </span>
+                  <input
+                    name="email"
+                    type="text"
+                    autoComplete="username"
+                    required={firebaseConfigured}
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder={isLogin ? "you@email.com or ADMIN" : "you@email.com"}
+                    className="field w-full rounded-2xl px-4 py-3 text-[15px] text-ink placeholder:text-ink-soft/50"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-medium text-ink">Password</span>
+                  <span className="relative block">
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete={isLogin ? "current-password" : "new-password"}
+                      required={firebaseConfigured}
+                      minLength={firebaseConfigured ? 8 : undefined}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="••••••••"
+                      className="field w-full rounded-2xl px-4 py-3 pr-12 text-[15px] text-ink placeholder:text-ink-soft/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((visible) => !visible)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-medium text-violet"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </span>
+                </label>
+
+                {!isLogin && (
+                  <label className="block">
+                    <span className="mb-1.5 block text-sm font-medium text-ink">
+                      Confirm password
+                    </span>
+                    <input
+                      name="confirmPassword"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      required={firebaseConfigured}
+                      minLength={firebaseConfigured ? 8 : undefined}
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                      placeholder="••••••••"
+                      className="field w-full rounded-2xl px-4 py-3 text-[15px] text-ink placeholder:text-ink-soft/50"
+                    />
+                  </label>
+                )}
+
+                {isLogin && (
+                  <div className="flex items-center justify-between text-sm">
+                    <label className="flex cursor-pointer items-center gap-2 text-ink-soft">
+                      <input
+                        type="checkbox"
+                        checked={remember}
+                        onChange={(event) => setRemember(event.target.checked)}
+                        className="h-4 w-4 accent-violet"
+                      />{" "}
+                      Remember me
+                    </label>
+                    <button
+                      type="button"
+                      onClick={resetPassword}
+                      disabled={loading}
+                      className="cursor-pointer font-medium text-violet"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="glass-violet mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(75,52,220,0.7)] active:scale-[0.97]"
+                >
+                  {loading
+                    ? "Please wait…"
+                    : !firebaseConfigured
+                      ? "Continue to demo dashboard"
+                      : isLogin
+                        ? "Log in"
+                        : "Create account"}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(isLogin ? "signup" : "login");
+                  setError("");
+                  setMessage("");
+                }}
+                className="mt-5 w-full cursor-pointer text-center text-sm text-ink-soft transition-colors hover:text-violet"
+              >
+                {isLogin ? "New to TVM? " : "Already have an account? "}
+                <span className="font-semibold text-violet">
+                  {isLogin ? "Create an account here" : "Log in"}
+                </span>
+              </button>
+
+              {error && (
+                <p
+                  className="mt-4 rounded-xl bg-coral/10 px-3 py-2 text-center text-xs text-coral"
+                  role="alert"
+                >
+                  {error}
+                </p>
+              )}
+
+              {message && (
+                <p
+                  className="mt-4 rounded-xl bg-violet/5 px-3 py-2 text-center text-xs text-ink-soft"
+                  role="status"
+                >
+                  {message}
+                </p>
+              )}
+
+              <p className="mt-6 text-center text-[11px] leading-relaxed text-ink-soft/70">
+                By continuing you agree this platform is for educational research only and does
+                not constitute investment advice.
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </PublicShell>
+  );
+}

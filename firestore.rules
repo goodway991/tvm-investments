@@ -1,0 +1,319 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed data model
+    // ===============================================================
+    // users/{uid}
+    //   uid: string, email: string, displayName: string
+    //   createdAt: timestamp (immutable), updatedAt: timestamp
+    //
+    // entitlements/{uid}
+    //   uid: string, role: "client"|"admin", plan: "free"|"pro"
+    //   watchlistLimit: int, cooldownDays: int
+    //   createdAt: timestamp (immutable), updatedAt: timestamp
+    //
+    // watchlists/{uid}
+    //   uid: string, symbols: list<string> (allowed market symbols only)
+    //   changedAt: timestamp, nextChangeAt: timestamp
+    //   createdAt: timestamp (immutable), updatedAt: timestamp
+    //
+    // portfolios/{uid}
+    //   uid: string, cash: number, totalValue: number
+    //   createdAt: timestamp (immutable), updatedAt: timestamp
+    //
+    // portfolios/{uid}/positions/{symbol}
+    //   uid: string, symbol: string, shares: number
+    //   averageCost: number, currentPrice: number, updatedAt: timestamp
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isBootstrapAdmin() {
+      return isAuthenticated()
+        && request.auth.token.email == "admin@tvm-investments.test"
+        && request.auth.token.email_verified == true;
+    }
+
+    function hasEntitlement(uid) {
+      return exists(/databases/$(database)/documents/entitlements/$(uid));
+    }
+
+    function entitlement(uid) {
+      return get(/databases/$(database)/documents/entitlements/$(uid)).data;
+    }
+
+    function isPro(uid) {
+      return hasEntitlement(uid) && entitlement(uid).plan == "pro";
+    }
+
+    function validEmail(value) {
+      return value is string
+        && value.size() >= 5
+        && value.size() <= 254
+        && value.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+    }
+
+    function validUser(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "email", "displayName", "createdAt", "updatedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "email", "displayName", "createdAt", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && data.email == request.auth.token.email
+        && validEmail(data.email)
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 80
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function validFreeEntitlement(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "role", "plan", "watchlistLimit", "cooldownDays",
+          "createdAt", "updatedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "role", "plan", "watchlistLimit", "cooldownDays",
+          "createdAt", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && data.role == "client"
+        && data.plan == "free"
+        && data.watchlistLimit == 10
+        && data.cooldownDays == 7
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function validAdminEntitlement(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "role", "plan", "watchlistLimit", "cooldownDays",
+          "createdAt", "updatedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "role", "plan", "watchlistLimit", "cooldownDays",
+          "createdAt", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && data.role == "admin"
+        && data.plan == "pro"
+        && data.watchlistLimit == 100
+        && data.cooldownDays == 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function allowedSymbols() {
+      return [
+        "AAPL", "AMD", "AMZN", "BA", "COIN", "GOOGL", "JPM", "META",
+        "MSFT", "NFLX", "NVDA", "PFE", "PLTR", "PYPL", "RIVN", "SHOP",
+        "TSLA"
+      ];
+    }
+
+    function validSymbols(symbols, uid) {
+      return symbols is list
+        && symbols.size() <= entitlement(uid).watchlistLimit
+        && symbols.toSet().size() == symbols.size()
+        && symbols.toSet().hasOnly(allowedSymbols());
+    }
+
+    function validWatchlist(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "symbols", "changedAt", "nextChangeAt",
+          "createdAt", "updatedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "symbols", "changedAt", "nextChangeAt",
+          "createdAt", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && hasEntitlement(uid)
+        && validSymbols(data.symbols, uid)
+        && data.changedAt is timestamp
+        && data.nextChangeAt is timestamp
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function validFreeCooldown(data) {
+      return data.nextChangeAt >= request.time + duration.value(167, "h")
+        && data.nextChangeAt <= request.time + duration.value(169, "h");
+    }
+
+    function validProCooldown(data) {
+      return data.nextChangeAt >= request.time
+        && data.nextChangeAt <= request.time + duration.value(5, "m");
+    }
+
+    function validPortfolio(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "cash", "totalValue", "createdAt", "updatedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "cash", "totalValue", "createdAt", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && data.cash is number
+        && data.cash >= 0
+        && data.cash <= 1000000000000
+        && data.totalValue is number
+        && data.totalValue >= 0
+        && data.totalValue <= 1000000000000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function validPosition(data, uid, symbol) {
+      return data.keys().hasOnly([
+          "uid", "symbol", "shares", "averageCost", "currentPrice", "updatedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "symbol", "shares", "averageCost", "currentPrice", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && data.symbol is string
+        && data.symbol == symbol
+        && data.symbol.matches("^[A-Z.\\-]{1,8}$")
+        && data.shares is number
+        && data.shares >= 0
+        && data.shares <= 1000000000
+        && data.averageCost is number
+        && data.averageCost >= 0
+        && data.averageCost <= 10000000
+        && data.currentPrice is number
+        && data.currentPrice >= 0
+        && data.currentPrice <= 10000000
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow create: if isOwner(uid)
+        && validUser(request.resource.data, uid)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(uid)
+        && validUser(request.resource.data, uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /entitlements/{uid} {
+      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow create: if isOwner(uid)
+        && (
+          (
+            validFreeEntitlement(request.resource.data, uid)
+            && request.auth.token.email != "admin@tvm-investments.test"
+          )
+          ||
+          (
+            isBootstrapAdmin()
+            && validAdminEntitlement(request.resource.data, uid)
+          )
+        )
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isBootstrapAdmin()
+        && (
+          validFreeEntitlement(request.resource.data, uid)
+          || validAdminEntitlement(request.resource.data, uid)
+        )
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /watchlists/{uid} {
+      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow create: if isOwner(uid)
+        && validWatchlist(request.resource.data, uid)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.changedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && (
+          (isPro(uid) && validProCooldown(request.resource.data))
+          || (!isPro(uid) && validFreeCooldown(request.resource.data))
+        );
+      allow update: if isOwner(uid)
+        && validWatchlist(request.resource.data, uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.changedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && (
+          (
+            isPro(uid)
+            && validProCooldown(request.resource.data)
+          )
+          ||
+          (
+            !isPro(uid)
+            && request.time >= resource.data.nextChangeAt
+            && validFreeCooldown(request.resource.data)
+          )
+        );
+      allow delete: if false;
+    }
+
+    match /portfolios/{uid} {
+      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow create: if isOwner(uid)
+        && validPortfolio(request.resource.data, uid)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(uid)
+        && validPortfolio(request.resource.data, uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+
+      match /positions/{symbol} {
+        allow read: if isOwner(uid) || isBootstrapAdmin();
+        allow create, update: if isOwner(uid)
+          && validPosition(request.resource.data, uid, symbol)
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    match /daily_snapshots/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /backtest_entries/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /user_investments/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

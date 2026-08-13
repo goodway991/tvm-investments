@@ -1,0 +1,45 @@
+import { NextRequest, NextResponse } from "next/server";
+import { runDailyAnalysis, filterStocks } from "@/lib/analysis-pipeline";
+import type { FilterCriteria } from "@/types";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+
+  const filters: FilterCriteria = {
+    peMin: num(params.get("peMin")),
+    peMax: num(params.get("peMax")),
+    betaMin: num(params.get("betaMin")),
+    betaMax: num(params.get("betaMax")),
+    volumeMin: num(params.get("volumeMin")),
+    epsMin: num(params.get("epsMin")),
+    marketCapMin: num(params.get("marketCapMin")),
+    marketCapMax: num(params.get("marketCapMax")),
+  };
+
+  const snapshot = await runDailyAnalysis(false);
+  const filtered = await filterStocks(snapshot, filters);
+
+  return NextResponse.json({
+    count: filtered.length,
+    stocks: filtered.map((s) => ({
+      symbol: s.symbol,
+      name: s.name,
+      price: s.price,
+      changePercent: s.changePercent,
+      compositeScore: s.compositeScore,
+      peRatio: s.fundamentals.peRatio,
+      beta: s.fundamentals.beta,
+      eps: s.fundamentals.eps,
+      marketCap: s.fundamentals.marketCap,
+      volume: s.volume,
+    })),
+  });
+}
+
+function num(v: string | null): number | undefined {
+  if (v == null || v === "") return undefined;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : undefined;
+}
