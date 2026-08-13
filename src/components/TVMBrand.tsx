@@ -27,29 +27,14 @@ export function TVMBrand({
 }) {
   return (
     <span className="inline-flex items-center gap-2.5">
-      <span
-        className="tvm-mark grid shrink-0 place-items-center text-white"
+      <img
+        src="/brand/tvm-app-icon-192.png"
+        alt=""
+        width={size}
+        height={size}
+        className="tvm-mark"
         style={{ width: size, height: size }}
-      >
-        <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path
-            d="M3 17.5 8.5 11l4 3.5L21 5"
-            stroke="#c5b6ff"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M3 17.5 8.5 11l4 3.5L21 5"
-            stroke="rgba(255,255,255,0.38)"
-            strokeWidth="1.15"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="21" cy="5" r="2.55" fill="#f4f1ff" />
-          <circle cx="20.35" cy="4.4" r="0.85" fill="white" fillOpacity="0.7" />
-        </svg>
-      </span>
+      />
       {showWordmark && (
         <span className="leading-none">
           <span className="font-display font-extrabold tracking-tight text-ink">TVM</span>

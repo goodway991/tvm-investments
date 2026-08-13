@@ -1,25 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="TVM Investments">
   <defs>
     <linearGradient id="base" x1="50%" y1="0%" x2="50%" y2="100%">
-      <stop offset="0%" stop-color="#8b74ff"/>
-      <stop offset="48%" stop-color="#5b3df5"/>
-      <stop offset="100%" stop-color="#3a2ad4"/>
-    </linearGradient>
-    <linearGradient id="sheen" x1="50%" y1="0%" x2="50%" y2="42%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.30"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#7aa4ff"/>
+      <stop offset="48%" stop-color="#4f6bff"/>
+      <stop offset="100%" stop-color="#2a3ec8"/>
     </linearGradient>
     <linearGradient id="line" x1="8%" y1="92%" x2="92%" y2="8%">
-      <stop offset="0%" stop-color="#7a68e8"/>
-      <stop offset="100%" stop-color="#c9befa"/>
+      <stop offset="0%" stop-color="#5a72dc"/>
+      <stop offset="100%" stop-color="#c5d4ff"/>
     </linearGradient>
     <radialGradient id="dot" cx="36%" cy="30%" r="70%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#e4ddff"/>
+      <stop offset="100%" stop-color="#dbe6ff"/>
     </radialGradient>
   </defs>
   <rect width="1024" height="1024" rx="230" fill="url(#base)"/>
-  <rect width="1024" height="430" rx="230" fill="url(#sheen)"/>
   <g fill="none" stroke="url(#line)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round">
     <path d="M214 700 L392 456 L540 578 L812 262"/>
   </g>
