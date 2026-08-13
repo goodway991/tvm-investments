@@ -15,7 +15,6 @@ const primaryLinks = [
 ];
 
 const workspaceLinks = [
-  { label: "Movers", href: "/dashboard/movers" },
   { label: "Daily Brief", href: "/dashboard/brief" },
   { label: "Screener", href: "/dashboard/screener" },
   { label: "Reports", href: "/dashboard/reports" },

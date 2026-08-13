@@ -319,6 +319,9 @@ export function buildDemoCandidates(): StockCandidate[] {
     last.open = s.price / (1 + s.changePercent / 100);
     last.high = Math.max(last.open, last.close) * 1.01;
     last.low = Math.min(last.open, last.close) * 0.99;
+    if (ohlcv.length >= 2) {
+      ohlcv[ohlcv.length - 2].close = last.open;
+    }
 
     const change = s.price - last.open;
     const volume = Math.floor(

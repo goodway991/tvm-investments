@@ -300,6 +300,44 @@ export function compactCompanyName(name: string) {
     .replace("Advanced Micro Devices", "Adv. Micro Devices");
 }
 
+export function screenedToCandidate(
+  stock: Pick<
+    StockCandidate,
+    | "symbol"
+    | "name"
+    | "sector"
+    | "industry"
+    | "price"
+    | "changePercent"
+    | "volume"
+    | "fundamentals"
+    | "compositeScore"
+    | "shortTermScore"
+    | "longTermScore"
+    | "indexMembership"
+  > & { change?: number },
+): StockCandidate {
+  return {
+    symbol: stock.symbol,
+    name: stock.name,
+    sector: stock.sector,
+    industry: stock.industry,
+    price: stock.price,
+    change: stock.change ?? 0,
+    changePercent: stock.changePercent,
+    volume: stock.volume,
+    fundamentals: stock.fundamentals,
+    ohlcv: [],
+    headlines: [],
+    signals: [],
+    compositeScore: stock.compositeScore,
+    maxCompositeScore: 100,
+    shortTermScore: stock.shortTermScore,
+    longTermScore: stock.longTermScore,
+    indexMembership: stock.indexMembership,
+  };
+}
+
 export function FlaggedPickButton({
   stock,
   index,

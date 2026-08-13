@@ -16,7 +16,6 @@ import { canUsePreviewFeature } from "@/lib/plans";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const },
-  { label: "Movers", href: "/dashboard/movers", icon: "movers" as const },
   { label: "Daily Brief", href: "/dashboard/brief", icon: "brief" as const },
   { label: "Screener", href: "/dashboard/screener", icon: "screener" as const },
   { label: "Reports", href: "/dashboard/reports", icon: "reports" as const },

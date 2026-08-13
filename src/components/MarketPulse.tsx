@@ -8,6 +8,7 @@ import { HorizonForecastChart } from "@/components/HorizonForecastChart";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import type { ChartPoint, ChartRange } from "@/lib/chart-series";
 import type { HorizonStats } from "@/lib/horizon-forecast";
+import { compactCompanyName } from "@/components/StockDetailModal";
 import type { DailySnapshot, OHLCVBar, StockCandidate } from "@/types";
 
 const rangeCopy: Record<ChartRange, string> = {
@@ -15,6 +16,8 @@ const rangeCopy: Record<ChartRange, string> = {
   month: "Trading dates this month",
   year: "Month-end closes this year",
 };
+
+export const WATCHLIST_PULSE_TITLE = "Watchlist pulse";
 
 type PulseStock = {
   symbol: string;
@@ -98,9 +101,11 @@ type PulseForecast = {
 export function MarketPulse({
   snapshot,
   stocks,
+  onOpenStock,
 }: {
   snapshot: DailySnapshot;
   stocks: StockCandidate[];
+  onOpenStock?: (symbol: string) => void;
 }) {
   const { entitlement, watchlist, portfolio } = useAuth();
   const { openUpgrade } = useUpgrade();
@@ -207,14 +212,31 @@ export function MarketPulse({
   const activeForecast = current ? forecastBySymbol[current.symbol] : undefined;
 
   return (
-    <article className="glass-strong rounded-[24px] p-6">
+    <article id="watchlist-pulse" className="glass-strong scroll-mt-8 rounded-[24px] p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="font-display text-lg font-semibold text-ink">Market pulse</h2>
-            <span className="rounded-full bg-emerald-400/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-600">
-              {current?.symbol ?? "Watchlist"}
-            </span>
+            <h2 className="font-display text-lg font-semibold text-ink">
+              {WATCHLIST_PULSE_TITLE}
+            </h2>
+            {current ? (
+              <button
+                type="button"
+                onClick={() => onOpenStock?.(current.symbol)}
+                className="glass rounded-2xl px-3 py-1.5 text-left transition-all hover:-translate-y-0.5"
+              >
+                <p className="font-display text-base font-bold text-violet">
+                  {current.symbol}
+                </p>
+                <p className="max-w-[10rem] truncate text-[11px] text-ink-soft">
+                  {compactCompanyName(current.name)}
+                </p>
+              </button>
+            ) : (
+              <span className="font-display text-base font-bold text-violet">
+                Watchlist
+              </span>
+            )}
           </div>
           <p className="mt-1 text-xs text-ink-soft">
             {predicting
@@ -260,7 +282,7 @@ export function MarketPulse({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <label>
-          <span className="sr-only">Market pulse range</span>
+          <span className="sr-only">Watchlist pulse range</span>
           <select
             value={range}
             onChange={(event) => {

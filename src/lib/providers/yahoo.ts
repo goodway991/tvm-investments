@@ -204,6 +204,7 @@ type YahooQuote = {
   regularMarketPrice?: unknown;
   regularMarketChange?: unknown;
   regularMarketChangePercent?: unknown;
+  regularMarketPreviousClose?: unknown;
   regularMarketVolume?: unknown;
   trailingPE?: unknown;
   beta?: unknown;
@@ -267,7 +268,10 @@ function candidateFromQuote(
   headlines: NewsHeadline[],
 ): StockCandidate {
   const lastClose = ohlcv.at(-1)?.close ?? 0;
-  const prevClose = ohlcv.at(-2)?.close ?? lastClose;
+  const prevClose =
+    num(quote?.regularMarketPreviousClose) ??
+    ohlcv.at(-2)?.close ??
+    lastClose;
   const price = num(quote?.regularMarketPrice) ?? nasdaq?.price ?? lastClose;
   const change =
     num(quote?.regularMarketChange) ??
@@ -371,15 +375,24 @@ export async function fetchYahooCandidate(symbol: string): Promise<StockCandidat
   const sector = inferSector(profile?.sector ?? "", profile?.industry ?? "");
   const ohlcv = barsFromChart(dailyChart.quotes).slice(-90);
   const yearCloses = monthlyChart ? barsFromChart(monthlyChart.quotes).slice(-12) : [];
+  const lastClose = ohlcv.at(-1)?.close ?? 0;
+  const prevClose =
+    num(quote.regularMarketPreviousClose) ?? ohlcv.at(-2)?.close ?? lastClose;
+  const price =
+    num(quote.regularMarketPrice) ?? num(quote.postMarketPrice) ?? lastClose;
+  const change = num(quote.regularMarketChange) ?? price - prevClose;
+  const changePercent =
+    num(quote.regularMarketChangePercent) ??
+    (prevClose ? ((price - prevClose) / prevClose) * 100 : 0);
 
   return {
     symbol: ticker,
     name: quote.longName || quote.shortName || ticker,
     sector,
     industry: profile?.industry || sector,
-    price: num(quote.regularMarketPrice) ?? num(quote.postMarketPrice) ?? ohlcv.at(-1)?.close ?? 0,
-    change: num(quote.regularMarketChange) ?? 0,
-    changePercent: num(quote.regularMarketChangePercent) ?? 0,
+    price,
+    change,
+    changePercent,
     volume: num(quote.regularMarketVolume) ?? ohlcv.at(-1)?.volume ?? 0,
     fundamentals: {
       peRatio: num(quote.trailingPE) ?? num(detail?.trailingPE),

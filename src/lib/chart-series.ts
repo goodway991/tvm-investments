@@ -31,6 +31,25 @@ export function uniqueStocks(stocks: StockCandidate[]) {
   return Array.from(unique.values());
 }
 
+export function sessionMove(stock: {
+  price: number;
+  change: number;
+  ohlcv?: Array<{ close: number }>;
+}) {
+  const current = stock.price;
+  const fromChange = current - stock.change;
+  const fromBars =
+    stock.ohlcv && stock.ohlcv.length >= 2
+      ? stock.ohlcv[stock.ohlcv.length - 2].close
+      : 0;
+  const previous = fromChange > 0 ? fromChange : fromBars > 0 ? fromBars : current;
+  return {
+    current,
+    previous,
+    up: current >= previous,
+  };
+}
+
 export function sparklineValues(ohlcv: OHLCVBar[], points = 8) {
   return ohlcv.slice(-points).map((bar) => bar.close);
 }

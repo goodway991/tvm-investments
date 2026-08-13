@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { WatchlistPanel } from "@/components/WatchlistPanel";
+import { uniqueStocks } from "@/lib/chart-series";
 import { YAHOO_SCAN_UNIVERSE } from "@/lib/watchlist-symbols";
 import { getDashboardSnapshot } from "@/lib/snapshot";
 
@@ -27,7 +28,14 @@ export default async function WatchlistPage({
 
   return (
     <div className="dashboard-research">
-      <WatchlistPanel stocks={Array.from(stocks.values())} externalQuery={q ?? ""} />
+      <WatchlistPanel
+        stocks={Array.from(stocks.values())}
+        quoted={uniqueStocks([...snapshot.topMovers, ...snapshot.topPicks])}
+        screened={snapshot.screenedStocks}
+        reports={snapshot.reports}
+        sessionDate={snapshot.date}
+        externalQuery={q ?? ""}
+      />
     </div>
   );
 }

@@ -7,9 +7,11 @@ import type { DailySnapshot } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { MiniChart } from "@/components/MiniChart";
 import { MarketPulse } from "@/components/MarketPulse";
-import { StockDetailModal, FlaggedPickButton, compactCompanyName } from "@/components/StockDetailModal";
+import { MoveMark } from "@/components/MoversTable";
+import { StockDetailModal, FlaggedPickButton, compactCompanyName, screenedToCandidate } from "@/components/StockDetailModal";
 import { TVMIcon } from "@/components/TVMBrand";
 import {
+  sessionMove,
   sparklineValues,
   uniqueStocks,
 } from "@/lib/chart-series";
@@ -37,8 +39,15 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       : 0;
   const filteredMovers = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return snapshot.topMovers.slice(0, 5);
-    return snapshot.topMovers
+    const ranked = [...snapshot.topMovers].sort((left, right) => {
+      const a = sessionMove(left);
+      const b = sessionMove(right);
+      const aPct = a.previous ? Math.abs(a.current - a.previous) / a.previous : 0;
+      const bPct = b.previous ? Math.abs(b.current - b.previous) / b.previous : 0;
+      return bPct - aPct;
+    });
+    if (!query) return ranked.slice(0, 5);
+    return ranked
       .filter(
         (stock) =>
           stock.symbol.toLowerCase().includes(query) ||
@@ -49,6 +58,11 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
   const selectedStock =
     allStocks.find((stock) => stock.symbol === selectedSymbol) ??
     snapshot.topPicks.find((stock) => stock.symbol === selectedSymbol) ??
+    (selectedSymbol
+      ? snapshot.screenedStocks
+          .filter((stock) => stock.symbol === selectedSymbol)
+          .map(screenedToCandidate)[0]
+      : undefined) ??
     null;
   const selectedReport = snapshot.reports.find(
     (report) => report.symbol === selectedSymbol,
@@ -194,37 +208,45 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.7fr_1fr]">
-        <MarketPulse snapshot={snapshot} stocks={allStocks} />
+        <MarketPulse
+          snapshot={snapshot}
+          stocks={allStocks}
+          onOpenStock={(symbol) => setSelectedSymbol(symbol)}
+        />
 
         <article className="glass-strong flex flex-col rounded-[24px] p-6">
           <h2 className="font-display text-lg font-semibold text-ink">Today&apos;s movers</h2>
           <div className="mt-4 flex-1 space-y-3.5">
             {filteredMovers.length > 0 ? (
-              filteredMovers.map((stock) => (
+              filteredMovers.map((stock) => {
+                const move = sessionMove(stock);
+                return (
                 <button
                   key={stock.symbol}
                   type="button"
                   onClick={() => setSelectedSymbol(stock.symbol)}
                   className="glass flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-all hover:-translate-y-0.5 hover:bg-white/50"
                 >
-                  <div className="grid h-10 w-10 place-items-center rounded-full bg-[#f2f0ff]/80 font-display text-xs font-bold text-violet">
-                    {stock.symbol.slice(0, 2)}
-                  </div>
+                  <MoveMark up={move.up} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-ink">{stock.symbol}</p>
                     <p className="truncate text-xs text-ink-soft">{compactCompanyName(stock.name)}</p>
                   </div>
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      stock.changePercent >= 0
-                        ? "bg-emerald-400/20 text-emerald-600"
-                        : "bg-coral/20 text-coral"
-                    }`}
-                  >
-                    {signedPercent(stock.changePercent)}
-                  </span>
+                  <div className="shrink-0 text-right">
+                    <p className="text-[11px] text-ink-soft">
+                      Prev ${move.previous.toFixed(2)}
+                    </p>
+                    <p
+                      className={`font-display text-sm font-bold ${
+                        move.up ? "text-emerald-600" : "text-coral"
+                      }`}
+                    >
+                      ${move.current.toFixed(2)}
+                    </p>
+                  </div>
                 </button>
-              ))
+                );
+              })
             ) : (
               <p className="glass rounded-2xl p-4 text-sm text-ink-soft">
                 No tracked ticker matches “{search}”.

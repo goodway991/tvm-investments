@@ -1,20 +1,36 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { StockCandidate } from "@/types";
+import type { CompanyReport, ScreenedStock, StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
+import {
+  FlaggedPickButton,
+  StockDetailModal,
+  screenedToCandidate,
+} from "@/components/StockDetailModal";
 
 type WatchlistStock = Pick<StockCandidate, "symbol" | "name">;
 
 export function WatchlistPanel({
   stocks,
+  quoted = [],
+  screened = [],
+  reports = [],
+  sessionDate,
   externalQuery = "",
 }: {
   stocks: WatchlistStock[];
+  quoted?: StockCandidate[];
+  screened?: ScreenedStock[];
+  reports?: CompanyReport[];
+  sessionDate?: string;
   externalQuery?: string;
 }) {
   const { entitlement, watchlist, updateWatchlist } = useAuth();
   const [draft, setDraft] = useState<string[]>(watchlist.symbols);
+  const [compact, setCompact] = useState(true);
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -27,6 +43,24 @@ export function WatchlistPanel({
     const unique = new Map(stocks.map((stock) => [stock.symbol, stock]));
     return Array.from(unique.values());
   }, [stocks]);
+
+  const quotedBySymbol = useMemo(
+    () => new Map(quoted.map((stock) => [stock.symbol, stock])),
+    [quoted],
+  );
+  const screenedBySymbol = useMemo(
+    () => new Map(screened.map((stock) => [stock.symbol, stock])),
+    [screened],
+  );
+
+  function detailFor(symbol: string) {
+    return (
+      quotedBySymbol.get(symbol) ??
+      (screenedBySymbol.has(symbol)
+        ? screenedToCandidate(screenedBySymbol.get(symbol)!)
+        : null)
+    );
+  }
 
   const results = useMemo(() => {
     const query = externalQuery.trim().toLowerCase();
@@ -50,6 +84,9 @@ export function WatchlistPanel({
   const changed =
     draft.length !== watchlist.symbols.length ||
     draft.some((symbol, index) => symbol !== watchlist.symbols[index]);
+
+  const selectedStock = selectedSymbol ? detailFor(selectedSymbol) : null;
+  const selectedReport = reports.find((report) => report.symbol === selectedSymbol);
 
   function add(symbol: string) {
     setError("");
@@ -108,9 +145,24 @@ export function WatchlistPanel({
               " After saving, the list is locked for seven days."}
           </p>
         </div>
-        <span className="glass rounded-full px-3 py-1.5 text-sm font-semibold text-violet">
-          {draft.length}/{entitlement.watchlistLimit}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="glass rounded-full px-3 py-1.5 text-sm font-semibold text-violet">
+            {draft.length}/{entitlement.watchlistLimit}
+          </span>
+          <button
+            type="button"
+            onClick={() => setCompact((value) => !value)}
+            className="glass rounded-full px-4 py-1.5 text-sm font-semibold text-ink hover:text-violet"
+          >
+            {compact ? "Expand" : "Compact"}
+          </button>
+          <Link
+            href="/dashboard#watchlist-pulse"
+            className="glass-violet rounded-full px-4 py-1.5 text-sm font-semibold text-white"
+          >
+            View in Watchlist pulse
+          </Link>
+        </div>
       </div>
 
       {watchlist.nextChangeAt && cooldownActive && (
@@ -119,66 +171,113 @@ export function WatchlistPanel({
         </p>
       )}
 
-      <div className="mt-5 flex min-h-14 flex-wrap gap-2 rounded-2xl bg-[#f7f8fc] p-3">
-        {draft.length ? (
-          draft.map((symbol) => (
-            <button
-              key={symbol}
-              type="button"
-              onClick={() => remove(symbol)}
-              disabled={cooldownActive}
-              className="rounded-full bg-violet/10 px-3 py-1.5 text-sm font-semibold text-violet transition-colors hover:bg-coral/10 hover:text-coral disabled:cursor-not-allowed disabled:opacity-60"
-              title={cooldownActive ? "Watchlist is in its seven-day lock period" : "Remove"}
-            >
-              {symbol} ×
-            </button>
-          ))
-        ) : (
-          <p className="px-1 py-2 text-sm text-ink-soft">
-            No watched stocks yet. Add several below, then save once.
-          </p>
-        )}
-      </div>
-
-      <div className="mt-5">
-        <p className="text-sm font-semibold text-ink">
-          {externalQuery
-            ? `Results for “${externalQuery}”`
-            : "Available S&P 500, Dow, and extra liquid names"}
-        </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((stock) => {
-            const selected = draft.includes(stock.symbol);
-            return (
-              <button
-                key={stock.symbol}
-                type="button"
-                onClick={() =>
-                  selected ? remove(stock.symbol) : add(stock.symbol)
+      {compact ? (
+        <div className="mt-5">
+          {draft.length ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {draft.map((symbol, index) => {
+                const stock = detailFor(symbol);
+                if (stock) {
+                  return (
+                    <FlaggedPickButton
+                      key={symbol}
+                      stock={stock}
+                      index={index}
+                      onOpen={() => setSelectedSymbol(symbol)}
+                    />
+                  );
                 }
-                disabled={cooldownActive}
-                className={`flex items-center justify-between rounded-2xl border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
-                  selected
-                    ? "border-violet/30 bg-violet/10"
-                    : "border-ink/[0.06] bg-white hover:-translate-y-0.5 hover:border-violet/20"
-                }`}
-              >
-                <span>
-                  <span className="block font-display font-bold text-ink">
-                    {stock.symbol}
-                  </span>
-                  <span className="block max-w-36 truncate text-xs text-ink-soft">
-                    {stock.name}
-                  </span>
-                </span>
-                <span className="text-sm font-semibold text-violet">
-                  {selected ? "Added" : "Add"}
-                </span>
-              </button>
-            );
-          })}
+                return (
+                  <div
+                    key={symbol}
+                    className="glass flex items-center justify-between rounded-2xl p-4"
+                  >
+                    <div>
+                      <p className="font-display font-bold text-violet">{symbol}</p>
+                      <p className="text-[11px] text-ink-soft">Watched</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => remove(symbol)}
+                      disabled={cooldownActive}
+                      className="text-sm font-semibold text-coral disabled:opacity-60"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="rounded-2xl bg-[#f7f8fc] px-4 py-6 text-sm text-ink-soft">
+              No watched stocks yet. Expand to add names, then save.
+            </p>
+          )}
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="mt-5 flex min-h-14 flex-wrap gap-2 rounded-2xl bg-[#f7f8fc] p-3">
+            {draft.length ? (
+              draft.map((symbol) => (
+                <button
+                  key={symbol}
+                  type="button"
+                  onClick={() => remove(symbol)}
+                  disabled={cooldownActive}
+                  className="rounded-full bg-violet/10 px-3 py-1.5 text-sm font-semibold text-violet transition-colors hover:bg-coral/10 hover:text-coral disabled:cursor-not-allowed disabled:opacity-60"
+                  title={cooldownActive ? "Watchlist is in its seven-day lock period" : "Remove"}
+                >
+                  {symbol} ×
+                </button>
+              ))
+            ) : (
+              <p className="px-1 py-2 text-sm text-ink-soft">
+                No watched stocks yet. Add several below, then save once.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-5">
+            <p className="text-sm font-semibold text-ink">
+              {externalQuery
+                ? `Results for “${externalQuery}”`
+                : "Available S&P 500, Dow, and extra liquid names"}
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {results.map((stock) => {
+                const selected = draft.includes(stock.symbol);
+                return (
+                  <button
+                    key={stock.symbol}
+                    type="button"
+                    onClick={() =>
+                      selected ? remove(stock.symbol) : add(stock.symbol)
+                    }
+                    disabled={cooldownActive}
+                    className={`flex items-center justify-between rounded-2xl border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                      selected
+                        ? "border-violet/30 bg-violet/10"
+                        : "border-ink/[0.06] bg-white hover:-translate-y-0.5 hover:border-violet/20"
+                    }`}
+                  >
+                    <span>
+                      <span className="block font-display font-bold text-ink">
+                        {stock.symbol}
+                      </span>
+                      <span className="block max-w-36 truncate text-xs text-ink-soft">
+                        {stock.name}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold text-violet">
+                      {selected ? "Added" : "Add"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button
@@ -209,6 +308,15 @@ export function WatchlistPanel({
         <p className="mt-4 rounded-xl bg-emerald-400/10 px-3 py-2 text-sm text-emerald-600" role="status">
           {message}
         </p>
+      )}
+
+      {selectedStock && (
+        <StockDetailModal
+          stock={selectedStock}
+          report={selectedReport}
+          sessionDate={sessionDate}
+          onClose={() => setSelectedSymbol(null)}
+        />
       )}
     </div>
   );
