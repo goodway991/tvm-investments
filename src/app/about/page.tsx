@@ -3,7 +3,7 @@ import { AboutPage } from "@/components/AboutPage";
 
 export const metadata: Metadata = {
   title: "About — TVM Investments",
-  description: "The mission, research method, and team behind TVM Investments.",
+  description: "Who TVM Investments is for, what the daily research desk does, and the people building it.",
 };
 
 export default function AboutRoute() {

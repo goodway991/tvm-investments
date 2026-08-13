@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="TVM Investments">
+  <defs>
+    <linearGradient id="tvmBase" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#8b74ff"/>
+      <stop offset="48%" stop-color="#5b3df5"/>
+      <stop offset="100%" stop-color="#3a2ad4"/>
+    </linearGradient>
+    <linearGradient id="tvmSheen" x1="50%" y1="0%" x2="50%" y2="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="tvmLine" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9b8cff"/>
+      <stop offset="100%" stop-color="#d5ccff"/>
+    </linearGradient>
+    <radialGradient id="tvmDot" cx="38%" cy="32%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e8e2ff"/>
+    </radialGradient>
+  </defs>
+  <rect width="32" height="32" rx="7.2" fill="url(#tvmBase)"/>
+  <rect width="32" height="14" rx="7.2" fill="url(#tvmSheen)"/>
+  <g fill="none" stroke="url(#tvmLine)" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.2 21.4 L12.6 14.4 L16.8 18.2 L24.4 8.6"/>
+  </g>
+  <circle cx="24.4" cy="8.6" r="2.15" fill="url(#tvmDot)"/>
+</svg>

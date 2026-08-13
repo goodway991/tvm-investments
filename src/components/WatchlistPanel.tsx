@@ -4,12 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 
+type WatchlistStock = Pick<StockCandidate, "symbol" | "name">;
+
 export function WatchlistPanel({
   stocks,
-  externalQuery,
+  externalQuery = "",
 }: {
-  stocks: StockCandidate[];
-  externalQuery: string;
+  stocks: WatchlistStock[];
+  externalQuery?: string;
 }) {
   const { entitlement, watchlist, updateWatchlist } = useAuth();
   const [draft, setDraft] = useState<string[]>(watchlist.symbols);
@@ -35,7 +37,7 @@ export function WatchlistPanel({
           stock.symbol.toLowerCase().includes(query) ||
           stock.name.toLowerCase().includes(query),
       )
-      .slice(0, query ? 8 : 6);
+      .slice(0, query ? 24 : 60);
   }, [candidates, externalQuery]);
 
   const cooldownActive =
@@ -142,7 +144,7 @@ export function WatchlistPanel({
         <p className="text-sm font-semibold text-ink">
           {externalQuery
             ? `Results for “${externalQuery}”`
-            : "Available tracked stocks"}
+            : "Available S&P 500, Dow, and extra liquid names"}
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((stock) => {

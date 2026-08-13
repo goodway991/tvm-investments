@@ -1,24 +1,11 @@
-import { NextResponse } from "next/server";
-import { runDailyAnalysis } from "@/lib/analysis-pipeline";
-import { getLatestSnapshot, saveDailySnapshot } from "@/lib/firebase/admin";
-import { normalizeSnapshot } from "@/lib/snapshot";
+import { NextRequest, NextResponse } from "next/server";
+import { getDashboardSnapshot, parseArchiveDate } from "@/lib/snapshot";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
-export async function GET() {
-  try {
-    let snapshot = await getLatestSnapshot();
-    const today = new Date().toISOString().slice(0, 10);
-
-    if (!snapshot || snapshot.date !== today) {
-      snapshot = await runDailyAnalysis(Boolean(process.env.OPENAI_API_KEY));
-      await saveDailySnapshot(snapshot);
-    }
-
-    return NextResponse.json(normalizeSnapshot(snapshot));
-  } catch (error) {
-    console.error("Snapshot API error:", error);
-    const snapshot = await runDailyAnalysis(false);
-    return NextResponse.json(normalizeSnapshot(snapshot));
-  }
+export async function GET(request: NextRequest) {
+  const date = parseArchiveDate(request.nextUrl.searchParams.get("date"));
+  const snapshot = await getDashboardSnapshot(date);
+  return NextResponse.json(snapshot);
 }

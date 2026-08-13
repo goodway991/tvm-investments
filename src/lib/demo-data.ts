@@ -9,37 +9,39 @@ import type {
 
 function generateOHLCV(
   basePrice: number,
-  days: number,
-  trend: "down" | "up" | "flat" = "flat"
+  tradingDays: number,
+  trend: "down" | "up" | "flat" = "flat",
 ): OHLCVBar[] {
   const bars: OHLCVBar[] = [];
   let price = basePrice * (trend === "down" ? 1.08 : trend === "up" ? 0.92 : 1);
-  const start = new Date();
-  start.setDate(start.getDate() - days);
+  const cursor = new Date();
+  cursor.setHours(16, 0, 0, 0);
 
-  for (let i = 0; i < days; i++) {
-    const d = new Date(start);
-    d.setDate(d.getDate() + i);
-    const drift = trend === "down" ? -0.003 : trend === "up" ? 0.003 : 0;
-    const noise = (Math.random() - 0.5) * 0.025;
-    const open = price;
-    const close = price * (1 + drift + noise);
-    const high = Math.max(open, close) * (1 + Math.random() * 0.012);
-    const low = Math.min(open, close) * (1 - Math.random() * 0.012);
-    const volume = Math.floor(8_000_000 + Math.random() * 12_000_000);
+  while (bars.length < tradingDays) {
+    if (cursor.getDay() !== 0 && cursor.getDay() !== 6) {
+      const drift = trend === "down" ? -0.003 : trend === "up" ? 0.003 : 0;
+      const noise = (Math.random() - 0.5) * 0.025;
+      const close = price;
+      const open = close / (1 + drift + noise);
+      const high = Math.max(open, close) * (1 + Math.random() * 0.012);
+      const low = Math.min(open, close) * (1 - Math.random() * 0.012);
+      const volume = Math.floor(8_000_000 + Math.random() * 12_000_000);
+      const stamp = new Date(cursor);
 
-    bars.push({
-      date: d.toISOString().slice(0, 10),
-      open: +open.toFixed(2),
-      high: +high.toFixed(2),
-      low: +low.toFixed(2),
-      close: +close.toFixed(2),
-      volume,
-    });
-    price = close;
+      bars.push({
+        date: `${stamp.getFullYear()}-${String(stamp.getMonth() + 1).padStart(2, "0")}-${String(stamp.getDate()).padStart(2, "0")}`,
+        open: +open.toFixed(2),
+        high: +high.toFixed(2),
+        low: +low.toFixed(2),
+        close: +close.toFixed(2),
+        volume,
+      });
+      price = open;
+    }
+    cursor.setDate(cursor.getDate() - 1);
   }
 
-  return bars;
+  return bars.reverse();
 }
 
 const DEMO_STOCKS: Array<{
@@ -113,7 +115,7 @@ const DEMO_STOCKS: Array<{
     },
     headlines: [
       { headline: "EV sector pressured as competitor cuts prices", source: "Reuters" },
-      { headline: "Tesla sympathy move on sector news, no company update", source: "Yahoo Finance" },
+      { headline: "Tesla sympathy move on sector news, no company update", source: "News" },
     ],
   },
   {
@@ -311,10 +313,12 @@ export function buildDemoCandidates(): StockCandidate[] {
   const now = new Date().toISOString();
 
   return DEMO_STOCKS.map((s) => {
-    const ohlcv = generateOHLCV(s.price, 90, s.trend);
+    const ohlcv = generateOHLCV(s.price, 252, s.trend);
     const last = ohlcv[ohlcv.length - 1];
     last.close = s.price;
     last.open = s.price / (1 + s.changePercent / 100);
+    last.high = Math.max(last.open, last.close) * 1.01;
+    last.low = Math.min(last.open, last.close) * 0.99;
 
     const change = s.price - last.open;
     const volume = Math.floor(
@@ -333,6 +337,11 @@ export function buildDemoCandidates(): StockCandidate[] {
       volume,
       fundamentals: s.fundamentals,
       ohlcv,
+      yearCloses: ohlcv.filter((bar, index, bars) => {
+        const month = bar.date.slice(0, 7);
+        const next = bars[index + 1];
+        return !next || next.date.slice(0, 7) !== month;
+      }).slice(-12),
       headlines: s.headlines.map((h) => ({
         ...h,
         datetime: now,
@@ -416,7 +425,7 @@ export const METHODOLOGY_NOTE =
 export function buildDemoMovers(candidates: StockCandidate[]): MarketMover[] {
   return [...candidates]
     .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-    .slice(0, 10)
+    .slice(0, 20)
     .map((c) => ({
       ...c,
       direction: c.changePercent >= 0 ? ("gainer" as const) : ("loser" as const),
@@ -430,6 +439,7 @@ export function emptySnapshot(): DailySnapshot {
     generatedAt: "",
     dataMode: "demo",
     scanUniverse: { sp500: 0, dow30: 0, combined: 0 },
+    screenedStocks: [],
     topMovers: [],
     topPicks: [],
     shortTermPicks: [],
@@ -438,6 +448,7 @@ export function emptySnapshot(): DailySnapshot {
     shortTermReports: [],
     longTermReports: [],
     marketEvents: [],
+    sectorDives: [],
     techSectorAnalysis: "",
     methodologyNote: METHODOLOGY_NOTE,
     disclaimer: DISCLAIMER,

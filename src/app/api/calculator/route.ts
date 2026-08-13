@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStockQuote } from "@/lib/analysis-pipeline";
-import { saveUserInvestment } from "@/lib/firebase/admin";
+import { parseTicker } from "@/lib/ticker";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const symbol = request.nextUrl.searchParams.get("symbol");
-  const amount = request.nextUrl.searchParams.get("amount");
+  const symbol = parseTicker(request.nextUrl.searchParams.get("symbol"));
+  const amountRaw = request.nextUrl.searchParams.get("amount");
 
   if (!symbol) {
-    return NextResponse.json({ error: "symbol required" }, { status: 400 });
+    return NextResponse.json({ error: "Valid ticker required" }, { status: 400 });
+  }
+
+  const amountUsd = amountRaw ? Number.parseFloat(amountRaw) : 0;
+  if (!Number.isFinite(amountUsd) || amountUsd < 0 || amountUsd > 1_000_000_000) {
+    return NextResponse.json({ error: "Amount must be between 0 and 1,000,000,000" }, { status: 400 });
   }
 
   try {
     const quote = await getStockQuote(symbol);
-    const amountUsd = amount ? parseFloat(amount) : 0;
     const shares = amountUsd > 0 && quote.price > 0 ? amountUsd / quote.price : 0;
 
     const scenarios = [-10, -5, 5, 10].reduce(
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
         };
         return acc;
       },
-      {} as Record<string, { percent: number; price: number; value: number; profitLoss: number }>
+      {} as Record<string, { percent: number; price: number; value: number; profitLoss: number }>,
     );
 
     return NextResponse.json({
@@ -43,28 +47,11 @@ export async function GET(request: NextRequest) {
       scenarios,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Quote failed" },
-      { status: 500 }
-    );
+    console.error("Calculator quote error:", error);
+    return NextResponse.json({ error: "Quote unavailable" }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { symbol, amountUsd, entryPrice, scenarios, userId } = body;
-
-    const saved = await saveUserInvestment({
-      userId,
-      symbol,
-      amountUsd,
-      entryPrice,
-      scenarios,
-    });
-
-    return NextResponse.json({ saved });
-  } catch {
-    return NextResponse.json({ saved: false });
-  }
+export async function POST() {
+  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }

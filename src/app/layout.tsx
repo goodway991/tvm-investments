@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Sora } from "next/font/google";
-import { AuthProvider } from "@/components/AuthProvider";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
@@ -15,7 +15,20 @@ export const metadata: Metadata = {
     template: "%s",
   },
   description:
-    "Educational daily stock screener using 8 weighted trading strategies, market events, and backtested track record.",
+    "A daily research desk for self-directed investors. Eight-signal screens, movers, and notes — educational, not investment advice.",
+  applicationName: "TVM Investments",
+  appleWebApp: {
+    capable: true,
+    title: "TVM Investments",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${dmSans.variable} ${sora.variable} font-sans antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

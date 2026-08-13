@@ -28,6 +28,8 @@ import {
   getClientAuth,
   getClientFirestore,
 } from "@/lib/firebase/client";
+import { LEGAL_STORAGE_KEY, TOS_VERSION } from "@/lib/legal";
+import { WATCHLIST_ALLOWED_SYMBOLS } from "@/lib/watchlist-symbols";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
@@ -37,6 +39,7 @@ export interface AccountProfile {
   uid: string;
   email: string;
   displayName: string;
+  createdAt: Date | null;
 }
 
 export interface AccountEntitlement {
@@ -98,7 +101,13 @@ const defaultWatchlist: AccountWatchlist = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function asDate(value: unknown) {
-  return value instanceof Timestamp ? value.toDate() : null;
+  if (value instanceof Timestamp) return value.toDate();
+  if (value instanceof Date) return value;
+  if (typeof value === "string" && value) {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? new Date(parsed) : null;
+  }
+  return null;
 }
 
 function profileFrom(data: DocumentData): AccountProfile {
@@ -106,6 +115,7 @@ function profileFrom(data: DocumentData): AccountProfile {
     uid: String(data.uid),
     email: String(data.email),
     displayName: String(data.displayName),
+    createdAt: asDate(data.createdAt),
   };
 }
 
@@ -121,12 +131,21 @@ async function ensureAccountDocuments(user: User) {
 
   const profile = await getDoc(profileRef);
   if (!profile.exists()) {
+    try {
+      sessionStorage.removeItem(LEGAL_STORAGE_KEY);
+    } catch {
+      /* private browsing */
+    }
+
     await setDoc(profileRef, {
       uid: user.uid,
       email: user.email,
       displayName: isAdmin ? "ADMIN" : user.displayName || user.email.split("@")[0],
       createdAt: now,
       updatedAt: now,
+      tosVersion: TOS_VERSION,
+      tosAcceptedAt: now,
+      privacyAcceptedAt: now,
     });
   }
 
@@ -290,6 +309,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalized = Array.from(
         new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)),
       );
+      const allowed = new Set(WATCHLIST_ALLOWED_SYMBOLS);
+      const blocked = normalized.filter((symbol) => !allowed.has(symbol));
+      if (blocked.length) {
+        throw new Error(
+          `Watchlist can only include TVM scan names (S&P 500, Dow 30, and extra liquid names). Remove ${blocked.join(", ")}.`,
+        );
+      }
       if (normalized.length > entitlement.watchlistLimit) {
         throw new Error(
           `Your ${entitlement.plan} plan allows ${entitlement.watchlistLimit} watched stocks.`,

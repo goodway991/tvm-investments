@@ -68,9 +68,10 @@ export function InvestmentCalculator({ defaultSymbol }: InvestmentCalculatorProp
 
   return (
     <div className="glass rounded-2xl p-6">
-      <h2 className="font-display text-2xl text-white mb-1">Investment Scenario Calculator</h2>
+      <h2 className="font-display text-2xl text-white mb-1">Hypothetical scenario calculator</h2>
       <p className="text-slate-400 text-sm mb-6">
-        Enter USD amount and ticker — uses live Yahoo Finance quotes when configured, demo prices otherwise.
+        Illustrative math only — not a recommendation to buy or sell. You can lose
+        money. Uses live market quotes when available.
       </p>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">

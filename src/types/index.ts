@@ -60,6 +60,10 @@ export interface StockCandidate {
   volume: number;
   fundamentals: StockFundamentals;
   ohlcv: OHLCVBar[];
+  yearCloses?: OHLCVBar[];
+  businessSummary?: string;
+  fiftyTwoWeekHigh?: number | null;
+  fiftyTwoWeekLow?: number | null;
   headlines: NewsHeadline[];
   newsClassification?: NewsClassification;
   signals: StrategySignal[];
@@ -92,7 +96,31 @@ export interface CompanyReport {
   upsideDrivers: string[];
   downsideRisks: string[];
   cultureAndLongTerm: string;
+  cultureAndLongTermPro?: string;
   fullReport: string;
+}
+
+export interface ScreenedStock {
+  symbol: string;
+  name: string;
+  sector: string;
+  industry: string;
+  price: number;
+  changePercent: number;
+  volume: number;
+  compositeScore: number;
+  shortTermScore: number;
+  longTermScore: number;
+  fundamentals: StockFundamentals;
+  indexMembership?: ("sp500" | "dow30")[];
+}
+
+export interface SectorDive {
+  id: string;
+  sector: string;
+  title: string;
+  subtitle: string;
+  body: string;
 }
 
 export interface DailySnapshot {
@@ -101,6 +129,7 @@ export interface DailySnapshot {
   generatedAt: string;
   dataMode: "demo" | "live";
   scanUniverse: { sp500: number; dow30: number; combined: number };
+  screenedStocks: ScreenedStock[];
   topMovers: MarketMover[];
   topPicks: StockCandidate[];
   shortTermPicks: StockCandidate[];
@@ -109,6 +138,7 @@ export interface DailySnapshot {
   shortTermReports: CompanyReport[];
   longTermReports: CompanyReport[];
   marketEvents: MarketEvent[];
+  sectorDives: SectorDive[];
   techSectorAnalysis: string;
   methodologyNote: string;
   disclaimer: string;
@@ -214,4 +244,23 @@ export const STRATEGY_NAMES: Record<StrategyId, string> = {
   catalyst_upside: "Catalyst-driven upside",
   gap_fill: "Gap fills",
   short_squeeze: "Short interest / squeeze setups",
+};
+
+export const STRATEGY_DETAILS: Record<StrategyId, string> = {
+  dip_no_fundamental:
+    "A stock drops on sector-wide news, a market-wide selloff, index rebalancing, or a sympathy move rather than its own earnings or business problems. If nothing about the company itself changed, the drop is often noise, and mean reversion is the bet. Company-specific problems (missed earnings, guidance cuts, lawsuits) are real repricing, not noise.",
+  oversold_technical:
+    "RSI dropping below 30, or price hitting the lower Bollinger Band, can mean a stock was sold off faster than its fundamentals justify, making a bounce more likely.",
+  volume_momentum:
+    "A drop on unusually low volume suggests weak conviction (easier to reverse). A drop on huge volume suggests real conviction, and possibly informed selling. Reversals often show volume drying up, then a fresh buying spike.",
+  support_bounce:
+    "Stocks often have price levels from past trading where buyers historically stepped in. Falling toward a well-established support level, especially one it has bounced off before, is a common setup.",
+  relative_strength:
+    "If the market or sector is down 2% but a stock is down 5%, it is underperforming and worth investigating. If a stock is down 2% while its sector is down 5%, it is outperforming and may be the stronger name once the sector turns.",
+  catalyst_upside:
+    "Rather than reacting to a drop, look for a scheduled or just-reported catalyst: earnings beat, FDA approval, contract win, analyst upgrade, or insider buying. Unusual options activity is limited on the free data tier, so this signal uses headline scanning.",
+  gap_fill:
+    "When a stock gaps down at the open without new negative news overnight, there is a common pattern of it filling the gap — drifting back toward the previous close during the session.",
+  short_squeeze:
+    "Stocks with high short interest that start moving up can trigger short covering, forcing more buying. Live short-interest and options-flow feeds are paid (Ortex, Unusual Whales) or biweekly (FINRA), so this signal stays visible but is marked limited on the free tier.",
 };

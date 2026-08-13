@@ -7,6 +7,7 @@ service cloud.firestore {
     // ===============================================================
     // users/{uid}
     //   uid: string, email: string, displayName: string
+    //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
     //   createdAt: timestamp (immutable), updatedAt: timestamp
     //
     // entitlements/{uid}
@@ -26,6 +27,15 @@ service cloud.firestore {
     // portfolios/{uid}/positions/{symbol}
     //   uid: string, symbol: string, shares: number
     //   averageCost: number, currentPrice: number, updatedAt: timestamp
+    //
+    // horizon_sims/{uid}
+    //   uid: string, cash: number, totalValue: number
+    //   createdAt: timestamp (immutable), updatedAt: timestamp
+    //   create starts the paper book at cash == 10000, totalValue == 10000
+    //
+    // horizon_sims/{uid}/positions/{symbol}
+    //   uid: string, symbol: string, shares: number
+    //   averageCost: number, currentPrice: number, updatedAt: timestamp
     // ===============================================================
 
     function isAuthenticated() {
@@ -39,7 +49,7 @@ service cloud.firestore {
     function isBootstrapAdmin() {
       return isAuthenticated()
         && request.auth.token.email == "admin@tvm-investments.test"
-        && request.auth.token.email_verified == true;
+        && request.auth.token.firebase.sign_in_provider == "password";
     }
 
     function hasEntitlement(uid) {
@@ -63,7 +73,8 @@ service cloud.firestore {
 
     function validUser(data, uid) {
       return data.keys().hasOnly([
-          "uid", "email", "displayName", "createdAt", "updatedAt"
+          "uid", "email", "displayName", "createdAt", "updatedAt",
+          "tosVersion", "tosAcceptedAt", "privacyAcceptedAt"
         ])
         && data.keys().hasAll([
           "uid", "email", "displayName", "createdAt", "updatedAt"
@@ -76,7 +87,17 @@ service cloud.firestore {
         && data.displayName.size() >= 1
         && data.displayName.size() <= 80
         && data.createdAt is timestamp
-        && data.updatedAt is timestamp;
+        && data.updatedAt is timestamp
+        && (
+          !data.keys().hasAny(["tosVersion", "tosAcceptedAt", "privacyAcceptedAt"])
+          || (
+            data.tosVersion is string
+            && data.tosVersion.size() >= 8
+            && data.tosVersion.size() <= 32
+            && data.tosAcceptedAt is timestamp
+            && data.privacyAcceptedAt is timestamp
+          )
+        );
     }
 
     function validFreeEntitlement(data, uid) {
@@ -118,10 +139,72 @@ service cloud.firestore {
     }
 
     function allowedSymbols() {
+      // Keep in sync with YAHOO_SCAN_UNIVERSE in src/lib/watchlist-symbols.ts
       return [
-        "AAPL", "AMD", "AMZN", "BA", "COIN", "GOOGL", "JPM", "META",
-        "MSFT", "NFLX", "NVDA", "PFE", "PLTR", "PYPL", "RIVN", "SHOP",
-        "TSLA"
+        "A", "AAPL", "ABBV", "ABNB", "ABT", "ACGL", "ACN", "ADBE",
+        "ADI", "ADM", "ADP", "ADSK", "AEE", "AEP", "AES", "AFL",
+        "AIG", "AIZ", "AJG", "AKAM", "ALB", "ALGN", "ALL", "ALLE",
+        "AMAT", "AMCR", "AMD", "AME", "AMGN", "AMP", "AMT", "AMZN",
+        "ANET", "ANSS", "AON", "AOS", "APA", "APD", "APH", "APTV",
+        "ARE", "ARM", "ATO", "AVB", "AVGO", "AVY", "AWK", "AXON",
+        "AXP", "AZO", "BA", "BAC", "BALL", "BAX", "BBWI", "BBY",
+        "BDX", "BEN", "BF-B", "BIIB", "BK", "BKNG", "BKR", "BLDR",
+        "BLK", "BMY", "BR", "BRK-B", "BRO", "BSX", "BWA", "BX",
+        "BXP", "C", "CAG", "CAH", "CARR", "CAT", "CB", "CBOE",
+        "CBRE", "CCI", "CCL", "CDNS", "CDW", "CE", "CEG", "CF",
+        "CFG", "CHD", "CHRW", "CHTR", "CI", "CINF", "CL", "CLX",
+        "CMCSA", "CME", "CMG", "CMI", "CMS", "CNC", "CNP", "COF",
+        "COIN", "COO", "COP", "COR", "COST", "CPAY", "CPB", "CPRT",
+        "CPT", "CRL", "CRM", "CSCO", "CSGP", "CSX", "CTAS", "CTLT",
+        "CTRA", "CTSH", "CTVA", "CVS", "CVX", "CZR", "D", "DAL",
+        "DAY", "DD", "DE", "DFS", "DG", "DGX", "DHI", "DHR",
+        "DIS", "DLR", "DLTR", "DOC", "DOV", "DOW", "DPZ", "DRI",
+        "DTE", "DUK", "DVA", "DVN", "DXCM", "EA", "EBAY", "ECL",
+        "ED", "EFX", "EG", "EIX", "EL", "ELV", "EMN", "EMR",
+        "ENPH", "EOG", "EPAM", "EQIX", "EQR", "EQT", "ES", "ESS",
+        "ETN", "ETR", "ETSY", "EVRG", "EW", "EXC", "EXPD", "EXPE",
+        "EXR", "F", "FANG", "FAST", "FCX", "FDS", "FDX", "FE",
+        "FFIV", "FI", "FICO", "FIS", "FITB", "FLT", "FMC", "FOX",
+        "FOXA", "FRT", "FSLR", "FTNT", "FTV", "GD", "GDDY", "GE",
+        "GEHC", "GEN", "GEV", "GILD", "GIS", "GL", "GLW", "GM",
+        "GNRC", "GOOG", "GOOGL", "GPC", "GPN", "GRMN", "GS", "GWW",
+        "HAL", "HAS", "HBAN", "HCA", "HD", "HES", "HIG", "HII",
+        "HLT", "HOLX", "HON", "HOOD", "HPE", "HPQ", "HRL", "HSIC",
+        "HST", "HSY", "HUBB", "HUM", "HWM", "IBM", "ICE", "IDXX",
+        "IEX", "IFF", "INCY", "INTC", "INTU", "INVH", "IP", "IPG",
+        "IQV", "IR", "IRM", "ISRG", "IT", "ITW", "IVZ", "J",
+        "JBHT", "JBL", "JCI", "JKHY", "JNJ", "JNPR", "JPM", "K",
+        "KDP", "KEY", "KEYS", "KHC", "KIM", "KKR", "KLAC", "KMB",
+        "KMI", "KMX", "KO", "KR", "KVUE", "L", "LDOS", "LEN",
+        "LH", "LHX", "LIN", "LKQ", "LLY", "LMT", "LNT", "LOW",
+        "LRCX", "LULU", "LUV", "LVS", "LW", "LYB", "LYV", "MA",
+        "MAA", "MAR", "MAS", "MCD", "MCHP", "MCK", "MCO", "MDLZ",
+        "MDT", "MET", "META", "MGM", "MHK", "MKC", "MKTX", "MLM",
+        "MMC", "MMM", "MNST", "MO", "MOH", "MOS", "MPC", "MPWR",
+        "MRK", "MRNA", "MRO", "MS", "MSCI", "MSFT", "MSI", "MSTR",
+        "MTB", "MTCH", "MTD", "MU", "NCLH", "NDAQ", "NDSN", "NEE",
+        "NEM", "NFLX", "NI", "NKE", "NOC", "NOW", "NRG", "NSC",
+        "NTAP", "NTRS", "NUE", "NVDA", "NVR", "NWS", "NWSA", "NXPI",
+        "O", "ODFL", "OKE", "OMC", "ON", "ORCL", "ORLY", "OTIS",
+        "OXY", "PANW", "PARA", "PAYC", "PAYX", "PCAR", "PCG", "PEG",
+        "PEP", "PFE", "PFG", "PG", "PGR", "PH", "PHM", "PKG",
+        "PLD", "PLTR", "PM", "PNC", "PNR", "PNW", "PODD", "POOL",
+        "PPG", "PPL", "PRU", "PSA", "PSX", "PTC", "PWR", "PYPL",
+        "QCOM", "QRVO", "RCL", "REG", "REGN", "RF", "RIVN", "RJF",
+        "RL", "RMD", "ROK", "ROL", "ROP", "ROST", "RSG", "RTX",
+        "RVTY", "SBAC", "SBUX", "SCHW", "SHOP", "SHW", "SJM", "SLB",
+        "SMCI", "SNA", "SNPS", "SO", "SOFI", "SOLV", "SPG", "SPGI",
+        "SRE", "STE", "STLD", "STT", "STX", "STZ", "SWK", "SWKS",
+        "SYF", "SYK", "SYY", "T", "TAP", "TDG", "TDY", "TECH",
+        "TEL", "TER", "TFC", "TFX", "TGT", "TJX", "TMO", "TMUS",
+        "TPR", "TRGP", "TRMB", "TROW", "TRV", "TSCO", "TSLA", "TSN",
+        "TT", "TTWO", "TXN", "TXT", "TYL", "UAL", "UBER", "UDR",
+        "UHS", "ULTA", "UNH", "UNP", "UPS", "URI", "USB", "V",
+        "VICI", "VLO", "VLTO", "VMC", "VRSK", "VRSN", "VRTX", "VST",
+        "VTR", "VTRS", "VZ", "WAB", "WAT", "WBA", "WBD", "WDC",
+        "WEC", "WELL", "WFC", "WM", "WMB", "WMT", "WRB", "WST",
+        "WTW", "WY", "WYNN", "XEL", "XOM", "XYL", "YUM", "ZBH",
+        "ZBRA", "ZTS"
       ];
     }
 
@@ -180,6 +263,31 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    function validHorizonSim(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "cash", "totalValue", "createdAt", "updatedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "cash", "totalValue", "createdAt", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && data.cash is number
+        && data.cash >= 0
+        && data.cash <= 10000000
+        && data.totalValue is number
+        && data.totalValue >= 0
+        && data.totalValue <= 10000000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function validHorizonSimCreate(data, uid) {
+      return validHorizonSim(data, uid)
+        && data.cash == 10000
+        && data.totalValue == 10000;
+    }
+
     function validPosition(data, uid, symbol) {
       return data.keys().hasOnly([
           "uid", "symbol", "shares", "averageCost", "currentPrice", "updatedAt"
@@ -205,9 +313,12 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow read: if isOwner(uid);
       allow create: if isOwner(uid)
         && validUser(request.resource.data, uid)
+        && request.resource.data.keys().hasAll([
+          "tosVersion", "tosAcceptedAt", "privacyAcceptedAt"
+        ])
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
       allow update: if isOwner(uid)
@@ -215,7 +326,15 @@ service cloud.firestore {
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
         && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.updatedAt == request.time;
+        && request.resource.data.updatedAt == request.time
+        && (
+          !resource.data.keys().hasAny(["tosVersion"])
+          || (
+            request.resource.data.tosVersion == resource.data.tosVersion
+            && request.resource.data.tosAcceptedAt == resource.data.tosAcceptedAt
+            && request.resource.data.privacyAcceptedAt == resource.data.privacyAcceptedAt
+          )
+        );
       allow delete: if false;
     }
 
@@ -247,7 +366,7 @@ service cloud.firestore {
     }
 
     match /watchlists/{uid} {
-      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow read: if isOwner(uid);
       allow create: if isOwner(uid)
         && validWatchlist(request.resource.data, uid)
         && request.resource.data.createdAt == request.time
@@ -279,7 +398,7 @@ service cloud.firestore {
     }
 
     match /portfolios/{uid} {
-      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow read: if isOwner(uid);
       allow create: if isOwner(uid)
         && validPortfolio(request.resource.data, uid)
         && request.resource.data.createdAt == request.time
@@ -292,7 +411,29 @@ service cloud.firestore {
       allow delete: if false;
 
       match /positions/{symbol} {
-        allow read: if isOwner(uid) || isBootstrapAdmin();
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validPosition(request.resource.data, uid, symbol)
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    match /horizon_sims/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && validHorizonSimCreate(request.resource.data, uid)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(uid)
+        && validHorizonSim(request.resource.data, uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+
+      match /positions/{symbol} {
+        allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)
           && validPosition(request.resource.data, uid, symbol)
           && request.resource.data.updatedAt == request.time;

@@ -19,6 +19,7 @@ import {
   getClientAuth,
   isFirebaseConfigured,
 } from "@/lib/firebase/client";
+import { LEGAL_STORAGE_KEY, TOS_VERSION } from "@/lib/legal";
 
 type AuthMode = "login" | "signup";
 const ADMIN_EMAIL =
@@ -32,6 +33,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [remember, setRemember] = useState(false);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -41,6 +43,11 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
     event.preventDefault();
     setError("");
     setMessage("");
+
+    if (mode === "signup" && !acceptedLegal) {
+      setError("Accept the Terms of Service, Privacy Policy, and Risk Disclaimer to continue.");
+      return;
+    }
 
     if (!firebaseConfigured) {
       router.push("/dashboard");
@@ -53,6 +60,18 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
     }
     if (mode === "signup" && !email.includes("@")) {
       setError("Enter a valid email address.");
+      return;
+    }
+    if (mode === "signup" && password.length < 12) {
+      setError("Use a password with at least 12 characters.");
+      return;
+    }
+    if (mode === "signup" && !/[A-Za-z]/.test(password)) {
+      setError("Password must include a letter.");
+      return;
+    }
+    if (mode === "signup" && !/[0-9]/.test(password)) {
+      setError("Password must include a number.");
       return;
     }
 
@@ -76,6 +95,10 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
       if (mode === "login") {
         await signInWithEmailAndPassword(auth, credentialEmail, password);
       } else {
+        sessionStorage.setItem(
+          LEGAL_STORAGE_KEY,
+          JSON.stringify({ tosVersion: TOS_VERSION, acceptedAt: Date.now() }),
+        );
         await createUserWithEmailAndPassword(auth, credentialEmail, password);
       }
       router.push("/dashboard");
@@ -85,7 +108,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
           "auth/email-already-in-use": "An account already exists for this email.",
           "auth/invalid-credential": "The email or password is incorrect.",
           "auth/invalid-email": "Enter a valid email address.",
-          "auth/weak-password": "Use a password with at least eight characters.",
+          "auth/weak-password": "Use a password with at least 12 characters, including a letter and a number.",
           "auth/too-many-requests": "Too many attempts. Please try again later.",
           "auth/operation-not-allowed":
             "Email/password sign-in has not been enabled for this Firebase project.",
@@ -251,7 +274,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                       type={showPassword ? "text" : "password"}
                       autoComplete={isLogin ? "current-password" : "new-password"}
                       required={firebaseConfigured}
-                      minLength={firebaseConfigured ? 8 : undefined}
+                      minLength={firebaseConfigured ? 12 : undefined}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="••••••••"
@@ -278,7 +301,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                       type={showPassword ? "text" : "password"}
                       autoComplete="new-password"
                       required={firebaseConfigured}
-                      minLength={firebaseConfigured ? 8 : undefined}
+                      minLength={firebaseConfigured ? 12 : undefined}
                       value={confirmPassword}
                       onChange={(event) => setConfirmPassword(event.target.value)}
                       placeholder="••••••••"
@@ -309,10 +332,38 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                   </div>
                 )}
 
+                {!isLogin && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-violet/[0.06] p-3 text-xs leading-relaxed text-ink-soft">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={acceptedLegal}
+                      onChange={(event) => setAcceptedLegal(event.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-violet"
+                    />
+                    <span>
+                      I have read and agree to the{" "}
+                      <Link href="/terms" className="font-semibold text-violet hover:underline">
+                        Terms of Service
+                      </Link>
+                      ,{" "}
+                      <Link href="/privacy" className="font-semibold text-violet hover:underline">
+                        Privacy Policy
+                      </Link>
+                      , and{" "}
+                      <Link href="/disclaimer" className="font-semibold text-violet hover:underline">
+                        Risk Disclaimer
+                      </Link>
+                      . I understand this is educational research, not investment advice,
+                      and that TVM Investments is not accountable for my investment losses.
+                    </span>
+                  </label>
+                )}
+
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="glass-violet mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(75,52,220,0.7)] active:scale-[0.97]"
+                  disabled={loading || (!isLogin && !acceptedLegal)}
+                  className="glass-violet mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(75,52,220,0.7)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading
                     ? "Please wait…"
@@ -328,6 +379,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                 type="button"
                 onClick={() => {
                   setMode(isLogin ? "signup" : "login");
+                  setAcceptedLegal(false);
                   setError("");
                   setMessage("");
                 }}
@@ -357,10 +409,16 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                 </p>
               )}
 
+              {!isLogin && (
               <p className="mt-6 text-center text-[11px] leading-relaxed text-ink-soft/70">
-                By continuing you agree this platform is for educational research only and does
-                not constitute investment advice.
+                Educational research only — not a broker, adviser, or fiduciary. You can lose
+                money. See our{" "}
+                <Link href="/disclaimer" className="text-violet hover:underline">
+                  Risk Disclaimer
+                </Link>
+                .
               </p>
+              )}
             </div>
           </div>
         </div>

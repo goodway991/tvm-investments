@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
+import { LegalFooter } from "@/components/LegalFooter";
+import { useUpgrade } from "@/components/UpgradeProvider";
 
 const primaryLinks = [
   { label: "Home", href: "/", icon: "home" as const },
@@ -13,23 +15,53 @@ const primaryLinks = [
 ];
 
 const workspaceLinks = [
-  { label: "Movers", href: "/dashboard#movers" },
-  { label: "Screener", href: "/dashboard#screener" },
-  { label: "Reports", href: "/dashboard#reports" },
-  { label: "Watchlist", href: "/dashboard#watchlist" },
-  { label: "Portfolio", href: "/dashboard#portfolio" },
-  { label: "Settings", href: "/dashboard#settings" },
+  { label: "Movers", href: "/dashboard/movers" },
+  { label: "Daily Brief", href: "/dashboard/brief" },
+  { label: "Screener", href: "/dashboard/screener" },
+  { label: "Reports", href: "/dashboard/reports" },
+  { label: "Watchlist", href: "/dashboard/watchlist" },
+  { label: "Portfolio", href: "/dashboard/portfolio" },
+  { label: "Settings", href: "/dashboard/settings" },
 ];
+
+function LandingAuthBar() {
+  return (
+    <header className="sticky top-0 z-30 px-4 pb-2 pt-4">
+      <div className="glass mx-auto flex w-[min(1180px,100%)] items-center gap-3 rounded-full py-2.5 pl-4 pr-2.5">
+        <Link href="/" className="shrink-0" aria-label="TVM Investments home">
+          <TVMBrand />
+        </Link>
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <Link
+            href="/login"
+            className="inline-flex rounded-full px-4 py-2 text-sm font-medium text-ink-soft transition-all duration-200 hover:bg-white/50 hover:text-violet active:scale-[0.97]"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/signup"
+            className="glass-violet inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(75,52,220,0.7)] active:scale-[0.97]"
+          >
+            Create account
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
 
 export function PublicShell({
   children,
   showNavigation = true,
+  showAuthBar = false,
 }: {
   children: React.ReactNode;
   showNavigation?: boolean;
+  showAuthBar?: boolean;
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { openUpgrade } = useUpgrade();
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -50,7 +82,13 @@ export function PublicShell({
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   if (!showNavigation) {
-    return <div className="min-h-screen">{children}</div>;
+    return (
+      <div className="min-h-screen">
+        {showAuthBar ? <LandingAuthBar /> : null}
+        {children}
+        <LegalFooter />
+      </div>
+    );
   }
 
   return (
@@ -191,17 +229,21 @@ export function PublicShell({
           <p className="mt-1 text-xs leading-relaxed text-ink-soft">
             Unlock live-time screening and full backtests.
           </p>
-          <Link
-            href="/signup"
-            onClick={() => setMenuOpen(false)}
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              openUpgrade();
+            }}
             className="glass-violet mt-3 block w-full rounded-full py-2 text-center text-sm font-medium text-white transition-transform hover:-translate-y-0.5"
           >
             Upgrade
-          </Link>
+          </button>
         </div>
       </aside>
 
       {children}
+      <LegalFooter />
     </div>
   );
 }

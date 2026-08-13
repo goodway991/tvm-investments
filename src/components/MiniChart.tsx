@@ -52,10 +52,15 @@ export function MiniChart({
               <stop offset="100%" stopColor={color} stopOpacity="0" />
             </linearGradient>
           </defs>
-          <polygon points={areaPoints} fill={`url(#${gradientId})`} />
+          <polygon
+            className="mini-chart-area"
+            points={areaPoints}
+            fill={`url(#${gradientId})`}
+          />
         </>
       )}
       <polyline
+        className="mini-chart-line"
         points={points}
         fill="none"
         stroke={color}

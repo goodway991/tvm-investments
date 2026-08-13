@@ -80,18 +80,41 @@ export function classifyNewsRules(
   };
 }
 
+export function hasNewsLlm(): boolean {
+  return Boolean(
+    process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.OPENAI_API_KEY,
+  );
+}
+
 export async function classifyNewsWithLLM(
   symbol: string,
   headlines: NewsHeadline[]
 ): Promise<NewsClassification> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || headlines.length === 0) {
+  if (headlines.length === 0) {
     return classifyNewsRules(headlines);
   }
 
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+
   try {
     const { default: OpenAI } = await import("openai");
-    const openai = new OpenAI({ apiKey });
+    const openai = geminiKey
+      ? new OpenAI({
+          apiKey: geminiKey,
+          baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        })
+      : openaiKey
+        ? new OpenAI({ apiKey: openaiKey })
+        : null;
+
+    if (!openai) return classifyNewsRules(headlines);
+
+    const model = geminiKey
+      ? process.env.GEMINI_MODEL || "gemini-2.5-flash"
+      : "gpt-4o-mini";
 
     const headlineText = headlines
       .slice(0, 8)
@@ -99,7 +122,7 @@ export async function classifyNewsWithLLM(
       .join("\n");
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model,
       temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [
@@ -127,7 +150,8 @@ export async function classifyNewsWithLLM(
       return parsed;
     }
     return classifyNewsRules(headlines);
-  } catch {
+  } catch (error) {
+    console.error("News LLM classification failed:", error);
     return classifyNewsRules(headlines);
   }
 }
@@ -348,10 +372,9 @@ export function rankCandidates(candidates: StockCandidate[]): StockCandidate[] {
     .map((c, i) => ({ ...c, rank: i + 1 }));
 }
 
-export function applyFilters(
-  stocks: StockCandidate[],
-  filters: import("@/types").FilterCriteria
-): StockCandidate[] {
+export function applyFilters<
+  T extends { volume: number; fundamentals: import("@/types").StockFundamentals },
+>(stocks: T[], filters: import("@/types").FilterCriteria): T[] {
   return stocks.filter((s) => {
     const f = s.fundamentals;
     if (filters.peMin != null && (f.peRatio == null || f.peRatio < filters.peMin)) return false;
@@ -366,89 +389,237 @@ export function applyFilters(
   });
 }
 
+export function toScreenedStock(
+  stock: StockCandidate,
+): import("@/types").ScreenedStock {
+  return {
+    symbol: stock.symbol,
+    name: stock.name,
+    sector: stock.sector,
+    industry: stock.industry,
+    price: stock.price,
+    changePercent: stock.changePercent,
+    volume: stock.volume,
+    compositeScore: stock.compositeScore,
+    shortTermScore: stock.shortTermScore ?? stock.compositeScore,
+    longTermScore: stock.longTermScore ?? stock.compositeScore,
+    fundamentals: stock.fundamentals,
+    indexMembership: stock.indexMembership,
+  };
+}
+
+function signedPct(value: number) {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+function periodReturn(closes: number[]): number | null {
+  if (closes.length < 2 || closes[0] === 0) return null;
+  return ((closes[closes.length - 1] - closes[0]) / closes[0]) * 100;
+}
+
 export function generateCompanyReport(stock: StockCandidate): import("@/types").CompanyReport {
   const news = stock.newsClassification;
-  const topSignals = stock.signals
-    .filter((s) => s.triggered)
-    .map((s) => s.strategyName)
-    .join(", ");
+  const rsi = computeRSI(stock.ohlcv.map((bar) => bar.close));
+  const avgVol = stock.fundamentals.avgVolume;
+  const volumeX = avgVol && avgVol > 0 ? stock.volume / avgVol : null;
+  const monthReturn = periodReturn(stock.ohlcv.slice(-22).map((bar) => bar.close));
+  const yearReturn = periodReturn((stock.yearCloses ?? stock.ohlcv).map((bar) => bar.close));
+  const high = stock.fiftyTwoWeekHigh;
+  const low = stock.fiftyTwoWeekLow;
+  const rangePct =
+    high != null && low != null && high > low
+      ? ((stock.price - low) / (high - low)) * 100
+      : null;
+  const pe =
+    stock.fundamentals.peRatio != null ? stock.fundamentals.peRatio.toFixed(1) : "n/a";
+  const headlines = stock.headlines.slice(0, 4).map((item) => item.headline);
+  const triggered = stock.signals.filter((signal) => signal.triggered);
 
-  const shortTerm =
-    stock.compositeScore >= 70
-      ? `Flagged as a strong day-trade / swing candidate with composite score ${stock.compositeScore.toFixed(0)}/100. Active signals: ${topSignals || "momentum and technical factors"}.`
-      : `Moderate short-term setup (score ${stock.compositeScore.toFixed(0)}/100). Monitor for confirmation before acting.`;
+  const shortTerm = [
+    `Last close $${stock.price.toFixed(2)} (${signedPct(stock.changePercent)}).`,
+    volumeX != null ? `Volume ${volumeX.toFixed(1)}× the 3-month average.` : null,
+    rsi != null ? `14-day RSI ${rsi.toFixed(0)} from daily closes.` : null,
+    monthReturn != null ? `1-month return ${signedPct(monthReturn)}.` : null,
+    triggered.length
+      ? `Flagged signals: ${triggered.map((signal) => signal.strategyName).join(", ")}.`
+      : "No short-term screen flags on today’s tape.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-  const longTerm =
-    stock.fundamentals.peRatio != null && stock.fundamentals.peRatio < 25
-      ? `${stock.name} trades at a reasonable P/E relative to growth peers, supporting longer holding periods if fundamentals hold.`
-      : `Valuation metrics suggest caution for long-term entry; better suited as a tactical trade unless earnings growth accelerates.`;
+  const longTerm = [
+    high != null && low != null
+      ? `52-week range $${low.toFixed(2)}–$${high.toFixed(2)}${
+          rangePct != null ? ` (${rangePct.toFixed(0)}% of the range)` : ""
+        }.`
+      : null,
+    `Trailing P/E ${pe}, beta ${stock.fundamentals.beta?.toFixed(2) ?? "n/a"}, EPS ${
+      stock.fundamentals.eps != null ? `$${stock.fundamentals.eps.toFixed(2)}` : "n/a"
+    }.`,
+    yearReturn != null ? `12-month return ${signedPct(yearReturn)}.` : null,
+    stock.fundamentals.marketCap
+      ? `Market cap $${(stock.fundamentals.marketCap / 1e9).toFixed(1)}B.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const upsideDrivers = [
+    ...triggered.filter((signal) => signal.score >= 60).map((signal) => signal.detail),
+    rsi != null && rsi < 35 ? `RSI ${rsi.toFixed(0)} is in oversold territory on daily bars.` : null,
+    monthReturn != null && monthReturn < -8
+      ? `1-month return ${signedPct(monthReturn)} leaves room for mean reversion if news stays sector-wide.`
+      : null,
+    headlines[0] ? `Latest headline: ${headlines[0]}` : `Last close $${stock.price.toFixed(2)} (${signedPct(stock.changePercent)}).`,
+  ].filter((item): item is string => Boolean(item));
+
+  const downsideRisks = [
+    news?.cause === "company_specific"
+      ? `Headlines look company-specific: ${news.summary}`
+      : news?.summary ?? null,
+    stock.fundamentals.beta != null && stock.fundamentals.beta > 1.3
+      ? `Beta ${stock.fundamentals.beta.toFixed(2)} — moves more than the market.`
+      : null,
+    rangePct != null && rangePct > 85
+      ? `Last close sits near the 52-week high (${rangePct.toFixed(0)}% of the range).`
+      : null,
+    volumeX != null && volumeX > 1.8 && stock.changePercent < 0
+      ? `Heavy volume (${volumeX.toFixed(1)}× average) on a down day.`
+      : `Session move ${signedPct(stock.changePercent)} on ${stock.symbol}.`,
+  ].filter((item): item is string => Boolean(item));
+
+  const cultureAndLongTerm = stock.businessSummary
+    ? stock.businessSummary
+    : `${stock.name} (${stock.symbol}) is listed as ${stock.industry} in ${stock.sector}. Trailing P/E ${pe}; 12-month return ${
+        yearReturn != null ? signedPct(yearReturn) : "n/a"
+      }.`;
 
   return {
     symbol: stock.symbol,
     name: stock.name,
     shortTermOutlook: shortTerm,
     longTermOutlook: longTerm,
-    recentEvents: stock.headlines.slice(0, 4).map((h) => h.headline),
-    upsideDrivers: [
-      "Mean reversion if drop was noise-driven",
-      "Technical bounce from oversold conditions",
-      stock.signals.find((s) => s.strategyId === "catalyst_upside")?.triggered
-        ? "Recent positive catalyst in headlines"
-        : "Sector recovery could lift laggards",
-    ],
-    downsideRisks: [
-      news?.cause === "company_specific"
-        ? "Company-specific negative news may continue to weigh on price"
-        : "Broader market selloff could override individual setup",
-      "Volume spike on further declines would invalidate reversal thesis",
-      stock.fundamentals.beta != null && stock.fundamentals.beta > 1.3
-        ? "High beta amplifies downside in risk-off environments"
-        : "Competitive pressure within sector",
-    ],
-    cultureAndLongTerm: `${stock.name} operates in ${stock.industry}. For long-term investors, culture and moat matter as much as daily signals — review recent earnings calls, employee reviews, and capital allocation before committing beyond a tactical trade.`,
-    fullReport: buildFullReport(stock, shortTerm, longTerm),
+    recentEvents: headlines,
+    upsideDrivers: upsideDrivers.slice(0, 4),
+    downsideRisks: downsideRisks.slice(0, 4),
+    cultureAndLongTerm,
+    fullReport: buildFullReport(stock, shortTerm, longTerm, headlines),
   };
+}
+
+export async function generateProCulture(
+  stock: StockCandidate,
+): Promise<string | undefined> {
+  if (!hasNewsLlm()) return undefined;
+
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!geminiKey && !openaiKey) return undefined;
+
+  try {
+    const { default: OpenAI } = await import("openai");
+    const openai = geminiKey
+      ? new OpenAI({
+          apiKey: geminiKey,
+          baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        })
+      : new OpenAI({ apiKey: openaiKey });
+    const model = geminiKey
+      ? process.env.GEMINI_MODEL || "gemini-2.5-flash"
+      : "gpt-4o-mini";
+    const headlines = stock.headlines
+      .slice(0, 6)
+      .map((item) => `- ${item.headline} (${item.source})`)
+      .join("\n");
+
+    const response = await openai.chat.completions.create({
+      model,
+      temperature: 0.3,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write educational equity research, not investment advice. Reply with 3-5 sentences only.",
+        },
+        {
+          role: "user",
+          content: `Company: ${stock.name} (${stock.symbol})
+Sector/industry: ${stock.sector} / ${stock.industry}
+P/E: ${stock.fundamentals.peRatio ?? "n/a"}, beta: ${stock.fundamentals.beta ?? "n/a"}
+Headlines:
+${headlines || "(none)"}
+
+Describe likely company culture, capital-allocation style, and whether the name looks like a long-term hold versus a tactical trade. If headlines are thin, say so. Do not recommend buying or selling.`,
+        },
+      ],
+    });
+
+    const text = response.choices[0]?.message?.content?.trim();
+    return text || undefined;
+  } catch (error) {
+    console.error("Pro culture write-up failed:", error);
+    return undefined;
+  }
+}
+
+export async function buildProCultureMap(
+  stocks: StockCandidate[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  for (const stock of stocks) {
+    if (map.has(stock.symbol)) continue;
+    const culture = await generateProCulture(stock);
+    if (culture) map.set(stock.symbol, culture);
+  }
+  return map;
+}
+
+export function applyProCulture(
+  reports: import("@/types").CompanyReport[],
+  cultureBySymbol: Map<string, string>,
+): import("@/types").CompanyReport[] {
+  return reports.map((report) => {
+    const culture = cultureBySymbol.get(report.symbol);
+    return culture ? { ...report, cultureAndLongTermPro: culture } : report;
+  });
 }
 
 function buildFullReport(
   stock: StockCandidate,
   shortTerm: string,
-  longTerm: string
+  longTerm: string,
+  headlines: string[],
 ): string {
   const news = stock.newsClassification;
   return `
-## ${stock.name} (${stock.symbol}) — Research Overview
+## ${stock.name} (${stock.symbol}) — research snapshot
 
-**Today's move:** ${stock.changePercent >= 0 ? "+" : ""}${stock.changePercent.toFixed(2)}% to $${stock.price.toFixed(2)}
+**Last close:** ${stock.changePercent >= 0 ? "+" : ""}${stock.changePercent.toFixed(2)}% to $${stock.price.toFixed(2)}
 
 **Composite score:** ${stock.compositeScore.toFixed(1)} / 100
+**Short-term score:** ${(stock.shortTermScore ?? stock.compositeScore).toFixed(1)} / 100
+**Long-term score:** ${(stock.longTermScore ?? stock.compositeScore).toFixed(1)} / 100
 
-### Short-term outlook
+### Short-term (quotes + daily bars)
 ${shortTerm}
 
-### Long-term outlook
+### Long-term (fundamentals + 52-week range)
 ${longTerm}
 
-### Recent events affecting price
-${stock.headlines.slice(0, 5).map((h) => `- ${h.headline}`).join("\n")}
+### Headlines
+${headlines.map((headline) => `- ${headline}`).join("\n") || "- None returned for this ticker"}
 
 News classification: ${news?.cause.replace(/_/g, " ") ?? "pending"} (${news?.confidence ?? "n/a"} confidence). ${news?.summary ?? ""}
 
-### What could push the stock up
-${stock.signals.filter((s) => s.triggered && s.score > 60).map((s) => `- ${s.detail}`).join("\n") || "- Technical mean reversion\n- Sector stabilization"}
-
-### What could push the stock down
-- Continued macro headwinds or sector weakness
-- ${news?.cause === "company_specific" ? "Further company-specific negative developments" : "Break below key support levels"}
-- Low-conviction bounce failing on rising sell volume
-
-### Company culture & long-term fit
-${stock.name} is classified in the ${stock.sector} sector (${stock.industry}). Long-term suitability depends on earnings consistency, management execution, and whether today's flagged signals align with your investment horizon. This report flags criteria met today — it is not a buy recommendation.
-
-### Key fundamentals
+### Fundamentals
 - P/E: ${stock.fundamentals.peRatio?.toFixed(1) ?? "N/A"}
 - Beta: ${stock.fundamentals.beta?.toFixed(2) ?? "N/A"}
 - EPS: $${stock.fundamentals.eps?.toFixed(2) ?? "N/A"}
-- Market Cap: ${stock.fundamentals.marketCap ? `$${(stock.fundamentals.marketCap / 1e9).toFixed(1)}B` : "N/A"}
+- Market cap: ${stock.fundamentals.marketCap ? `$${(stock.fundamentals.marketCap / 1e9).toFixed(1)}B` : "N/A"}
+- 52-week: ${
+    stock.fiftyTwoWeekLow != null && stock.fiftyTwoWeekHigh != null
+      ? `$${stock.fiftyTwoWeekLow.toFixed(2)} – $${stock.fiftyTwoWeekHigh.toFixed(2)}`
+      : "N/A"
+  }
 `.trim();
 }

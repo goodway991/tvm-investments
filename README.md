@@ -31,23 +31,40 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000). Without market-data API key
 | Backtest log | 1d / 1w / 1m forward returns vs S&P |
 | EOD cron | Vercel cron at 10 PM ET weekdays |
 
+## Data sources
+
+Live snapshots do **not** use Gemini, OpenAI, or Codex to download prices. Those keys are only for headline classification, culture write-ups, and forecast notes.
+
+Market data is free and keyless:
+
+| Source | What we use | Key? |
+| --- | --- | --- |
+| Yahoo Finance (`yahoo-finance2`) | Quotes, daily bars, news, analyst targets | No |
+| NASDAQ screener | Extra liquid names, last sale, market cap | No |
+| Wikipedia / static lists | S&P 500 and Dow 30 membership | No |
+
+Optional paid/free-tier keys:
+
+- `GEMINI_API_KEY` — news + forecast notes (already in `.env.local` if you added it)
+- `OPENAI_API_KEY` / Codex — same text jobs, fallback if Gemini is unset
+- `FINNHUB_API_KEY` — extra market/tech headlines
+- `ALPHA_VANTAGE_API_KEY` — not used in the daily scan (free tier is ~25 calls/day)
+
+Set `DATA_MODE=live` so the weekday cron actually refreshes the desk.
+
 ## API Keys Setup
 
-### 1. Finnhub (primary live data)
+### 1. Gemini (write-ups and forecast notes)
 
-1. Register at [finnhub.io/register](https://finnhub.io/register)
-2. Copy API key → `FINNHUB_API_KEY` in `.env.local`
-3. Set `DATA_MODE=live`
+Create a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and set `GEMINI_API_KEY`.
 
-Provides: quotes, OHLCV, news, fundamentals, sector data.
+### 2. OpenAI / Codex (optional text fallback)
 
-### 2. OpenAI (news classification — strategy #1)
-
-1. Get key at [platform.openai.com](https://platform.openai.com)
+1. Get a key at [platform.openai.com](https://platform.openai.com)
 2. Set `OPENAI_API_KEY` in `.env.local`
-3. Uses `gpt-4o-mini` to classify headlines as company-specific vs sector/market vs no clear cause
+3. Used only if Gemini is missing, for headline classification and culture copy
 
-Without this key, rule-based keyword fallback is used.
+Without an LLM key, rule-based keyword fallback is used.
 
 ### 3. Yahoo Finance (calculator live quotes)
 
@@ -72,12 +89,22 @@ The project uses the `yahoo-finance2` Node library. It pulls from Yahoo's public
 3. POST results to your Firebase Firestore or `POST /api/calculator`
 4. Good if you want visual workflow debugging without code changes
 
-**Option C — MCP (Model Context Protocol)**
+**Option C — MCP in Cursor (already configured in this repo)**
 
-1. Install a Yahoo Finance MCP server (search Cursor MCP directory or GitHub for `yahoo-finance mcp`)
-2. In Cursor → Settings → MCP → Add server
-3. Use MCP tools from agent sessions to query quotes during research
-4. For the **website**, still use the built-in API route — MCP is for your IDE/agent workflow, not browser clients
+This project’s `.cursor/mcp.json` registers a Yahoo Finance MCP server. After a Cursor reload, enable **yahoo-finance** in Settings → MCP if it is not already on.
+
+```json
+{
+  "mcpServers": {
+    "yahoo-finance": {
+      "command": "npx",
+      "args": ["-y", "yahoo-finance-mcp"]
+    }
+  }
+}
+```
+
+Requires Node.js. No Yahoo API key. Tools include quotes, history, news, company info, and market summaries. MCP is for agent research in Cursor. The website pulls Yahoo news through `/api/yahoo/news` via `yahoo-finance2`.
 
 **Option D — Alpha Vantage (backup)**
 

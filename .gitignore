@@ -15,7 +15,8 @@
 /build
 
 # editor
-.cursor/
+.cursor/*
+!.cursor/mcp.json
 
 # misc
 .DS_Store
@@ -29,6 +30,11 @@ yarn-error.log*
 # env
 .env
 .env*.local
+service-account.json
+*-firebase-adminsdk-*.json
+
+# local Yahoo snapshot cache when Firebase Admin is not configured
+.data/
 
 # typescript
 *.tsbuildinfo

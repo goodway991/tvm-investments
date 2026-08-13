@@ -1,15 +1,33 @@
 import type { DailySnapshot, BacktestEntry, BacktestSummary } from "@/types";
+import { ARCHIVE_KEEP_DAYS } from "@/lib/plans";
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
 const databaseId =
   process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "tvm-investments";
+
+function normalizePrivateKey(value?: string) {
+  if (!value) return undefined;
+  let key = value.trim();
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+  key = key
+    .replace(/\r\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\(\n|$)/g, "$1")
+    .trim();
+  return key;
+}
 
 async function getAdminDb(): Promise<FirebaseFirestore.Firestore | null> {
   if (adminDb) return adminDb;
 
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKey = normalizePrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
 
   if (!projectId || !clientEmail || !privateKey) return null;
 
@@ -36,25 +54,31 @@ export async function saveDailySnapshot(snapshot: DailySnapshot): Promise<boolea
   const db = await getAdminDb();
   if (!db) return false;
 
-  await db.collection("daily_snapshots").doc(snapshot.id).set(snapshot);
+  try {
+    await db.collection("daily_snapshots").doc(snapshot.id).set(snapshot);
+    await pruneOldSnapshots(db);
 
-  for (const pick of snapshot.topPicks) {
-    await db.collection("backtest_entries").add({
-      date: snapshot.date,
-      symbol: pick.symbol,
-      pickRank: pick.rank ?? 0,
-      entryPrice: pick.price,
-      compositeScore: pick.compositeScore,
-      return1d: null,
-      return1w: null,
-      return1m: null,
-      spReturn1d: null,
-      spReturn1w: null,
-      spReturn1m: null,
-    } satisfies BacktestEntry);
+    for (const pick of snapshot.topPicks) {
+      await db.collection("backtest_entries").add({
+        date: snapshot.date,
+        symbol: pick.symbol,
+        pickRank: pick.rank ?? 0,
+        entryPrice: pick.price,
+        compositeScore: pick.compositeScore,
+        return1d: null,
+        return1w: null,
+        return1m: null,
+        spReturn1d: null,
+        spReturn1w: null,
+        spReturn1m: null,
+      } satisfies BacktestEntry);
+    }
+
+    return true;
+  } catch (error) {
+    console.warn("Firebase snapshot save failed:", error);
+    return false;
   }
-
-  return true;
 }
 
 export async function getLatestSnapshot(): Promise<DailySnapshot | null> {
@@ -69,6 +93,42 @@ export async function getLatestSnapshot(): Promise<DailySnapshot | null> {
 
   if (snap.empty) return null;
   return snap.docs[0].data() as DailySnapshot;
+}
+
+export async function getSnapshotByDate(date: string): Promise<DailySnapshot | null> {
+  const db = await getAdminDb();
+  if (!db) return null;
+  const doc = await db.collection("daily_snapshots").doc(date).get();
+  if (!doc.exists) return null;
+  return doc.data() as DailySnapshot;
+}
+
+export async function listSnapshotDates(limit = ARCHIVE_KEEP_DAYS): Promise<string[]> {
+  const db = await getAdminDb();
+  if (!db) return [];
+  const snap = await db
+    .collection("daily_snapshots")
+    .orderBy("date", "desc")
+    .limit(limit)
+    .get();
+  return snap.docs
+    .map((doc) => String(doc.data().date || doc.id))
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date));
+}
+
+async function pruneOldSnapshots(db: FirebaseFirestore.Firestore) {
+  const snap = await db
+    .collection("daily_snapshots")
+    .orderBy("date", "desc")
+    .limit(ARCHIVE_KEEP_DAYS + 40)
+    .get();
+  const extra = snap.docs.slice(ARCHIVE_KEEP_DAYS);
+  if (extra.length === 0) return;
+  const batch = db.batch();
+  for (const doc of extra) {
+    batch.delete(doc.ref);
+  }
+  await batch.commit();
 }
 
 export async function getBacktestSummary(): Promise<BacktestSummary | null> {
@@ -111,6 +171,35 @@ export async function saveUserInvestment(data: {
 
   await db.collection("user_investments").add({
     ...data,
+    createdAt: new Date().toISOString(),
+  });
+  return true;
+}
+
+export async function verifyIdToken(idToken: string) {
+  await getAdminDb();
+  const { getApps } = await import("firebase-admin/app");
+  const { getAuth } = await import("firebase-admin/auth");
+  const app = getApps()[0];
+  if (!app) return null;
+  try {
+    return await getAuth(app).verifyIdToken(idToken);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveFeedback(entry: {
+  uid: string;
+  email: string;
+  kind: "bug" | "feature";
+  rating: number;
+  message: string;
+}): Promise<boolean> {
+  const db = await getAdminDb();
+  if (!db) return false;
+  await db.collection("feedback").add({
+    ...entry,
     createdAt: new Date().toISOString(),
   });
   return true;

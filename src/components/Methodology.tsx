@@ -1,25 +1,29 @@
-import { STRATEGY_NAMES } from "@/types";
+import { STRATEGY_DETAILS, STRATEGY_NAMES, type StrategyId } from "@/types";
 
 export function Methodology() {
-  const strategies = Object.entries(STRATEGY_NAMES);
+  const strategies = Object.entries(STRATEGY_NAMES) as Array<[StrategyId, string]>;
 
   return (
     <div className="glass rounded-2xl p-6">
-      <h2 className="font-display text-2xl text-white mb-1">8-Strategy Methodology</h2>
-      <p className="text-slate-400 text-sm mb-6">
+      <h2 className="font-display text-2xl text-ink mb-1">8-Strategy Methodology</h2>
+      <p className="text-ink-soft text-sm mb-6">
         Signals combine into a weighted composite score — not independent checkboxes.
+        A name hitting several setups at once ranks above a name hitting only one.
       </p>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         {strategies.map(([id, name], i) => (
           <div
             key={id}
-            className="rounded-xl border border-white/10 p-4 bg-white/[0.02]"
+            className="rounded-xl border border-ink/[0.08] bg-[#f7f8fc] p-4"
           >
-            <span className="text-tvm-gold text-xs font-medium">#{i + 1}</span>
-            <p className="text-sm text-white mt-1">{name}</p>
+            <span className="text-violet text-xs font-semibold">#{i + 1}</span>
+            <p className="mt-1 text-sm font-semibold text-ink">{name}</p>
+            <p className="mt-2 text-xs leading-relaxed text-ink-soft">
+              {STRATEGY_DETAILS[id]}
+            </p>
             {(id === "short_squeeze" || id === "catalyst_upside") && (
-              <p className="text-xs text-amber-400/80 mt-2">
-                Partial: options/short data limited on free tier
+              <p className="mt-2 text-xs text-amber-600">
+                Partial: options and short-interest data are limited on the free tier.
               </p>
             )}
           </div>

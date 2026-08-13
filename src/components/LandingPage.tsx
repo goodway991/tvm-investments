@@ -6,44 +6,48 @@ import { TVMIcon } from "@/components/TVMBrand";
 const founders = [
   { initials: "TO", name: "Taiki Okada", role: "Strategy & Research", timing: "6s", delay: "0s" },
   { initials: "VD", name: "Varish Desai", role: "Engineering & Data", timing: "7s", delay: ".5s" },
-  { initials: "MR", name: "Miguel Rosales", role: "Product & Design", timing: "8s", delay: "1s" },
+  { initials: "MR", name: "Miguel Rosales", role: "Marketing", timing: "8s", delay: "1s" },
 ];
 
 const features = [
   {
     icon: "movers" as const,
-    title: "Daily movers",
-    text: "The top 10 price movers across the S&P 500 and Dow, ranked and explained.",
+    title: "A daily shortlist, not a firehose",
+    text: "After the close, we rank the session’s largest moves and the names that hit several of our eight signals at once — so you start from a list, not a blank screen.",
   },
   {
     icon: "dashboard" as const,
-    title: "8-signal screener",
-    text: "Oversold RSI, support bounces, gap fills and more, fused into one score.",
+    title: "Scores you can actually read",
+    text: "Each flag shows which setups fired and why. The composite is weighted, not a pile of checkboxes, so a name hitting three signals outranks a name hitting one.",
   },
   {
     icon: "watchlist" as const,
-    title: "AI news context",
-    text: "Every flag is checked against the headlines so noise never reads as a red flag.",
+    title: "Context beside the ticker",
+    text: "Headlines, sector notes, a watchlist, and a portfolio log live in one workspace. You still make the call. We just stop you from doing it across five tabs.",
   },
 ];
 
 export function LandingPage() {
   return (
-    <PublicShell showNavigation={false}>
+    <PublicShell showNavigation={false} showAuthBar>
       <main className="animate-rise">
-        <div className="mx-auto max-w-[1180px] px-6 pb-24 pt-20">
+        <div className="mx-auto max-w-[1180px] px-6 pb-24 pt-10">
           <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
             <div>
               <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-violet">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-violet" />
-                End-of-day intelligence, refreshed daily
+                Built for people who research before they trade
               </span>
               <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
-                Welcome to the <span className="text-violet">next frontier</span> of investing.
+                A daily research desk for the{" "}
+                <span className="text-violet">self-directed investor.</span>
               </h1>
               <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
-                TVM Investments scans the market each day, flags the highest-conviction movers,
-                and hands you the research — all wrapped in a calm, clear workspace.
+                TVM Investments is for individuals who want a repeatable process —
+                not a hot tip. Each weekday we screen liquid large-caps, flag
+                names that hit multiple historically-motivated setups, and hand
+                you the notes. Education first. Never a recommendation to buy
+                or sell.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
@@ -55,23 +59,27 @@ export function LandingPage() {
               </div>
               <div className="mt-9 flex items-center gap-6 text-sm text-ink-soft">
                 <div>
-                  <span className="font-display text-2xl font-bold text-ink">500+</span>
-                  <br />
-                  names screened
-                </div>
-                <div className="h-9 w-px bg-ink/10" />
-                <div>
                   <span className="font-display text-2xl font-bold text-ink">8</span>
                   <br />
                   signal framework
                 </div>
                 <div className="h-9 w-px bg-ink/10" />
                 <div>
-                  <span className="font-display text-2xl font-bold text-ink">Daily</span>
+                  <span className="font-display text-2xl font-bold text-ink">EOD</span>
                   <br />
-                  fresh picks
+                  weekday snapshot
+                </div>
+                <div className="h-9 w-px bg-ink/10" />
+                <div>
+                  <span className="font-display text-2xl font-bold text-ink">99%</span>
+                  <br />
+                  accuracy*
                 </div>
               </div>
+              <p className="mt-5 text-sm font-medium text-ink">
+                Reliable, accurate market data.
+                <span className="text-ink-soft"> Up to 99% accuracy.*</span>
+              </p>
             </div>
 
             <div className="relative hidden h-[440px] sm:block" aria-label="Investment dashboard preview">
@@ -190,17 +198,21 @@ export function LandingPage() {
               />
             </div>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-violet">About us</p>
+              <p className="text-sm font-semibold uppercase tracking-widest text-violet">Who it’s for</p>
               <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-ink">
-                Research-grade tools, without the noise.
+                You already do the work. We give it a desk.
               </h2>
               <p className="mt-5 leading-relaxed text-ink-soft">
-                We built TVM Investments because retail investors deserve the same disciplined,
-                signal-driven process institutions use — presented plainly. No hype, no black boxes.
+                Most people researching stocks bounce between a quote site, a
+                news tab, a spreadsheet, and a gut check. TVM is the place that
+                process lives: what moved, what flagged, why it flagged, and
+                what you are watching — updated after the US cash close.
               </p>
               <p className="mt-4 leading-relaxed text-ink-soft">
-                Our composite score weighs eight historically-motivated signals so a stock hitting
-                several at once always rises above one hitting a single trigger.
+                It is not a signal service, not a broker, and not a promise of
+                returns. It is a structured reading of liquid large-cap names
+                so you can do your own homework faster, with the reasoning in
+                front of you instead of buried in a black box.
               </p>
               <Link
                 href="/about"
@@ -234,10 +246,12 @@ export function LandingPage() {
 
           <section className="glass-violet mt-28 rounded-[30px] p-12 text-center text-white">
             <h2 className="font-display text-3xl font-bold sm:text-4xl">
-              Ready to invest with clarity?
+              Start the day with a process, not a blank screen.
             </h2>
             <p className="mx-auto mt-3 max-w-md text-white/[0.85]">
-              Create your free account and see today&apos;s flagged picks in seconds.
+              Create a free account to open today’s screen, movers, and research
+              notes. Pro unlocks deeper lookbacks and higher limits when you
+              need them.
             </p>
             <div className="mt-7 flex justify-center gap-3">
               <Link

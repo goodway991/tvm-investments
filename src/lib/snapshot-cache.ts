@@ -1,0 +1,40 @@
+import { mkdir, readFile, writeFile } from "fs/promises";
+import path from "path";
+
+import type { DailySnapshot } from "@/types";
+import { saveDailySnapshot } from "@/lib/firebase/admin";
+
+const DISK_SNAPSHOT_PATH = path.join(
+  process.env.VERCEL ? "/tmp" : process.cwd(),
+  process.env.VERCEL ? "tvm-latest-snapshot.json" : path.join(".data", "latest-snapshot.json"),
+);
+
+export async function writeDiskSnapshot(snapshot: DailySnapshot) {
+  await mkdir(path.dirname(DISK_SNAPSHOT_PATH), { recursive: true });
+  await writeFile(DISK_SNAPSHOT_PATH, JSON.stringify(snapshot));
+}
+
+export async function readDiskSnapshot(): Promise<DailySnapshot | null> {
+  try {
+    const raw = await readFile(DISK_SNAPSHOT_PATH, "utf8");
+    const snapshot = JSON.parse(raw) as DailySnapshot;
+    return snapshot?.id ? snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
+export function newerLive(...snapshots: Array<DailySnapshot | null | undefined>) {
+  return snapshots
+    .filter((snapshot): snapshot is DailySnapshot => snapshot?.dataMode === "live")
+    .sort((left, right) => right.generatedAt.localeCompare(left.generatedAt))[0];
+}
+
+export async function persistSnapshot(snapshot: DailySnapshot): Promise<boolean> {
+  try {
+    await writeDiskSnapshot(snapshot);
+  } catch (error) {
+    console.warn("Local snapshot cache failed:", error);
+  }
+  return saveDailySnapshot(snapshot);
+}

@@ -6,13 +6,17 @@ type IconName =
   | "about"
   | "login"
   | "movers"
+  | "brief"
   | "screener"
   | "reports"
   | "watchlist"
+  | "horizon"
+  | "calendar"
   | "settings"
   | "search"
   | "arrow"
-  | "back";
+  | "back"
+  | "lock";
 
 export function TVMBrand({
   size = 30,
@@ -24,18 +28,26 @@ export function TVMBrand({
   return (
     <span className="inline-flex items-center gap-2.5">
       <span
-        className="glass-violet grid shrink-0 place-items-center rounded-[13px] text-white"
+        className="tvm-mark grid shrink-0 place-items-center text-white"
         style={{ width: size, height: size }}
       >
         <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none" aria-hidden>
           <path
             d="M3 17.5 8.5 11l4 3.5L21 5"
-            stroke="white"
-            strokeWidth="2.4"
+            stroke="#c5b6ff"
+            strokeWidth="2.6"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <circle cx="21" cy="5" r="2.4" fill="white" />
+          <path
+            d="M3 17.5 8.5 11l4 3.5L21 5"
+            stroke="rgba(255,255,255,0.38)"
+            strokeWidth="1.15"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="21" cy="5" r="2.55" fill="#f4f1ff" />
+          <circle cx="20.35" cy="4.4" r="0.85" fill="white" fillOpacity="0.7" />
         </svg>
       </span>
       {showWordmark && (
@@ -65,9 +77,28 @@ export function TVMIcon({
     about: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-8 8a8 8 0 0 1 16 0" />,
     login: <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />,
     movers: <path d="M3 17.5 8.5 11l4 3.5L21 5" />,
+    brief: (
+      <>
+        <path d="M5 5h14v14H5z" />
+        <path d="M8 9h8M8 13h5" />
+      </>
+    ),
     screener: <path d="M4 6h16M7 12h10M10 18h4" />,
     reports: <path d="M8 4h8l4 4v12H4V4h4Zm0 8h8M8 16h5" />,
     watchlist: <path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9 2.6.9-5.5-4-3.9L9.5 8z" />,
+    horizon: (
+      <>
+        <path d="M3 16.5 8.5 10l3.5 3.5L16 8" />
+        <path d="M16 8h5" />
+        <path d="M18.2 5.2 21 8l-2.8 2.8" />
+      </>
+    ),
+    calendar: (
+      <>
+        <rect x="4" y="6" width="16" height="14" rx="2" />
+        <path d="M8 4v4M16 4v4M4 10h16" />
+      </>
+    ),
     settings: (
       <>
         <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
@@ -82,6 +113,12 @@ export function TVMIcon({
     ),
     arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
     back: <path d="M15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10M10 17l5-5-5-5M15 12H3" />,
+    lock: (
+      <>
+        <rect x="5" y="11" width="14" height="10" rx="2" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </>
+    ),
   };
 
   return (

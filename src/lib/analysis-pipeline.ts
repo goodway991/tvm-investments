@@ -1,4 +1,4 @@
-import type { DailySnapshot, FilterCriteria, StockCandidate } from "@/types";
+import type { DailySnapshot, FilterCriteria, ScreenedStock, StockCandidate } from "@/types";
 import {
   buildDemoCandidates,
   buildDemoMovers,
@@ -9,9 +9,14 @@ import {
 } from "./demo-data";
 import {
   analyzeStock,
+  applyProCulture,
+  buildProCultureMap,
   generateCompanyReport,
   rankCandidates,
+  toScreenedStock,
 } from "./scoring";
+import { fillDiveHeadlines, writeDailySectorDives } from "./sector-dives";
+import { etDateString } from "./archive-window";
 import { DOW_30, SP500 } from "./indices/constituents";
 
 const SECTOR_CHANGES: Record<string, number> = {
@@ -67,20 +72,37 @@ function summarizeUniverse(candidates: StockCandidate[]) {
 }
 
 export function isDemoMode(): boolean {
-  return (
-    process.env.DATA_MODE === "demo" ||
-    !process.env.FINNHUB_API_KEY ||
-    process.env.FINNHUB_API_KEY.length === 0
+  return process.env.DATA_MODE === "demo";
+}
+
+function hasFinnhub(): boolean {
+  return Boolean(process.env.FINNHUB_API_KEY);
+}
+
+function averageBySector(stocks: StockCandidate[]): Record<string, number> {
+  const buckets: Record<string, number[]> = {};
+  for (const stock of stocks) {
+    (buckets[stock.sector] ??= []).push(stock.changePercent);
+  }
+  return Object.fromEntries(
+    Object.entries(buckets).map(([sector, values]) => [
+      sector,
+      values.reduce((sum, value) => sum + value, 0) / values.length,
+    ]),
   );
 }
 
 export async function runDailyAnalysis(
-  useLLM = false
+  useLLM = false,
 ): Promise<DailySnapshot> {
   if (isDemoMode()) {
     return runDemoAnalysis(useLLM);
   }
   return runLiveAnalysis(useLLM);
+}
+
+export async function runFallbackSnapshot(): Promise<DailySnapshot> {
+  return runDemoAnalysis(false);
 }
 
 async function runDemoAnalysis(useLLM: boolean): Promise<DailySnapshot> {
@@ -96,22 +118,42 @@ async function runDemoAnalysis(useLLM: boolean): Promise<DailySnapshot> {
 
   const ranked = rankCandidates(analyzed);
   const topPicks = ranked.slice(0, 3);
-  const reports = topPicks.map(generateCompanyReport);
+  let reports = topPicks.map(generateCompanyReport);
   const topMovers = buildDemoMovers(analyzed);
   const horizonViews = buildHorizonViews(ranked);
-  const now = new Date();
+  if (useLLM) {
+    const unique = uniquePicks([
+      ...topPicks,
+      ...horizonViews.shortTermPicks,
+      ...horizonViews.longTermPicks,
+    ]);
+    const cultureBySymbol = await buildProCultureMap(unique);
+    reports = applyProCulture(reports, cultureBySymbol);
+    horizonViews.shortTermReports = applyProCulture(
+      horizonViews.shortTermReports,
+      cultureBySymbol,
+    );
+    horizonViews.longTermReports = applyProCulture(
+      horizonViews.longTermReports,
+      cultureBySymbol,
+    );
+  }
+  const sessionDate = etDateString();
+  const sectorDives = await writeDailySectorDives(ranked, sessionDate, useLLM);
 
   return {
-    id: now.toISOString().slice(0, 10),
-    date: now.toISOString().slice(0, 10),
-    generatedAt: now.toISOString(),
+    id: sessionDate,
+    date: sessionDate,
+    generatedAt: new Date().toISOString(),
     dataMode: "demo",
     scanUniverse: summarizeUniverse(analyzed),
+    screenedStocks: ranked.map(toScreenedStock),
     topMovers,
     topPicks,
     ...horizonViews,
     reports,
-    marketEvents: DEMO_MARKET_EVENTS,
+    marketEvents: DEMO_MARKET_EVENTS.map((event) => ({ ...event, date: sessionDate })),
+    sectorDives,
     techSectorAnalysis: DEMO_TECH_ANALYSIS,
     methodologyNote: METHODOLOGY_NOTE,
     disclaimer: DISCLAIMER,
@@ -119,62 +161,117 @@ async function runDemoAnalysis(useLLM: boolean): Promise<DailySnapshot> {
 }
 
 async function runLiveAnalysis(useLLM: boolean): Promise<DailySnapshot> {
-  const { fetchLiveUniverse, fetchMarketEvents, fetchTechAnalysis } =
-    await import("./providers/finnhub");
+  const finnhubEnabled = hasFinnhub();
+  const yahoo = await import("./providers/yahoo");
+  const finnhub = finnhubEnabled ? await import("./providers/finnhub") : null;
 
-  const raw = await fetchLiveUniverse();
+  const raw = await yahoo.fetchYahooUniverse();
+
+  if (raw.length === 0) {
+    console.warn("Live universe empty; falling back to demo snapshot");
+    return runDemoAnalysis(useLLM);
+  }
+
+  const sectorChanges = averageBySector(raw);
+  const marketChange =
+    raw.reduce((sum, stock) => sum + stock.changePercent, 0) / raw.length;
+
   const analyzed: StockCandidate[] = [];
-
   for (const stock of raw) {
-    const sectorChange = SECTOR_CHANGES[stock.sector] ?? MARKET_CHANGE;
+    const sectorChange = sectorChanges[stock.sector] ?? marketChange;
     analyzed.push(
-      await analyzeStock(addIndexMembership(stock), sectorChange, MARKET_CHANGE, useLLM),
+      await analyzeStock(addIndexMembership(stock), sectorChange, marketChange, useLLM),
     );
   }
 
-  const ranked = rankCandidates(analyzed);
+  let ranked = rankCandidates(analyzed);
+  ranked = await fillDiveHeadlines(ranked);
   const topPicks = ranked.slice(0, 3);
-  const reports = topPicks.map(generateCompanyReport);
+  let reports = topPicks.map(generateCompanyReport);
   const horizonViews = buildHorizonViews(ranked);
-  const topMovers = [...analyzed]
+  if (useLLM) {
+    const unique = uniquePicks([
+      ...topPicks,
+      ...horizonViews.shortTermPicks,
+      ...horizonViews.longTermPicks,
+    ]);
+    const cultureBySymbol = await buildProCultureMap(unique);
+    reports = applyProCulture(reports, cultureBySymbol);
+    horizonViews.shortTermReports = applyProCulture(
+      horizonViews.shortTermReports,
+      cultureBySymbol,
+    );
+    horizonViews.longTermReports = applyProCulture(
+      horizonViews.longTermReports,
+      cultureBySymbol,
+    );
+  }
+  const topMovers = [...ranked]
     .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-    .slice(0, 10)
-    .map((c) => ({
-      ...c,
-      direction: c.changePercent >= 0 ? ("gainer" as const) : ("loser" as const),
+    .slice(0, 20)
+    .map((candidate) => ({
+      ...candidate,
+      direction: candidate.changePercent >= 0 ? ("gainer" as const) : ("loser" as const),
     }));
 
-  const now = new Date();
-  const marketEvents = await fetchMarketEvents();
-  const techSectorAnalysis = await fetchTechAnalysis();
+  const sessionDate = etDateString();
+  const [marketEvents, techSectorAnalysis, sectorDives] = await Promise.all([
+    finnhub ? finnhub.fetchMarketEvents() : yahoo.fetchYahooMarketEvents(),
+    finnhub ? finnhub.fetchTechAnalysis() : yahoo.fetchYahooTechAnalysis(),
+    writeDailySectorDives(ranked, sessionDate, useLLM),
+  ]);
 
   return {
-    id: now.toISOString().slice(0, 10),
-    date: now.toISOString().slice(0, 10),
-    generatedAt: now.toISOString(),
+    id: sessionDate,
+    date: sessionDate,
+    generatedAt: new Date().toISOString(),
     dataMode: "live",
     scanUniverse: summarizeUniverse(analyzed),
+    screenedStocks: ranked.map(toScreenedStock),
     topMovers,
     topPicks,
     ...horizonViews,
     reports,
     marketEvents,
+    sectorDives,
     techSectorAnalysis,
-    methodologyNote: METHODOLOGY_NOTE,
+    methodologyNote: `${METHODOLOGY_NOTE} Live snapshots scan the S&P 500, Dow 30, and other liquid US names after the weekday close. The daily brief and sector deep dives are rewritten from that session’s closes and headlines.`,
     disclaimer: DISCLAIMER,
   };
+}
+
+function uniquePicks(stocks: StockCandidate[]): StockCandidate[] {
+  const seen = new Set<string>();
+  return stocks.filter((stock) => {
+    if (seen.has(stock.symbol)) return false;
+    seen.add(stock.symbol);
+    return true;
+  });
 }
 
 export async function filterStocks(
   snapshot: DailySnapshot,
   filters: FilterCriteria
-): Promise<StockCandidate[]> {
+): Promise<ScreenedStock[]> {
   const { applyFilters } = await import("./scoring");
-  const all = snapshot.topMovers.map(({ direction, ...rest }) => {
-    void direction;
-    return rest;
-  });
-  return applyFilters(all, filters);
+  const pool =
+    snapshot.screenedStocks?.length > 0
+      ? snapshot.screenedStocks
+      : snapshot.topMovers.map((stock) => ({
+          symbol: stock.symbol,
+          name: stock.name,
+          sector: stock.sector,
+          industry: stock.industry,
+          price: stock.price,
+          changePercent: stock.changePercent,
+          volume: stock.volume,
+          compositeScore: stock.compositeScore,
+          shortTermScore: stock.shortTermScore ?? stock.compositeScore,
+          longTermScore: stock.longTermScore ?? stock.compositeScore,
+          fundamentals: stock.fundamentals,
+          indexMembership: stock.indexMembership,
+        }));
+  return applyFilters(pool, filters);
 }
 
 export async function getStockQuote(symbol: string): Promise<{

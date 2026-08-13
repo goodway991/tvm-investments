@@ -1,4 +1,5 @@
 import type { MarketEvent, NewsHeadline, OHLCVBar, StockCandidate } from "@/types";
+import { YAHOO_SCAN_UNIVERSE } from "./yahoo";
 
 const FINNHUB = "https://finnhub.io/api/v1";
 
@@ -18,15 +19,10 @@ async function finnhubGet<T>(path: string, params: Record<string, string> = {}):
   return res.json() as Promise<T>;
 }
 
-const WATCHLIST = [
-  "AAPL", "MSFT", "NVDA", "AMD", "META", "TSLA", "GOOGL", "AMZN",
-  "NFLX", "JPM", "PFE", "BA", "COIN", "RIVN",
-];
-
 export async function fetchLiveUniverse(): Promise<StockCandidate[]> {
   const candidates: StockCandidate[] = [];
 
-  for (const symbol of WATCHLIST) {
+  for (const symbol of YAHOO_SCAN_UNIVERSE.slice(0, 20)) {
     try {
       const [quote, profile, candles, news, metrics] = await Promise.all([
         finnhubGet<{ c: number; d: number; dp: number }>("/quote", { symbol }),

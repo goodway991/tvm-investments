@@ -3,29 +3,29 @@ import { PublicShell } from "@/components/PublicShell";
 
 const statements = [
   {
-    title: "Our mission",
-    text: "Give every investor institution-grade screening in plain language, so decisions are informed rather than emotional.",
+    title: "Who it’s for",
+    text: "Self-directed investors who already do homework and want one place to see what moved, what flagged, and why — without treating a website as a broker or a guru.",
   },
   {
-    title: "Our method",
-    text: "Fuse eight historically-motivated signals into one composite score, then log every pick to hold the framework accountable.",
+    title: "What it does",
+    text: "Each weekday after the US close, TVM screens liquid large-cap names, ranks the session’s movers, and writes up the names that hit several of eight historically-motivated setups at once.",
   },
   {
-    title: "Our promise",
-    text: "No hype and no black boxes. We surface the reasoning and the risks behind every flag, and we say when data is unavailable.",
+    title: "What it is not",
+    text: "It is not a hot-tip feed, not a brokerage, and not personalized advice. Scores and notes are general research. You still decide whether anything is worth a real-world trade.",
   },
 ];
 
 const values = [
-  ["Transparent", "Every score is explained"],
-  ["Accountable", "Picks tracked at 1D / 1W / 1M"],
-  ["Educational", "Research first, always"],
+  ["Transparent", "Every score shows which signals fired"],
+  ["Repeatable", "The same desk, refreshed after each session"],
+  ["Educational", "Research first. Never a recommendation."],
 ];
 
 const founders = [
   ["TO", "Taiki Okada", "Strategy & Research", "6s", "0s"],
   ["VD", "Varish Desai", "Engineering & Data", "7s", ".5s"],
-  ["MR", "Miguel Rosales", "Product & Design", "8s", "1s"],
+  ["MR", "Miguel Rosales", "Marketing", "8s", "1s"],
 ];
 
 export function AboutPage() {
@@ -38,11 +38,15 @@ export function AboutPage() {
               About TVM Investments
             </span>
             <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.08] tracking-tight text-ink">
-              Disciplined research, <span className="text-violet">made legible.</span>
+              A research desk for people who{" "}
+              <span className="text-violet">want a process.</span>
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-ink-soft">
-              We turn a rigorous, eight-signal screening process into a workspace anyone can read
-              at a glance — honest about its risks and clear that it is research, never advice.
+              Most investors do not need another opinion. They need a calmer way
+              to start: a shortlist, the reasoning behind it, the day’s tape,
+              and a place to keep what they are watching. That is TVM — built
+              for individuals who research before they trade, and honest that
+              the trade is still theirs.
             </p>
           </section>
 
@@ -64,11 +68,29 @@ export function AboutPage() {
             ))}
           </section>
 
+          <section className="glass-strong mt-16 rounded-[28px] p-8 sm:p-10">
+            <p className="text-sm font-semibold uppercase tracking-widest text-violet">
+              How the desk works
+            </p>
+            <h2 className="mt-3 font-display text-3xl font-bold text-ink">
+              Eight signals, one composite, notes you can reread.
+            </h2>
+            <p className="mt-4 max-w-3xl leading-relaxed text-ink-soft">
+              A name that is merely oversold does not automatically rise to the
+              top. The composite is weighted so several setups firing together
+              outrank a single trigger. Research reports, a daily brief, a
+              watchlist, and a portfolio log sit next to that screen so the
+              work of following a name does not scatter across tabs. Archive
+              days let you see what the desk showed on a prior session — useful
+              for learning the process, not for rewriting history.
+            </p>
+          </section>
+
           <section className="mt-24 text-center">
             <p className="text-sm font-semibold uppercase tracking-widest text-violet">The team</p>
             <h2 className="mt-3 font-display text-4xl font-bold text-ink">Meet the co-founders</h2>
             <p className="mx-auto mt-4 max-w-lg text-ink-soft">
-              Three builders who wanted a calmer, clearer way to research the market.
+              Three people building a quieter way to research the market.
             </p>
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {founders.map(([initials, name, role, duration, delay]) => (
@@ -87,9 +109,9 @@ export function AboutPage() {
           </section>
 
           <section className="glass-violet mt-24 rounded-[30px] p-12 text-center text-white">
-            <h2 className="font-display text-3xl font-bold">See the process in action</h2>
+            <h2 className="font-display text-3xl font-bold">Open today’s desk</h2>
             <p className="mt-3 text-white/[0.85]">
-              Open the dashboard and explore today&apos;s flagged picks.
+              Sign in to see the latest screen, movers, and research notes.
             </p>
             <Link
               href="/dashboard"

@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
+import { useUpgrade } from "@/components/UpgradeProvider";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -280,6 +282,7 @@ export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
 
 export function SettingsPanel() {
   const { user, profile, entitlement, watchlist, positions, logout } = useAuth();
+  const { openUpgrade } = useUpgrade();
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function handleLogout() {
@@ -324,6 +327,37 @@ export function SettingsPanel() {
             {entitlement.watchlistLimit}
           </p>
         </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-[#f7f8fc] p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="font-semibold text-ink">Plan</p>
+        <p className="mt-1">
+          You are on <span className="font-semibold text-ink">{entitlement.plan}</span>.
+          Pro is $8/month or $60/year.
+        </p>
+        {entitlement.plan !== "pro" ? (
+          <button
+            type="button"
+            onClick={openUpgrade}
+            className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Upgrade to Pro
+          </button>
+        ) : null}
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-[#f7f8fc] p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="font-semibold text-ink">Legal &amp; privacy</p>
+        <p className="mt-1">
+          Your account, watchlist, and portfolio are private to you. Passwords are
+          hashed by Firebase Auth and never stored in Firestore. Data is encrypted in
+          transit (TLS) and at rest by Google Cloud.
+        </p>
+        <nav className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-violet">
+          <Link href="/terms">Terms of Service</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/disclaimer">Risk Disclaimer</Link>
+        </nav>
       </div>
 
       <button

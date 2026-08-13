@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runDailyAnalysis, filterStocks } from "@/lib/analysis-pipeline";
+import { filterStocks } from "@/lib/analysis-pipeline";
+import { getDashboardSnapshot } from "@/lib/snapshot";
 import type { FilterCriteria } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     marketCapMax: num(params.get("marketCapMax")),
   };
 
-  const snapshot = await runDailyAnalysis(false);
+  const snapshot = await getDashboardSnapshot();
   const filtered = await filterStocks(snapshot, filters);
 
   return NextResponse.json({
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
       price: s.price,
       changePercent: s.changePercent,
       compositeScore: s.compositeScore,
+      shortTermScore: s.shortTermScore,
+      longTermScore: s.longTermScore,
       peRatio: s.fundamentals.peRatio,
       beta: s.fundamentals.beta,
       eps: s.fundamentals.eps,

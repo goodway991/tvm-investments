@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { MarketMover } from "@/types";
+import type { ScreenedStock } from "@/types";
 
 interface FilterPanelProps {
-  initialStocks: MarketMover[];
+  initialStocks: ScreenedStock[];
 }
 
 interface FilterState {
@@ -29,35 +29,26 @@ const emptyFilters: FilterState = {
   marketCapMax: "",
 };
 
+function toRow(stock: ScreenedStock) {
+  return {
+    symbol: stock.symbol,
+    name: stock.name,
+    price: stock.price,
+    changePercent: stock.changePercent,
+    compositeScore: stock.compositeScore,
+    shortTermScore: stock.shortTermScore,
+    longTermScore: stock.longTermScore,
+    peRatio: stock.fundamentals.peRatio,
+    beta: stock.fundamentals.beta,
+    eps: stock.fundamentals.eps,
+    marketCap: stock.fundamentals.marketCap,
+    volume: stock.volume,
+  };
+}
+
 export function FilterPanel({ initialStocks }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
-  const [results, setResults] = useState<
-    Array<{
-      symbol: string;
-      name: string;
-      price: number;
-      changePercent: number;
-      compositeScore: number;
-      peRatio: number | null;
-      beta: number | null;
-      eps: number | null;
-      marketCap: number | null;
-      volume: number;
-    }>
-  >(
-    initialStocks.map((s) => ({
-      symbol: s.symbol,
-      name: s.name,
-      price: s.price,
-      changePercent: s.changePercent,
-      compositeScore: s.compositeScore,
-      peRatio: s.fundamentals.peRatio,
-      beta: s.fundamentals.beta,
-      eps: s.fundamentals.eps,
-      marketCap: s.fundamentals.marketCap,
-      volume: s.volume,
-    }))
-  );
+  const [results, setResults] = useState(initialStocks.map(toRow));
   const [loading, setLoading] = useState(false);
 
   async function applyFilters() {
@@ -74,20 +65,7 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
 
   function reset() {
     setFilters(emptyFilters);
-    setResults(
-      initialStocks.map((s) => ({
-        symbol: s.symbol,
-        name: s.name,
-        price: s.price,
-        changePercent: s.changePercent,
-        compositeScore: s.compositeScore,
-        peRatio: s.fundamentals.peRatio,
-        beta: s.fundamentals.beta,
-        eps: s.fundamentals.eps,
-        marketCap: s.fundamentals.marketCap,
-        volume: s.volume,
-      }))
-    );
+    setResults(initialStocks.map(toRow));
   }
 
   const fields: Array<{ key: keyof FilterState; label: string; placeholder: string }> = [
@@ -103,15 +81,15 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
 
   return (
     <div className="glass rounded-2xl p-6">
-      <h2 className="font-display text-2xl text-white mb-1">Stock Filter</h2>
-      <p className="text-slate-400 text-sm mb-6">
-        Filter by P/E, Beta, Volume, EPS, and Market Cap.
+      <h2 className="font-display text-2xl text-ink mb-1">Stock Filter</h2>
+      <p className="text-ink-soft text-sm mb-6">
+        Filter the full scanned universe by P/E, Beta, Volume, EPS, and Market Cap.
       </p>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {fields.map(({ key, label, placeholder }) => (
           <label key={key} className="block">
-            <span className="text-xs text-slate-400">{label}</span>
+            <span className="text-xs text-ink-soft">{label}</span>
             <input
               type="number"
               value={filters[key]}
@@ -139,25 +117,27 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
         </button>
       </div>
 
-      <p className="text-sm text-slate-400 mb-4">{results.length} stocks match</p>
+      <p className="text-sm text-ink-soft mb-4">{results.length} stocks match</p>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-slate-400 border-b border-white/10">
+            <tr className="text-left text-ink-soft border-b border-ink/[0.08]">
               <th className="pb-2 pr-4">Symbol</th>
               <th className="pb-2 pr-4 text-right">P/E</th>
               <th className="pb-2 pr-4 text-right">Beta</th>
               <th className="pb-2 pr-4 text-right">EPS</th>
               <th className="pb-2 pr-4 text-right">Volume</th>
               <th className="pb-2 pr-4 text-right">Mkt Cap</th>
+              <th className="pb-2 pr-4 text-right">ST</th>
+              <th className="pb-2 pr-4 text-right">LT</th>
               <th className="pb-2 text-right">Score</th>
             </tr>
           </thead>
           <tbody>
             {results.map((s) => (
-              <tr key={s.symbol} className="border-b border-white/5">
-                <td className="py-2 pr-4 font-medium text-white">{s.symbol}</td>
+              <tr key={s.symbol} className="border-b border-ink/[0.05]">
+                <td className="py-2 pr-4 font-medium text-ink">{s.symbol}</td>
                 <td className="py-2 pr-4 text-right">{s.peRatio?.toFixed(1) ?? "—"}</td>
                 <td className="py-2 pr-4 text-right">{s.beta?.toFixed(2) ?? "—"}</td>
                 <td className="py-2 pr-4 text-right">{s.eps != null ? `$${s.eps.toFixed(2)}` : "—"}</td>
@@ -165,7 +145,13 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
                 <td className="py-2 pr-4 text-right">
                   {s.marketCap ? `$${(s.marketCap / 1e9).toFixed(1)}B` : "—"}
                 </td>
-                <td className="py-2 text-right text-tvm-gold">{s.compositeScore.toFixed(0)}</td>
+                <td className="py-2 pr-4 text-right text-ink-soft">
+                  {s.shortTermScore?.toFixed(0) ?? "—"}
+                </td>
+                <td className="py-2 pr-4 text-right text-ink-soft">
+                  {s.longTermScore?.toFixed(0) ?? "—"}
+                </td>
+                <td className="py-2 text-right text-violet">{s.compositeScore.toFixed(0)}</td>
               </tr>
             ))}
           </tbody>
