@@ -53,7 +53,7 @@ function DashboardScene() {
         {cards.map((card) => (
           <div
             key={card.label}
-            className="tour-pop rounded-2xl bg-white/80 p-3 shadow-[0_10px_24px_-16px_rgba(52,41,120,0.35)]"
+            className="tour-pop rounded-2xl bg-white/80 p-3 shadow-[0_10px_24px_-16px_rgba(30,70,160,0.35)]"
             style={{ animationDelay: card.delay }}
           >
             <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
@@ -133,7 +133,7 @@ function StockScene() {
           <path
             d="M4 52 C 28 48, 40 30, 58 34 S 90 58, 110 28 S 150 12, 196 18"
             fill="none"
-            stroke="#5b3df5"
+            stroke="#2f62ff"
             strokeWidth="3"
             strokeLinecap="round"
           />

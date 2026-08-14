@@ -52,7 +52,7 @@ export function LandingPage() {
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/signup"
-                  className="glass-violet inline-flex items-center justify-center rounded-full px-7 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(75,52,220,0.7)] active:scale-[0.97]"
+                  className="glass-violet inline-flex items-center justify-center rounded-full px-7 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(37,90,230,0.7)] active:scale-[0.97]"
                 >
                   Get started free
                 </Link>
@@ -119,8 +119,8 @@ export function LandingPage() {
                           height: `${height}%`,
                           background:
                             index === 6
-                              ? "linear-gradient(#6b4aff, #3f6bff)"
-                              : "linear-gradient(rgba(107,74,255,.35), rgba(107,74,255,.12))",
+                              ? "linear-gradient(#2f62ff, #3f6bff)"
+                              : "linear-gradient(rgba(47,98,255,.35), rgba(47,98,255,.12))",
                         }}
                       />
                     </div>

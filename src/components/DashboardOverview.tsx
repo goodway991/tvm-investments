@@ -169,7 +169,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
                   <MiniChart
                     values={card.chart}
                     id={`overview-${index}`}
-                    color={card.gradient ? "#ffffff" : "#5b3df5"}
+                    color={card.gradient ? "#ffffff" : "#2f62ff"}
                     height={38}
                     area={!card.gradient}
                   />

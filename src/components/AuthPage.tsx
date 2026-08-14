@@ -432,7 +432,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                 <button
                   type="submit"
                   disabled={loading || (!isLogin && !acceptedLegal)}
-                  className="glass-violet mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(75,52,220,0.7)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="glass-violet mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(37,90,230,0.7)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading
                     ? "Please wait…"

@@ -10,7 +10,7 @@ export function MaintenancePage() {
   return (
     <PublicShell>
       <section className="mx-auto grid min-h-[70vh] w-[min(720px,100%)] place-items-center px-5 py-16">
-        <article className="glass-strong w-full rounded-[28px] p-8 text-center shadow-[0_18px_40px_-24px_rgba(52,41,120,0.4)] sm:p-10">
+        <article className="glass-strong w-full rounded-[28px] p-8 text-center shadow-[0_18px_40px_-24px_rgba(30,70,160,0.4)] sm:p-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet">
             Desk notice
           </p>

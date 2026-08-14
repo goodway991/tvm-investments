@@ -22,16 +22,16 @@ import {
 } from "@/lib/horizon-forecast";
 
 const LIGHT = {
-  line: "#5b3df5",
-  band: "rgba(91, 61, 245, 0.16)",
-  dash: "rgba(91, 61, 245, 0.38)",
+  line: "#2f62ff",
+  band: "rgba(47, 98, 255, 0.16)",
+  dash: "rgba(47, 98, 255, 0.38)",
   grid: "#ece9f6",
-  tick: "#5a5578",
+  tick: "#51607a",
   axis: "#e4e0f0",
   tooltipBg: "#ffffff",
-  tooltipColor: "#1a1442",
+  tooltipColor: "#12203c",
   tooltipBorder: "1px solid rgba(120,108,200,.18)",
-  ref: "rgba(90, 85, 120, 0.35)",
+  ref: "rgba(81, 96, 122, 0.35)",
 };
 
 const DARK = {
@@ -175,7 +175,7 @@ export function HorizonForecastChart({
                 background: palette.tooltipBg,
                 border: palette.tooltipBorder,
                 borderRadius: 12,
-                boxShadow: "0 14px 34px -20px rgba(52,41,120,.3)",
+                boxShadow: "0 14px 34px -20px rgba(30,70,160,.3)",
               }}
             />
             {stats && (

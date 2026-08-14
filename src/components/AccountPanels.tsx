@@ -407,8 +407,8 @@ export function SettingsPanel() {
           )}
           <p className="mt-1 text-sm text-ink-soft">{user?.email}</p>
         </div>
-        <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold uppercase text-white">
-          {entitlement.plan} · {entitlement.role}
+        <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white">
+          {entitlement.plan === "pro" ? "Pro" : "Free"}
         </span>
       </div>
 

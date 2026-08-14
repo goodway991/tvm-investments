@@ -5,7 +5,7 @@
 :root {
   color-scheme: light;
   --background: #ffffff;
-  --foreground: #1a1442;
+  --foreground: #12203c;
 }
 
 html {
@@ -15,13 +15,13 @@ html {
 body {
   color: var(--foreground);
   background-color: var(--background);
-  background-image: linear-gradient(180deg, #ffffff 0%, #f6f7fc 100%);
+  background-image: linear-gradient(180deg, #ffffff 0%, #f5f8fc 100%);
   background-attachment: fixed;
   min-height: 100vh;
 }
 
 ::selection {
-  background: rgba(91, 61, 245, 0.22);
+  background: rgba(47, 98, 255, 0.22);
 }
 
 button,
@@ -38,23 +38,23 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(91, 61, 245, 0.35);
+  outline: 3px solid rgba(47, 98, 255, 0.35);
   outline-offset: 3px;
 }
 
 @layer utilities {
   .glass {
     background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(120, 108, 200, 0.12);
-    box-shadow: 0 14px 34px -20px rgba(52, 41, 120, 0.22);
+    border: 1px solid rgba(90, 140, 210, 0.14);
+    box-shadow: 0 14px 34px -20px rgba(30, 70, 160, 0.22);
     backdrop-filter: blur(22px) saturate(150%);
     -webkit-backdrop-filter: blur(22px) saturate(150%);
   }
 
   .glass-strong {
     background: rgba(255, 255, 255, 0.58);
-    border: 1px solid rgba(120, 108, 200, 0.16);
-    box-shadow: 0 18px 44px -24px rgba(52, 41, 120, 0.26);
+    border: 1px solid rgba(90, 140, 210, 0.16);
+    box-shadow: 0 18px 44px -24px rgba(30, 70, 160, 0.26);
     backdrop-filter: blur(28px) saturate(165%);
     -webkit-backdrop-filter: blur(28px) saturate(165%);
   }
@@ -67,15 +67,15 @@ button {
   }
 
   .glass-violet {
-    background: linear-gradient(140deg, rgba(107, 74, 255, 0.92), rgba(63, 107, 255, 0.9));
+    background: linear-gradient(140deg, rgba(70, 130, 255, 0.94), rgba(37, 90, 230, 0.94));
     box-shadow:
-      0 24px 50px -18px rgba(75, 52, 220, 0.55),
+      0 24px 50px -18px rgba(37, 90, 230, 0.5),
       inset 0 1px rgba(255, 255, 255, 0.35);
   }
 
   .field {
     background: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(120, 108, 200, 0.22);
+    border: 1px solid rgba(90, 140, 210, 0.22);
     transition:
       border-color 0.2s,
       box-shadow 0.2s,
@@ -84,9 +84,9 @@ button {
 
   .field:focus {
     background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(91, 61, 245, 0.7);
+    border-color: rgba(47, 98, 255, 0.7);
     outline: none;
-    box-shadow: 0 0 0 4px rgba(91, 61, 245, 0.14);
+    box-shadow: 0 0 0 4px rgba(47, 98, 255, 0.14);
   }
 
   .text-gain {
@@ -132,38 +132,38 @@ button {
 }
 
 .dashboard-research .text-white {
-  color: #1a1442;
+  color: #12203c;
 }
 
 .dashboard-research .text-slate-300,
 .dashboard-research .text-slate-400 {
-  color: #5a5578;
+  color: #51607a;
 }
 
 .dashboard-research .text-slate-500,
 .dashboard-research .text-slate-600 {
-  color: rgba(90, 85, 120, 0.72);
+  color: rgba(81, 96, 122, 0.72);
 }
 
 .dashboard-research .border-white\/10,
 .dashboard-research .border-white\/20 {
-  border-color: rgba(120, 108, 200, 0.16);
+  border-color: rgba(90, 140, 210, 0.16);
 }
 
 .dashboard-research .border-white\/5 {
-  border-color: rgba(120, 108, 200, 0.09);
+  border-color: rgba(90, 140, 210, 0.09);
 }
 
 .dashboard-research .bg-white\/5,
 .dashboard-research .bg-white\/\[0\.02\],
 .dashboard-research .bg-white\/\[0\.03\] {
-  background-color: #f7f8fc;
+  background-color: #f4f7fc;
 }
 
 .dashboard-research input:not([type="checkbox"]) {
-  color: #1a1442;
-  background-color: #f7f8fc;
-  border-color: rgba(120, 108, 200, 0.2);
+  color: #12203c;
+  background-color: #f4f7fc;
+  border-color: rgba(90, 140, 210, 0.2);
 }
 
 .paywall-secret {
@@ -215,9 +215,9 @@ button {
   border-radius: 16px;
   background: linear-gradient(
     90deg,
-    rgba(26, 20, 66, 0.04),
-    rgba(91, 61, 245, 0.08),
-    rgba(26, 20, 66, 0.04)
+    rgba(18, 32, 60, 0.04),
+    rgba(47, 98, 255, 0.08),
+    rgba(18, 32, 60, 0.04)
   );
   background-size: 200% 100%;
   animation: chart-shimmer 1.2s ease-in-out infinite;
@@ -400,7 +400,7 @@ button {
 .archive-mode-pulse-off {
   background: radial-gradient(
     circle at 82% 0%,
-    rgba(91, 61, 245, 0.22),
+    rgba(47, 98, 255, 0.22),
     transparent 62%
   );
   animation: archive-pulse-fade 0.78s ease forwards;
@@ -460,8 +460,8 @@ button:not(:disabled):hover .archive-flow-node {
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: #1a1442;
-  box-shadow: 0 0 0 3px rgba(26, 20, 66, 0.12);
+  background: #12203c;
+  box-shadow: 0 0 0 3px rgba(18, 32, 60, 0.12);
 }
 
 .horizon-slider {
@@ -472,7 +472,7 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 .horizon-slider-light {
-  background: linear-gradient(90deg, rgba(91, 61, 245, 0.16), rgba(91, 61, 245, 0.85));
+  background: linear-gradient(90deg, rgba(47, 98, 255, 0.16), rgba(47, 98, 255, 0.85));
 }
 
 .horizon-slider::-webkit-slider-thumb {
@@ -488,8 +488,8 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 .horizon-slider-light::-webkit-slider-thumb {
-  background: #5b3df5;
-  box-shadow: 0 0 0 4px rgba(91, 61, 245, 0.16);
+  background: #2f62ff;
+  box-shadow: 0 0 0 4px rgba(47, 98, 255, 0.16);
 }
 
 .horizon-slider::-webkit-slider-thumb:hover,
@@ -507,7 +507,7 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 .horizon-slider-light::-moz-range-thumb {
-  background: #5b3df5;
+  background: #2f62ff;
 }
 
 .plan-mark {
@@ -569,10 +569,10 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 .plan-col-current {
-  background: rgba(91, 61, 245, 0.1);
+  background: rgba(47, 98, 255, 0.1);
   box-shadow:
-    inset 0 0 0 1px rgba(91, 61, 245, 0.35),
-    0 0 18px rgba(91, 61, 245, 0.22);
+    inset 0 0 0 1px rgba(47, 98, 255, 0.35),
+    0 0 18px rgba(47, 98, 255, 0.22);
   animation: plan-col-glow 2.4s ease-in-out infinite;
 }
 
@@ -580,13 +580,13 @@ button:not(:disabled):hover .archive-flow-node {
   0%,
   100% {
     box-shadow:
-      inset 0 0 0 1px rgba(91, 61, 245, 0.28),
-      0 0 12px rgba(91, 61, 245, 0.16);
+      inset 0 0 0 1px rgba(47, 98, 255, 0.28),
+      0 0 12px rgba(47, 98, 255, 0.16);
   }
   50% {
     box-shadow:
-      inset 0 0 0 2px rgba(91, 61, 245, 0.55),
-      0 0 26px rgba(91, 61, 245, 0.32);
+      inset 0 0 0 2px rgba(47, 98, 255, 0.55),
+      0 0 26px rgba(47, 98, 255, 0.32);
   }
 }
 
@@ -625,7 +625,7 @@ button:not(:disabled):hover .archive-flow-node {
   max-height: 100svh;
   overflow: auto;
   padding: 1.25rem;
-  background: rgba(26, 20, 66, 0.28);
+  background: rgba(18, 32, 60, 0.28);
   backdrop-filter: blur(10px) saturate(140%);
   -webkit-backdrop-filter: blur(10px) saturate(140%);
 }
@@ -635,8 +635,8 @@ button:not(:disabled):hover .archive-flow-node {
   border-radius: 28px;
   padding: 1.4rem 1.4rem 1.25rem;
   background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(120, 108, 200, 0.16);
-  box-shadow: 0 28px 64px -28px rgba(52, 41, 120, 0.45);
+  border: 1px solid rgba(90, 140, 210, 0.16);
+  box-shadow: 0 28px 64px -28px rgba(30, 70, 160, 0.45);
   backdrop-filter: blur(28px) saturate(165%);
   -webkit-backdrop-filter: blur(28px) saturate(165%);
 }
@@ -653,10 +653,10 @@ button:not(:disabled):hover .archive-flow-node {
   aspect-ratio: 1;
   overflow: hidden;
   border-radius: 22px;
-  background: linear-gradient(180deg, #ffffff 0%, #f6f7fc 100%);
-  border: 1px solid rgba(120, 108, 200, 0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fc 100%);
+  border: 1px solid rgba(90, 140, 210, 0.18);
   box-shadow:
-    0 22px 40px -22px rgba(52, 41, 120, 0.4),
+    0 22px 40px -22px rgba(30, 70, 160, 0.4),
     inset 0 1px rgba(255, 255, 255, 0.9);
   animation: tour-window-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -667,8 +667,8 @@ button:not(:disabled):hover .archive-flow-node {
   gap: 10px;
   height: 36px;
   padding: 0 12px;
-  border-bottom: 1px solid rgba(26, 20, 66, 0.06);
-  background: rgba(247, 248, 252, 0.9);
+  border-bottom: 1px solid rgba(18, 32, 60, 0.06);
+  background: rgba(244, 247, 252, 0.9);
 }
 
 .tour-traffic {
@@ -702,7 +702,7 @@ button:not(:disabled):hover .archive-flow-node {
   white-space: nowrap;
   font-size: 11px;
   font-weight: 600;
-  color: #5a5578;
+  color: #51607a;
 }
 
 .tour-window-body {
@@ -726,7 +726,7 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 .tour-signal {
-  background: linear-gradient(140deg, rgba(107, 74, 255, 0.92), rgba(63, 107, 255, 0.9));
+  background: linear-gradient(140deg, rgba(70, 130, 255, 0.94), rgba(37, 90, 230, 0.94));
   animation: tour-signal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 

@@ -31,7 +31,7 @@ function chartPoints(values: number[], width: number, height: number) {
 export function MiniChart({
   values,
   id,
-  color = "#5b3df5",
+  color = "#2f62ff",
   height = 90,
   area = true,
 }: MiniChartProps) {

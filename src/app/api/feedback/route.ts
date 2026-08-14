@@ -102,7 +102,7 @@ async function sendFeedbackEmail({
     message,
   ].join("\n");
   const html = `
-    <div style="font-family:Georgia,serif;color:#1a1442;line-height:1.5">
+    <div style="font-family:Georgia,serif;color:#12203c;line-height:1.5">
       <p><strong>From:</strong> ${escapeHtml(email)}</p>
       <p><strong>Type:</strong> ${escapeHtml(label)}</p>
       <p style="font-size:20px;letter-spacing:2px;margin:16px 0 4px">

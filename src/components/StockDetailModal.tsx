@@ -90,7 +90,7 @@ export function StockDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-[0_8px_20px_-12px_rgba(52,41,120,0.45)] hover:bg-violet/10 hover:text-violet"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-[0_8px_20px_-12px_rgba(30,70,160,0.45)] hover:bg-violet/10 hover:text-violet"
           >
             <TVMIcon name="close" size={16} />
             Close
@@ -352,7 +352,7 @@ export function FlaggedPickButton({
     <button
       type="button"
       onClick={onOpen}
-      className="glass w-full rounded-2xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-22px_rgba(52,41,120,0.45)] active:scale-[0.98]"
+      className="glass w-full rounded-2xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-22px_rgba(30,70,160,0.45)] active:scale-[0.98]"
     >
       <div className="flex items-start justify-between">
         <div>

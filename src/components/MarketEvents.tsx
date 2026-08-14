@@ -34,7 +34,7 @@ export function MarketEvents({ events }: { events: MarketEvent[] }) {
         {slots.map((event, index) => (
           <article
             key={`${event.title}-${index}`}
-            className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(52,41,120,0.4)]"
+            className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]"
           >
             <div className="mb-2 flex items-center gap-2">
               <span className="text-xs text-ink-soft">{regionLabels[event.region]}</span>

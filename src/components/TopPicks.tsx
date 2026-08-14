@@ -103,9 +103,9 @@ export function TopPicks({
           return (
             <article
               key={pick?.symbol ?? `empty-pick-${idx}`}
-              className="glass-strong rounded-[24px] p-5 shadow-[0_18px_40px_-24px_rgba(52,41,120,0.4)] sm:p-6"
+              className="glass-strong rounded-[24px] p-5 shadow-[0_18px_40px_-24px_rgba(30,70,160,0.4)] sm:p-6"
             >
-              <p className="glass inline-flex rounded-2xl px-3 py-1.5 font-display text-sm font-bold text-violet shadow-[0_12px_24px_-18px_rgba(52,41,120,0.35)]">
+              <p className="glass inline-flex rounded-2xl px-3 py-1.5 font-display text-sm font-bold text-violet shadow-[0_12px_24px_-18px_rgba(30,70,160,0.35)]">
                 Pick {idx + 1}
               </p>
               <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -163,7 +163,7 @@ export function TopPicks({
 
               {!compact && (
                 <div className="mt-5 grid gap-3 lg:grid-cols-2">
-                  <div className="glass h-64 rounded-[22px] p-3 shadow-[0_16px_34px_-22px_rgba(52,41,120,0.4)]">
+                  <div className="glass h-64 rounded-[22px] p-3 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
                     {pick ? (
                       <YahooPriceChart
                         symbol={pick.symbol}
@@ -179,7 +179,7 @@ export function TopPicks({
                       </p>
                     )}
                   </div>
-                  <div className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(52,41,120,0.4)]">
+                  <div className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
                     <SignalGrid signals={signalsForLayout(pick?.signals)} />
                   </div>
                 </div>
@@ -293,7 +293,7 @@ function Stat({
   positive?: boolean;
 }) {
   return (
-    <div className="glass min-w-[6.5rem] rounded-2xl px-3 py-2.5 text-center shadow-[0_12px_24px_-18px_rgba(52,41,120,0.35)]">
+    <div className="glass min-w-[6.5rem] rounded-2xl px-3 py-2.5 text-center shadow-[0_12px_24px_-18px_rgba(30,70,160,0.35)]">
       <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">{label}</p>
       <p
         className={`mt-0.5 font-display text-lg font-bold ${
@@ -322,7 +322,7 @@ function NoteWidget({
   children: ReactNode;
 }) {
   return (
-    <div className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(52,41,120,0.4)]">
+    <div className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
       <p
         className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${
           tone === "gain" ? "text-gain" : tone === "loss" ? "text-loss" : "text-violet"

@@ -5,15 +5,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#1a1442",
-        "ink-soft": "#5a5578",
-        violet: "#5b3df5",
+        ink: "#12203c",
+        "ink-soft": "#51607a",
+        violet: "#2f62ff",
         coral: "#f47174",
         tvm: {
-          navy: "#1a1442",
-          slate: "#5a5578",
-          gold: "#5b3df5",
-          accent: "#5b3df5",
+          navy: "#12203c",
+          slate: "#51607a",
+          gold: "#2f62ff",
+          accent: "#2f62ff",
           gain: "#059669",
           loss: "#e2555a",
         },

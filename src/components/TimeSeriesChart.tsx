@@ -22,7 +22,7 @@ import {
 export function TimeSeriesChart({
   data,
   height = 180,
-  color = "#5b3df5",
+  color = "#2f62ff",
   rangeLabel,
 }: {
   data: ChartPoint[];
@@ -59,7 +59,7 @@ export function TimeSeriesChart({
           <CartesianGrid stroke="#ece9f6" vertical={false} />
           <XAxis
             dataKey="label"
-            tick={{ fill: "#5a5578", fontSize: 11 }}
+            tick={{ fill: "#51607a", fontSize: 11 }}
             tickLine={false}
             axisLine={{ stroke: "#e4e0f0" }}
             interval="preserveStartEnd"
@@ -68,7 +68,7 @@ export function TimeSeriesChart({
           <YAxis
             domain={["auto", "auto"]}
             width={58}
-            tick={{ fill: "#5a5578", fontSize: 11 }}
+            tick={{ fill: "#51607a", fontSize: 11 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(value: number) => formatPrice(value)}
@@ -77,11 +77,11 @@ export function TimeSeriesChart({
             formatter={(value) => [formatPrice(Number(value)), "Price"]}
             labelFormatter={(label) => (rangeLabel ? `${rangeLabel} · ${label}` : String(label))}
             contentStyle={{
-              color: "#1a1442",
+              color: "#12203c",
               background: "#ffffff",
               border: "1px solid rgba(120,108,200,.18)",
               borderRadius: 12,
-              boxShadow: "0 14px 34px -20px rgba(52,41,120,.3)",
+              boxShadow: "0 14px 34px -20px rgba(30,70,160,.3)",
             }}
           />
           <Area

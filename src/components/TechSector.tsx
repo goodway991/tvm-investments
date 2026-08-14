@@ -180,7 +180,7 @@ function DiveWidget({ block }: { block: DiveBlock }) {
   const leftover = leftoverCopy(block);
 
   return (
-    <article className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(52,41,120,0.4)]">
+    <article className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet">
         {block.title}
       </p>
