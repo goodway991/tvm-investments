@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
+import { TVMIcon } from "@/components/TVMBrand";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 
@@ -282,10 +283,45 @@ export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
 }
 
 export function SettingsPanel() {
-  const { user, profile, entitlement, watchlist, positions, logout } = useAuth();
+  const {
+    user,
+    profile,
+    entitlement,
+    watchlist,
+    positions,
+    logout,
+    updateDisplayName,
+  } = useAuth();
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [nameBusy, setNameBusy] = useState(false);
+  const [nameError, setNameError] = useState("");
+
+  function startEditName() {
+    setFirstName(profile?.firstName || "");
+    setLastName(profile?.lastName || "");
+    setNameError("");
+    setEditingName(true);
+  }
+
+  async function saveName() {
+    setNameBusy(true);
+    setNameError("");
+    try {
+      await updateDisplayName(firstName, lastName);
+      setEditingName(false);
+    } catch (saveError) {
+      setNameError(
+        saveError instanceof Error ? saveError.message : "Unable to save your name.",
+      );
+    } finally {
+      setNameBusy(false);
+    }
+  }
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -299,10 +335,76 @@ export function SettingsPanel() {
         Account
       </p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-5">
-        <div>
-          <h2 className="font-display text-2xl font-bold text-ink">
-            {profile?.displayName || "TVM user"}
-          </h2>
+        <div className="min-w-0 flex-1">
+          {editingName ? (
+            <div>
+              <div className="grid max-w-md grid-cols-2 gap-3">
+                <label className="block min-w-0">
+                  <span className="mb-1.5 block text-xs font-medium text-ink-soft">
+                    First name
+                  </span>
+                  <input
+                    type="text"
+                    maxLength={40}
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    placeholder="First"
+                    className="field w-full rounded-2xl px-4 py-2.5 text-[15px] text-ink"
+                  />
+                </label>
+                <label className="block min-w-0">
+                  <span className="mb-1.5 block text-xs font-medium text-ink-soft">
+                    Last name
+                  </span>
+                  <input
+                    type="text"
+                    maxLength={40}
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    placeholder="Last"
+                    className="field w-full rounded-2xl px-4 py-2.5 text-[15px] text-ink"
+                  />
+                </label>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void saveName()}
+                  disabled={nameBusy}
+                  className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {nameBusy ? "Saving…" : "Save name"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingName(false)}
+                  disabled={nameBusy}
+                  className="rounded-full px-4 py-2 text-sm font-semibold text-ink-soft"
+                >
+                  Cancel
+                </button>
+              </div>
+              {nameError ? (
+                <p className="mt-2 text-sm text-coral" role="alert">
+                  {nameError}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h2 className="font-display text-2xl font-bold text-ink">
+                {profile?.displayName || "TVM user"}
+              </h2>
+              <button
+                type="button"
+                onClick={startEditName}
+                className="grid h-9 w-9 place-items-center rounded-full text-violet hover:bg-violet/10"
+                aria-label="Edit first and last name"
+              >
+                <TVMIcon name="pencil" size={16} />
+              </button>
+            </div>
+          )}
           <p className="mt-1 text-sm text-ink-soft">{user?.email}</p>
         </div>
         <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold uppercase text-white">

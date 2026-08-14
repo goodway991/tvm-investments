@@ -11,6 +11,7 @@ import {
 import {
   onAuthStateChanged,
   signOut,
+  updateProfile,
   type User,
 } from "firebase/auth";
 import {
@@ -33,6 +34,8 @@ import { LEGAL_STORAGE_KEY, TOS_VERSION } from "@/lib/legal";
 import {
   clearSignupName,
   fullDisplayName,
+  isPersonName,
+  normalizePersonName,
   readSignupName,
 } from "@/lib/person-name";
 import { WATCHLIST_ALLOWED_SYMBOLS } from "@/lib/watchlist-symbols";
@@ -91,6 +94,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   acknowledgeGift: () => Promise<void>;
   completeTour: () => Promise<void>;
+  updateDisplayName: (firstName: string, lastName: string) => Promise<void>;
   updateWatchlist: (symbols: string[]) => Promise<void>;
   updatePortfolio: (cash: number, totalValue: number) => Promise<void>;
   savePosition: (position: Omit<PortfolioPosition, "currentPrice"> & { currentPrice?: number }) => Promise<void>;
@@ -437,6 +441,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  const updateDisplayName = useCallback(
+    async (firstName: string, lastName: string) => {
+      const db = getClientFirestore();
+      if (!db || !user) throw new Error("Sign in to update your name.");
+      const first = normalizePersonName(firstName);
+      const last = normalizePersonName(lastName);
+      if (!isPersonName(first) || !isPersonName(last)) {
+        throw new Error("Enter a first and last name (letters only, no numbers).");
+      }
+      const displayName = fullDisplayName(first, last);
+      await updateDoc(doc(db, "users", user.uid), {
+        firstName: first,
+        lastName: last,
+        displayName,
+        updatedAt: serverTimestamp(),
+      });
+      await updateProfile(user, { displayName });
+    },
+    [user],
+  );
+
   const updateWatchlist = useCallback(
     async (symbols: string[]) => {
       const db = getClientFirestore();
@@ -566,6 +591,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       acknowledgeGift,
       completeTour,
+      updateDisplayName,
       updateWatchlist,
       updatePortfolio,
       savePosition,
@@ -580,6 +606,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       acknowledgeGift,
       completeTour,
+      updateDisplayName,
       portfolio,
       positions,
       profile,

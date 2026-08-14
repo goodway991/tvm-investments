@@ -280,8 +280,8 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
 
               <form className="mt-7 space-y-4" onSubmit={submit}>
                 {!isLogin && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block">
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block min-w-0">
                       <span className="mb-1.5 block text-sm font-medium text-ink">
                         First name
                       </span>
@@ -297,7 +297,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                         className="field w-full rounded-2xl px-4 py-3 text-[15px] text-ink placeholder:text-ink-soft/50"
                       />
                     </label>
-                    <label className="block">
+                    <label className="block min-w-0">
                       <span className="mb-1.5 block text-sm font-medium text-ink">
                         Last name
                       </span>

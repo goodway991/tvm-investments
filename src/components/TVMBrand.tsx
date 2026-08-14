@@ -16,7 +16,8 @@ type IconName =
   | "search"
   | "arrow"
   | "back"
-  | "lock";
+  | "lock"
+  | "pencil";
 
 export function TVMBrand({
   size = 30,
@@ -102,6 +103,12 @@ export function TVMIcon({
       <>
         <rect x="5" y="11" width="14" height="10" rx="2" />
         <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </>
+    ),
+    pencil: (
+      <>
+        <path d="M13.5 5.5 18.5 10.5" />
+        <path d="M4 20h4.2L19 9.2a1.5 1.5 0 0 0 0-2.1L16.9 5a1.5 1.5 0 0 0-2.1 0L4 15.8V20Z" />
       </>
     ),
   };
