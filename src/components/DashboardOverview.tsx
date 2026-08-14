@@ -23,7 +23,7 @@ function signedPercent(value: number) {
 }
 
 export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
-  const { profile, user } = useAuth();
+  const { profile, user, entitlement } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [investment, setInvestment] = useState(0);
@@ -117,11 +117,22 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       <div className="flex flex-wrap items-center gap-4">
         <div className="mr-auto">
           <h1 className="font-display text-3xl font-bold text-ink">
-            Welcome, {resolveAccountName({
-              profileName: profile?.displayName,
-              authName: user?.displayName,
-              email: user?.email,
-            })}
+            Welcome,{" "}
+            {entitlement.plan === "pro" ? (
+              <span className="pro-name-glow">
+                {resolveAccountName({
+                  profileName: profile?.displayName,
+                  authName: user?.displayName,
+                  email: user?.email,
+                })}
+              </span>
+            ) : (
+              resolveAccountName({
+                profileName: profile?.displayName,
+                authName: user?.displayName,
+                email: user?.email,
+              })
+            )}
           </h1>
         </div>
         <form className="flex items-center gap-2" onSubmit={submitTickerSearch}>

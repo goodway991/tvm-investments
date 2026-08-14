@@ -50,12 +50,14 @@ function ProfileNavLink({
   active,
   href,
   onNavigate,
+  pro = false,
 }: {
   compact?: boolean;
   name: string;
   active: boolean;
   href: string;
   onNavigate?: () => void;
+  pro?: boolean;
 }) {
   return (
     <BogenHit
@@ -86,7 +88,7 @@ function ProfileNavLink({
       </span>
       {!compact && (
         <span className="pointer-events-none relative z-[1] min-w-0 truncate leading-tight">
-          {name}
+          {pro ? <span className="pro-name-glow">{name}</span> : name}
         </span>
       )}
     </BogenHit>
@@ -439,6 +441,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             name={accountLabel(profile, user)}
             active={navIsActive(pathname, "/dashboard/settings")}
             href={withArchiveQuery("/dashboard/settings", archive)}
+            pro={entitlement.plan === "pro"}
           />
         </div>
       </aside>
@@ -521,6 +524,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   active={navIsActive(pathname, "/dashboard/settings")}
                   href={withArchiveQuery("/dashboard/settings", archive)}
                   onNavigate={() => setMobileMenuOpen(false)}
+                  pro={entitlement.plan === "pro"}
                 />
               </div>
             </aside>
