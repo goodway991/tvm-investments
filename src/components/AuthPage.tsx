@@ -131,7 +131,9 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
           displayName: fullDisplayName(first, last),
         });
       }
-      router.push((await readMaintenanceEnabled()) ? "/maintenance" : "/dashboard");
+      const goToDesk = (await readMaintenanceEnabled())
+        && credentialEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase();
+      router.push(goToDesk ? "/maintenance" : "/dashboard");
     } catch (authError) {
       if (authError instanceof FirebaseError) {
         const messages: Record<string, string> = {
