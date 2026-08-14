@@ -2,7 +2,14 @@
 
 import { doc, onSnapshot } from "firebase/firestore";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMIcon } from "@/components/TVMBrand";
@@ -30,6 +37,26 @@ const IDLE: SiteMaintenance = {
   endMs: null,
 };
 
+type MaintenanceContextValue = {
+  warning: boolean;
+  lock: boolean;
+  text: string;
+  start: string;
+  end: string;
+};
+
+const MaintenanceContext = createContext<MaintenanceContextValue>({
+  warning: false,
+  lock: false,
+  text: "",
+  start: "",
+  end: "",
+});
+
+export function useMaintenance() {
+  return useContext(MaintenanceContext);
+}
+
 function warningFingerprint(site: SiteMaintenance) {
   return [site.warning, site.enabled, site.start, site.end, site.message].join("|");
 }
@@ -48,6 +75,38 @@ function writeDismissed(fingerprint: string) {
   } catch {
     /* private mode */
   }
+}
+
+export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
+  const { warning, start, end } = useMaintenance();
+  if (!warning) return null;
+  const detail = end
+    ? `Until ${end}`
+    : start
+      ? `From ${start}`
+      : "Scheduled downtime";
+  return (
+    <div
+      className={`maintenance-nav-card rounded-2xl ${
+        compact
+          ? "grid h-[52px] w-full place-items-center px-2"
+          : "flex min-h-[52px] w-full items-center gap-3 px-3 py-2.5 text-left"
+      }`}
+      title={detail}
+    >
+      <TVMIcon name="warning" size={18} />
+      {!compact && (
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold leading-tight">
+            Maintenance
+          </span>
+          <span className="block truncate text-[11px] font-medium leading-tight opacity-85">
+            {detail}
+          </span>
+        </span>
+      )}
+    </div>
+  );
 }
 
 export function MaintenanceGate({ children }: { children: React.ReactNode }) {
@@ -119,6 +178,16 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const warningOn = resolved.warning;
   const showWarning = mounted && warningOn && dismissed !== fingerprint;
   const warningText = formatWarningText(site);
+  const maintenanceValue = useMemo(
+    () => ({
+      warning: warningOn,
+      lock: resolved.lock,
+      text: warningText,
+      start: site.start,
+      end: site.end,
+    }),
+    [resolved.lock, site.end, site.start, warningOn, warningText],
+  );
 
   useEffect(() => {
     const root = document.documentElement;
@@ -164,9 +233,9 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
     ) : null;
 
   return (
-    <>
+    <MaintenanceContext.Provider value={maintenanceValue}>
       {banner && createPortal(banner, document.body)}
       {children}
-    </>
+    </MaintenanceContext.Provider>
   );
 }

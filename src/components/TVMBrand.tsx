@@ -18,7 +18,8 @@ type IconName =
   | "arrow"
   | "back"
   | "lock"
-  | "pencil";
+  | "pencil"
+  | "warning";
 
 export function TVMBrand({
   size = 30,
@@ -117,6 +118,12 @@ export function TVMIcon({
       <>
         <path d="M13.5 5.5 18.5 10.5" />
         <path d="M4 20h4.2L19 9.2a1.5 1.5 0 0 0 0-2.1L16.9 5a1.5 1.5 0 0 0-2.1 0L4 15.8V20Z" />
+      </>
+    ),
+    warning: (
+      <>
+        <path d="M12 4 21 19H3L12 4Z" />
+        <path d="M12 10v4.2M12 16.8v.6" />
       </>
     ),
   };

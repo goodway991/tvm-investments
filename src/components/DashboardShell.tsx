@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/components/AuthProvider";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
 import { ArchiveCalendarLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
+import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
@@ -79,6 +80,65 @@ function ProfileNavLink({
   );
 }
 
+function widgetBox(compact: boolean) {
+  return compact
+    ? "grid h-[52px] w-full place-items-center px-2"
+    : "flex min-h-[52px] w-full items-center gap-3 px-3 py-2.5 text-left";
+}
+
+function UpgradeNavCard({
+  compact = false,
+  plan,
+  onUpgrade,
+}: {
+  compact?: boolean;
+  plan: "free" | "pro";
+  onUpgrade: () => void;
+}) {
+  if (plan === "pro") {
+    return (
+      <div
+        className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
+        title="Pro account"
+      >
+        {compact ? (
+          <span className="text-[11px] font-bold uppercase">Pro</span>
+        ) : (
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold leading-tight">
+              Pro account
+            </span>
+            <span className="block text-[11px] font-medium leading-tight text-white/80">
+              Unlocked
+            </span>
+          </span>
+        )}
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onUpgrade}
+      title="Upgrade to Pro"
+      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
+    >
+      {compact ? (
+        <span className="text-[11px] font-bold uppercase">Pro</span>
+      ) : (
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold leading-tight">
+            Upgrade to Pro
+          </span>
+          <span className="block text-[11px] font-medium leading-tight text-white/80">
+            Unlock more
+          </span>
+        </span>
+      )}
+    </button>
+  );
+}
+
 function PreviewSidebar({
   compact = false,
   onNavigate,
@@ -98,6 +158,7 @@ function PreviewSidebar({
 
   return (
     <div className="mt-4 flex flex-col gap-2">
+      <MaintenanceNavCard compact={compact} />
       {showArchive ? (
         <Link
           href={withArchiveQuery("/dashboard/archive", archive)}
@@ -281,44 +342,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <PreviewSidebar compact={sidebarMode !== "expanded"} />
 
-        <div
-          className={`mt-auto ${
-            sidebarMode === "expanded" ? "space-y-3" : "space-y-2"
-          }`}
-        >
-          <div
-            className={`glass-violet text-center text-white ${
-              sidebarMode === "expanded"
-                ? "rounded-3xl p-5"
-                : "rounded-2xl px-2 py-3"
-            }`}
-          >
-            {sidebarMode === "expanded" ? (
-              <>
-                <p className="font-display text-sm font-semibold">
-                  {entitlement.plan === "pro" ? "Pro account" : "Upgrade to Pro"}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-white/80">
-                  {entitlement.plan === "pro"
-                    ? "All plan limits are unlocked."
-                    : "Unlock unlimited changes and expanded watchlists."}
-                </p>
-                {entitlement.plan !== "pro" && (
-                  <button
-                    type="button"
-                    onClick={openUpgrade}
-                    className="on-white mt-3 block w-full rounded-full bg-white py-2 text-sm font-semibold transition-transform hover:-translate-y-0.5"
-                  >
-                    Upgrade
-                  </button>
-                )}
-              </>
-            ) : (
-              <span className="font-display text-xs font-bold uppercase">
-                {entitlement.plan}
-              </span>
-            )}
-          </div>
+        <div className="mt-auto space-y-2">
+          <UpgradeNavCard
+            compact={sidebarMode !== "expanded"}
+            plan={entitlement.plan}
+            onUpgrade={openUpgrade}
+          />
           <ProfileNavLink
             compact={sidebarMode !== "expanded"}
             name={accountLabel(profile, user.email)}
@@ -385,19 +414,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 })}
               </nav>
               <PreviewSidebar onNavigate={() => setMobileMenuOpen(false)} />
-              <div className="mt-auto space-y-3">
-                {entitlement.plan !== "pro" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      openUpgrade();
-                    }}
-                    className="glass-violet rounded-full py-3 text-sm font-semibold text-white"
-                  >
-                    Upgrade to Pro
-                  </button>
-                )}
+              <div className="mt-auto space-y-2">
+                <UpgradeNavCard
+                  plan={entitlement.plan}
+                  onUpgrade={() => {
+                    setMobileMenuOpen(false);
+                    openUpgrade();
+                  }}
+                />
                 <ProfileNavLink
                   name={accountLabel(profile, user.email)}
                   active={navIsActive(pathname, "/dashboard/settings")}
