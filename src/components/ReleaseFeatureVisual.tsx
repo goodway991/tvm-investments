@@ -56,11 +56,6 @@ function BogenVisual() {
   );
 }
 
-const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
-  bogen: BogenVisual,
-  events: EventsVisual,
-};
-
 function EventsVisual() {
   return (
     <div className="overflow-hidden rounded-[22px] border border-ink/[0.08] bg-white">
@@ -73,6 +68,34 @@ function EventsVisual() {
     </div>
   );
 }
+
+function UiVisual() {
+  return (
+    <div className="rounded-[22px] border border-ink/[0.08] bg-surface p-6">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-violet">
+        UI design
+      </p>
+      <p className="mt-1 text-xs text-ink-soft">Moving Pro borders</p>
+      <div className="mt-4 flex flex-col items-center gap-4">
+        <div className="pro-border-shine glass-violet relative w-full max-w-[220px] rounded-2xl px-4 py-3 text-white">
+          <p className="text-sm font-semibold leading-tight">Pro account</p>
+          <p className="text-[11px] font-medium leading-tight text-white/80">
+            Unlocked
+          </p>
+        </div>
+        <span className="pro-border-shine glass-violet relative rounded-full px-4 py-2 text-sm font-semibold text-white">
+          Pro
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
+  bogen: BogenVisual,
+  events: EventsVisual,
+  ui: UiVisual,
+};
 
 export function ReleaseFeatureVisual({ id }: { id: ReleaseFeatureVisualId }) {
   const Visual = VISUALS[id];

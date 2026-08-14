@@ -35,75 +35,50 @@ function PlanMark({ included }: { included: boolean }) {
   );
 }
 
-function PlanWidget({
-  title,
-  current,
-  included,
-}: {
-  title: string;
-  current: boolean;
-  included: (feature: (typeof PLAN_FEATURES)[number]) => boolean;
-}) {
-  const features = [...PLAN_FEATURES].sort(
-    (left, right) => Number(left.free) - Number(right.free),
-  );
-
-  return (
-    <article
-      className={`glass rounded-[22px] p-4 sm:p-5 ${
-        current ? "plan-widget-current" : ""
-      }`}
-    >
-      <header className="mb-4 text-center">
-        <h3
-          className={`font-display text-xl font-bold ${
-            title === "Pro" ? "text-violet" : "text-ink"
-          }`}
-        >
-          {title}
-        </h3>
-        {current ? (
-          <span className="archive-active-label mt-1 block">Current</span>
-        ) : (
-          <span className="mt-1 block h-[13px]" aria-hidden />
-        )}
-      </header>
-      <ul className="space-y-1">
-        {features.map((feature) => (
-          <li
-            key={feature.name}
-            className="flex items-center justify-between gap-3 rounded-xl px-1 py-2"
-          >
-            <p className="text-sm font-medium leading-snug text-ink">
-              {feature.name}
-            </p>
-            <PlanMark included={included(feature)} />
-          </li>
-        ))}
-      </ul>
-    </article>
-  );
-}
-
 export function PlanComparisonTable({
   currentPlan,
 }: {
   currentPlan: "free" | "pro";
 }) {
   const alreadyPro = currentPlan === "pro";
+  const features = [...PLAN_FEATURES].sort(
+    (left, right) => Number(left.free) - Number(right.free),
+  );
 
   return (
-    <div className="grid gap-4 p-2 sm:grid-cols-2 sm:gap-5 sm:p-3">
-      <PlanWidget
-        title="Free"
-        current={!alreadyPro}
-        included={(feature) => feature.free}
+    <div className="plan-compare">
+      <div
+        className={`plan-current-pane ${alreadyPro ? "is-pro" : "is-free"}`}
+        aria-hidden
       />
-      <PlanWidget
-        title="Pro"
-        current={alreadyPro}
-        included={(feature) => feature.pro}
-      />
+      <div className="plan-compare-h plan-compare-feature">Features</div>
+      <div className="plan-compare-h">
+        Free
+        {!alreadyPro ? (
+          <span className="mt-1 block text-[10px] font-semibold uppercase tracking-widest text-violet">
+            Current
+          </span>
+        ) : null}
+      </div>
+      <div className="plan-compare-h text-violet">
+        Pro
+        {alreadyPro ? (
+          <span className="mt-1 block text-[10px] font-semibold uppercase tracking-widest text-violet">
+            Current
+          </span>
+        ) : null}
+      </div>
+      {features.map((feature) => (
+        <div key={feature.name} className="contents">
+          <div className="plan-compare-cell plan-compare-feature">{feature.name}</div>
+          <div className="plan-compare-cell plan-compare-mark">
+            <PlanMark included={feature.free} />
+          </div>
+          <div className="plan-compare-cell plan-compare-mark">
+            <PlanMark included={feature.pro} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

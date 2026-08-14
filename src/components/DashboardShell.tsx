@@ -139,7 +139,9 @@ function UpgradeNavCard({
       id="nav-upgrade"
       compact={compact}
       onDark
-      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
+      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)} ${
+        plan === "pro" ? "pro-border-shine" : ""
+      }`}
     >
       {plan === "pro" ? (
         <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
