@@ -1045,63 +1045,58 @@ html.dark .plan-current-pane {
   place-items: center;
 }
 
-.pro-shine-svg {
+.pro-border-shine {
+  isolation: isolate;
+}
+
+.pro-border-shine::before,
+.pro-border-shine::after {
+  content: "";
   position: absolute;
-  inset: 1px;
-  z-index: 4;
-  width: auto;
-  height: auto;
-  overflow: visible;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 1.5px;
   pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    #c9b6ff 0%,
+    #f3c4a6 18%,
+    #b7c6ff 36%,
+    #c9b6ff 50%,
+    #f3c4a6 68%,
+    #b7c6ff 86%,
+    #c9b6ff 100%
+  );
+  background-size: 200% 100%;
+  animation: pro-border-flow 3.8s linear infinite;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
 }
 
-.pro-shine-svg rect {
-  fill: none;
-  vector-effect: non-scaling-stroke;
+.pro-border-shine::after {
+  inset: -1px;
+  padding: 3px;
+  opacity: 0.42;
 }
 
-.pro-shine-outer {
-  stroke: #5b21b6;
-  stroke-width: 3.4px;
-  opacity: 0.48;
-}
-
-.pro-shine-inner {
-  stroke: #7dd3fc;
-  stroke-width: 1.55px;
-  opacity: 0.82;
-}
-
-.pro-shine-tail,
-.pro-shine-head {
-  stroke-linecap: round;
-  animation: pro-shine-orbit 7.2s linear infinite;
-}
-
-.pro-shine-tail {
-  stroke: #8b5cf6;
-  stroke-width: 4.2px;
-  stroke-dasharray: 16 84;
-  opacity: 0.46;
-}
-
-.pro-shine-head {
-  stroke-width: 2.15px;
-  stroke-dasharray: 8 92;
-  opacity: 0.95;
-}
-
-@keyframes pro-shine-orbit {
+@keyframes pro-border-flow {
   to {
-    stroke-dashoffset: -100;
+    background-position: -200% 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pro-shine-tail,
-  .pro-shine-head {
+  .pro-border-shine::before,
+  .pro-border-shine::after {
     animation: none;
-    stroke-dashoffset: 18;
+    background-position: 18% 0;
   }
 }
 
@@ -1903,10 +1898,14 @@ html.dark .plan-current-pane {
 }
 
 html.motion-paused .loop-motion,
+html.motion-paused .loop-motion::before,
+html.motion-paused .loop-motion::after,
 html.motion-paused .loop-motion *,
 html.motion-paused .loop-motion *::before,
 html.motion-paused .loop-motion *::after,
 .loop-motion.is-paused,
+.loop-motion.is-paused::before,
+.loop-motion.is-paused::after,
 .loop-motion.is-paused *,
 .loop-motion.is-paused *::before,
 .loop-motion.is-paused *::after,
