@@ -207,7 +207,6 @@ function PreviewSidebar({
       ) : (
         <TestingSuiteLock compact={compact} />
       )}
-      <MaintenanceNavCard compact={compact} />
     </div>
   );
 }
@@ -285,10 +284,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           onClick={cycleSidebar}
-          className="glass fixed left-4 top-[calc(1rem+var(--site-notice,0px))] z-30 hidden h-11 w-11 place-items-center rounded-full text-violet lg:grid"
+          className="glass fixed left-4 top-[calc(1rem+var(--site-notice,0px))] z-30 hidden h-11 w-11 place-items-center rounded-full lg:grid"
           aria-label="Open dashboard menu"
+          title="Open dashboard menu"
         >
-          <TVMIcon name="menu" />
+          <TVMBrand showWordmark={false} size={22} />
         </button>
       )}
 
@@ -301,21 +301,25 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               : "w-0 overflow-hidden border-0 px-0 py-7 opacity-0"
         }`}
       >
-        <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={cycleSidebar}
+          title={
+            sidebarMode === "expanded"
+              ? "Shrink menu to the logo"
+              : "Hide the menu"
+          }
+          aria-label={
+            sidebarMode === "expanded"
+              ? "Shrink menu to the logo"
+              : "Hide the menu"
+          }
+          className={`flex items-center rounded-2xl p-1.5 transition-colors hover:bg-violet/10 ${
+            sidebarMode === "expanded" ? "gap-2.5 self-start" : "mx-auto"
+          }`}
+        >
           <TVMBrand showWordmark={sidebarMode === "expanded"} />
-          <button
-            type="button"
-            onClick={cycleSidebar}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-violet/10 hover:text-violet"
-            aria-label={
-              sidebarMode === "expanded"
-                ? "Collapse dashboard menu"
-                : "Hide dashboard menu"
-            }
-          >
-            <TVMIcon name="menu" size={18} />
-          </button>
-        </div>
+        </button>
 
         <nav className="mt-10 flex flex-col gap-1.5" aria-label="Dashboard navigation">
           {dashboardNav.map((item) => {
@@ -344,7 +348,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <PreviewSidebar compact={sidebarMode !== "expanded"} />
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-auto space-y-2 pt-4">
+          <MaintenanceNavCard compact={sidebarMode !== "expanded"} />
           <UpgradeNavCard
             compact={sidebarMode !== "expanded"}
             plan={entitlement.plan}
@@ -364,12 +369,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-full text-violet hover:bg-violet/10"
+            className="rounded-2xl p-1.5 hover:bg-violet/10"
             aria-label="Open dashboard menu"
           >
-            <TVMIcon name="menu" />
+            <TVMBrand />
           </button>
-          <TVMBrand />
           <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold uppercase text-white">
             {entitlement.plan}
           </span>
@@ -416,7 +420,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 })}
               </nav>
               <PreviewSidebar onNavigate={() => setMobileMenuOpen(false)} />
-              <div className="mt-4 space-y-2">
+              <div className="mt-auto space-y-2 pt-4">
+                <MaintenanceNavCard />
                 <UpgradeNavCard
                   plan={entitlement.plan}
                   onUpgrade={() => {

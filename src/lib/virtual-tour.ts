@@ -1,3 +1,5 @@
+export const CURRENT_TOUR_ID = "tour-2";
+
 export type TourSceneId =
   | "welcome"
   | "dashboard"
@@ -7,6 +9,7 @@ export type TourSceneId =
   | "watchlist"
   | "portfolio"
   | "reports"
+  | "menu"
   | "settings"
   | "repeat";
 
@@ -19,8 +22,8 @@ export interface TourSlide {
 export const TOUR_SLIDES: TourSlide[] = [
   {
     id: "welcome",
-    name: "Your research desk",
-    how: "After you sign in, the dashboard is home. Numbers refresh on weekday closes — this is educational research, not advice.",
+    name: "Welcome in",
+    how: "After you sign in, Dashboard is home. Numbers refresh on weekday closes — this is educational research, not advice.",
   },
   {
     id: "dashboard",
@@ -30,7 +33,7 @@ export const TOUR_SLIDES: TourSlide[] = [
   {
     id: "brief",
     name: "Daily Brief",
-    how: "Open Daily Brief in the sidebar for the day’s flagged names, sector notes, and the short write-up of what the desk is watching.",
+    how: "Open Daily Brief in the sidebar for the day’s flagged names, sector notes, and a short write-up of what is in focus.",
   },
   {
     id: "screener",
@@ -44,13 +47,13 @@ export const TOUR_SLIDES: TourSlide[] = [
   },
   {
     id: "watchlist",
-    name: "Watchlist pulse",
+    name: "Watchlist",
     how: "Add names on Watchlist, then check Watchlist pulse on the dashboard. Compact view shows only what you selected; Expand lets you add more.",
   },
   {
     id: "portfolio",
     name: "Portfolio",
-    how: "Track cash and positions you enter. New accounts start at zero — add only what you want to follow. The calculator sits with the same workspace.",
+    how: "Track cash and positions you enter. New accounts start at zero — add only what you want to follow. The calculator sits in the same workspace.",
   },
   {
     id: "reports",
@@ -58,13 +61,18 @@ export const TOUR_SLIDES: TourSlide[] = [
     how: "Open Reports for the write-ups on flagged picks. Free includes the core notes; Pro unlocks the longer culture and path write-ups.",
   },
   {
+    id: "menu",
+    name: "The logo is the menu",
+    how: "Tap the TVM mark at the top of the sidebar to shrink it to the logo, hide the menu, or bring the full menu back. Maintenance, Pro, and your account stay at the bottom.",
+  },
+  {
     id: "settings",
     name: "Settings",
-    how: "View your plan, send a bug or feature note, and manage the account from Settings. Legal pages are linked there too.",
+    how: "Tap your name at the bottom of the sidebar for Settings — plan, feedback, and this tour again.",
   },
   {
     id: "repeat",
-    name: "That’s the desk",
-    how: "To repeat this tour anytime, go to Settings and tap Virtual Tour.",
+    name: "That’s the tour",
+    how: "Replay anytime from Settings → Virtual Tour.",
   },
 ];

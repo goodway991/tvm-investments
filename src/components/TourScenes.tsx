@@ -24,6 +24,20 @@ function WindowFrame({
   );
 }
 
+function TourPointer() {
+  return (
+    <svg className="tour-cursor" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4.2 3.1 20 12.2l-7.1.5 3.7 8.6-2.8 1.2-3.7-8.6L4.2 16.8V3.1Z"
+        fill="#12203c"
+        stroke="#fff"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function WelcomeScene() {
   return (
     <WindowFrame title="TVM Investments">
@@ -33,7 +47,7 @@ function WelcomeScene() {
           <p className="mt-4 font-display text-xl font-bold text-ink">
             Welcome in
           </p>
-          <p className="mt-1 text-sm text-ink-soft">Your weekday research desk</p>
+          <p className="mt-1 text-sm text-ink-soft">Your weekday research home</p>
         </div>
       </div>
     </WindowFrame>
@@ -49,19 +63,24 @@ function DashboardScene() {
   ];
   return (
     <WindowFrame title="Dashboard">
-      <div className="grid h-full grid-cols-2 gap-2.5 p-4">
-        {cards.map((card) => (
-          <div
-            key={card.label}
-            className="tour-pop rounded-2xl bg-white/80 p-3 shadow-[0_10px_24px_-16px_rgba(30,70,160,0.35)]"
-            style={{ animationDelay: card.delay }}
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
-              {card.label}
-            </p>
-            <p className="mt-1 font-display text-lg font-bold text-ink">{card.value}</p>
-          </div>
-        ))}
+      <div className="tour-dash-stage relative h-full p-4">
+        <div className="grid h-full grid-cols-2 gap-2.5">
+          {cards.map((card, index) => (
+            <div
+              key={card.label}
+              className={`rounded-2xl bg-white/80 p-3 shadow-[0_10px_24px_-16px_rgba(30,70,160,0.35)] ${
+                index === 0 ? "tour-dash-hit" : "tour-pop"
+              }`}
+              style={index === 0 ? undefined : { animationDelay: card.delay }}
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
+                {card.label}
+              </p>
+              <p className="mt-1 font-display text-lg font-bold text-ink">{card.value}</p>
+            </div>
+          ))}
+        </div>
+        <TourPointer />
       </div>
     </WindowFrame>
   );
@@ -97,13 +116,15 @@ function ScreenerScene() {
   const signals = ["Trend", "RSI", "Volume", "News", "Quality", "Value", "Momentum", "Risk"];
   return (
     <WindowFrame title="Screener">
-      <div className="flex h-full flex-col justify-center gap-3 p-4">
+      <div className="tour-screener-stage relative flex h-full flex-col justify-center gap-3 p-4">
         <p className="text-xs font-semibold text-ink">Eight signals</p>
         <div className="flex flex-wrap gap-1.5">
           {signals.map((signal, index) => (
             <span
               key={signal}
-              className="tour-signal rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+              className={`tour-signal rounded-full px-2.5 py-1 text-[11px] font-semibold text-white ${
+                index === 2 ? "tour-screener-hit" : ""
+              }`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {signal}
@@ -111,6 +132,7 @@ function ScreenerScene() {
           ))}
         </div>
         <p className="text-xs text-ink-soft">Filter, then tap a name to inspect it.</p>
+        <TourPointer />
       </div>
     </WindowFrame>
   );
@@ -147,7 +169,7 @@ function StockScene() {
 function WatchlistScene() {
   return (
     <WindowFrame title="Watchlist pulse">
-      <div className="flex h-full flex-col gap-2.5 p-4">
+      <div className="tour-watch-stage relative flex h-full flex-col gap-2.5 p-4">
         {["AAPL", "MSFT", "GOOGL"].map((symbol, index) => (
           <div
             key={symbol}
@@ -158,7 +180,10 @@ function WatchlistScene() {
             <span className="h-8 w-16 rounded-lg bg-gradient-to-r from-violet/20 to-violet/5" />
           </div>
         ))}
-        <p className="text-xs text-ink-soft">Compact shows only your names. Expand to add more.</p>
+        <div className="tour-watch-add mt-auto rounded-full bg-violet px-3 py-1.5 text-center text-[11px] font-semibold text-white">
+          Add NVDA
+        </div>
+        <TourPointer />
       </div>
     </WindowFrame>
   );
@@ -202,13 +227,62 @@ function ReportsScene() {
   );
 }
 
+function MenuScene() {
+  return (
+    <WindowFrame title="Sidebar">
+      <div className="tour-menu-stage">
+        <aside className="tour-mini-sidebar">
+          <div className="tour-mini-brand">
+            <img
+              src="/brand/tvm-app-icon-192.png"
+              alt=""
+              width={22}
+              height={22}
+              className="tour-mini-logo tvm-mark"
+            />
+            <span className="tour-mini-wordmark">TVM</span>
+          </div>
+          <div className="tour-mini-links">
+            {["Dashboard", "Brief", "Screener", "Watchlist"].map((label) => (
+              <span key={label} className="tour-mini-link">
+                {label}
+              </span>
+            ))}
+          </div>
+          <div className="tour-mini-bottom">
+            <span className="tour-mini-chip tour-mini-chip-warn">Maint.</span>
+            <span className="tour-mini-chip tour-mini-chip-pro">Pro</span>
+            <span className="tour-mini-chip">Account</span>
+          </div>
+        </aside>
+        <div className="tour-mini-page">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
+            Dashboard
+          </p>
+          <p className="mt-1 font-display text-sm font-bold text-ink">Weekday research</p>
+        </div>
+        <button type="button" className="tour-mini-fab" tabIndex={-1} aria-hidden>
+          <img
+            src="/brand/tvm-app-icon-192.png"
+            alt=""
+            width={18}
+            height={18}
+            className="tvm-mark"
+          />
+        </button>
+        <TourPointer />
+      </div>
+    </WindowFrame>
+  );
+}
+
 function SettingsScene() {
   return (
     <WindowFrame title="Settings">
       <div className="flex h-full flex-col justify-center gap-3 p-5">
         <div className="tour-pop rounded-2xl bg-white/85 p-4">
-          <p className="text-sm font-semibold text-ink">Plan · Feedback · Account</p>
-          <p className="mt-1 text-xs text-ink-soft">View plan, send a bug or idea, log out.</p>
+          <p className="text-sm font-semibold text-ink">Your name · bottom of the sidebar</p>
+          <p className="mt-1 text-xs text-ink-soft">Plan, feedback, and this tour live here.</p>
         </div>
         <div className="tour-pulse glass-violet rounded-full px-4 py-2 text-center text-sm font-semibold text-white">
           Virtual Tour
@@ -225,8 +299,8 @@ function RepeatScene() {
         <div>
           <p className="font-display text-2xl font-bold text-ink">Settings → Virtual Tour</p>
           <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-            Take this walkthrough again whenever you want. It lives in Settings, on
-            your account card.
+            Take this walkthrough again whenever you want. It lives on your account
+            card in Settings.
           </p>
         </div>
       </div>
@@ -243,6 +317,7 @@ const SCENES: Record<TourSceneId, () => JSX.Element> = {
   watchlist: WatchlistScene,
   portfolio: PortfolioScene,
   reports: ReportsScene,
+  menu: MenuScene,
   settings: SettingsScene,
   repeat: RepeatScene,
 };

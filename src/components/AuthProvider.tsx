@@ -43,6 +43,7 @@ import {
 } from "@/lib/person-name";
 import { parseTicker } from "@/lib/ticker";
 import { CURRENT_RELEASE_ID } from "@/lib/release-notes";
+import { CURRENT_TOUR_ID } from "@/lib/virtual-tour";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
@@ -160,15 +161,17 @@ function tourSeenKey(uid: string) {
 
 function readTourSeen(uid: string) {
   try {
-    return window.localStorage.getItem(tourSeenKey(uid)) === "1";
+    const raw = window.localStorage.getItem(tourSeenKey(uid));
+    if (raw === "1") return "tour-1";
+    return raw || "";
   } catch {
-    return false;
+    return "";
   }
 }
 
-function writeTourSeen(uid: string) {
+function writeTourSeen(uid: string, tourId: string) {
   try {
-    window.localStorage.setItem(tourSeenKey(uid), "1");
+    window.localStorage.setItem(tourSeenKey(uid), tourId);
   } catch {
     /* private mode */
   }
@@ -399,10 +402,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               });
               const roleIsAdmin =
                 nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+              const storedTour =
+                typeof data.seenTour === "string" ? data.seenTour : "";
+              const localTour = readTourSeen(nextUser.uid);
+              const completedTour =
+                storedTour ||
+                localTour ||
+                (asDate(data.tourCompletedAt) ? "tour-1" : "");
               const tourIsPending =
-                !roleIsAdmin &&
-                !asDate(data.tourCompletedAt) &&
-                !readTourSeen(nextUser.uid);
+                !roleIsAdmin && completedTour !== CURRENT_TOUR_ID;
               setTourPending(tourIsPending);
               const seen =
                 (typeof data.seenRelease === "string" && data.seenRelease) ||
@@ -541,7 +549,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const completeTour = useCallback(async () => {
     const db = getClientFirestore();
     if (!user) return;
-    writeTourSeen(user.uid);
+    writeTourSeen(user.uid, CURRENT_TOUR_ID);
     writeReleaseSeen(user.uid, CURRENT_RELEASE_ID);
     setTourPending(false);
     setReleasePending(false);
@@ -549,6 +557,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await updateDoc(doc(db, "users", user.uid), {
         tourCompletedAt: serverTimestamp(),
+        seenTour: CURRENT_TOUR_ID,
         seenRelease: CURRENT_RELEASE_ID,
         updatedAt: serverTimestamp(),
       });

@@ -9,6 +9,8 @@ service cloud.firestore {
     //   uid: string, email: string, displayName: string
     //   firstName, lastName (required on new client signups)
     //   tourCompletedAt: timestamp (set after the virtual tour)
+    //   seenTour: string tour version, e.g. "tour-2" (re-shows when it changes)
+    //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
     //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
     //   createdAt: timestamp (immutable), updatedAt: timestamp
     //
@@ -93,7 +95,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
           "uid", "email", "displayName", "createdAt", "updatedAt",
           "tosVersion", "tosAcceptedAt", "privacyAcceptedAt",
-          "firstName", "lastName", "tourCompletedAt", "seenRelease"
+          "firstName", "lastName", "tourCompletedAt", "seenRelease", "seenTour"
         ])
         && data.keys().hasAll([
           "uid", "email", "displayName", "createdAt", "updatedAt"
@@ -136,6 +138,14 @@ service cloud.firestore {
             data.seenRelease is string
             && data.seenRelease.size() >= 1
             && data.seenRelease.size() <= 32
+          )
+        )
+        && (
+          !data.keys().hasAny(["seenTour"])
+          || (
+            data.seenTour is string
+            && data.seenTour.size() >= 1
+            && data.seenTour.size() <= 32
           )
         );
     }
