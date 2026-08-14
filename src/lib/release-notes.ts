@@ -63,7 +63,7 @@ export const RELEASES: ReleaseNote[] = [
       {
         title: "Market-moving events",
         visual: "events",
-        body: "On Daily Brief, tap a market-moving event card to expand it. You get the fuller note, source, date, and any tickers — not just the one-line teaser.",
+        body: "On Daily Brief, tap a market-moving event card to expand it. The card gets longer with the fuller note and any extra info — then tap again to collapse back to the headline.",
       },
       {
         title: "UI updates",

@@ -362,7 +362,9 @@ export const DEMO_MARKET_EVENTS: MarketEvent[] = [
     region: "US",
     impact: "mixed",
     summary:
-      "The Federal Reserve kept benchmark rates unchanged while emphasizing inflation progress remains uneven. Equities traded choppy as investors parsed dot-plot shifts.",
+      "The Federal Reserve kept benchmark rates unchanged while emphasizing inflation progress remains uneven.",
+    detail:
+      "The Federal Reserve kept benchmark rates unchanged while emphasizing inflation progress remains uneven. Equities traded choppy as investors parsed dot-plot shifts, and the fuller note is the path language — not just the hold itself.",
     date: new Date().toISOString().slice(0, 10),
   },
   {
@@ -370,7 +372,9 @@ export const DEMO_MARKET_EVENTS: MarketEvent[] = [
     region: "US",
     impact: "bullish",
     summary:
-      "Consumer prices rose less than expected, supporting risk assets and growth stocks. Bond yields dipped on the print.",
+      "Consumer prices rose less than expected, supporting risk assets and growth stocks.",
+    detail:
+      "Consumer prices rose less than expected, supporting risk assets and growth stocks. Bond yields dipped on the print, which is why growth names caught a bid after the teaser headline.",
     date: new Date().toISOString().slice(0, 10),
   },
   {
@@ -378,7 +382,9 @@ export const DEMO_MARKET_EVENTS: MarketEvent[] = [
     region: "Global",
     impact: "bullish",
     summary:
-      "Beijing announced targeted fiscal support for property and infrastructure, lifting mining and industrial names globally.",
+      "Beijing announced targeted fiscal support for property and infrastructure.",
+    detail:
+      "Beijing announced targeted fiscal support for property and infrastructure, lifting mining and industrial names globally. The extra read is the commodity tape, not a calendar stamp.",
     date: new Date().toISOString().slice(0, 10),
   },
   {
@@ -386,7 +392,9 @@ export const DEMO_MARKET_EVENTS: MarketEvent[] = [
     region: "Global",
     impact: "bearish",
     summary:
-      "Geopolitical tension along key shipping lanes pushed crude higher and pressured airlines and transport stocks.",
+      "Geopolitical tension along key shipping lanes pushed crude higher.",
+    detail:
+      "Geopolitical tension along key shipping lanes pushed crude higher and pressured airlines and transport stocks. Expand for that second-order hit; collapse to keep the headline tight.",
     date: new Date().toISOString().slice(0, 10),
   },
   {
@@ -394,7 +402,9 @@ export const DEMO_MARKET_EVENTS: MarketEvent[] = [
     region: "Tech",
     impact: "bearish",
     summary:
-      "Passive fund flows from index reconstitution hit chip names disproportionately, creating sympathy moves unrelated to individual earnings.",
+      "Passive fund flows from index reconstitution hit chip names disproportionately.",
+    detail:
+      "Passive fund flows from index reconstitution hit chip names disproportionately, creating sympathy moves unrelated to individual earnings. The longer note is the flow story behind the print.",
     date: new Date().toISOString().slice(0, 10),
   },
   {
@@ -402,7 +412,9 @@ export const DEMO_MARKET_EVENTS: MarketEvent[] = [
     region: "Tech",
     impact: "bullish",
     summary:
-      "Mega-cap tech reported strong cloud and AI revenue, though guidance on datacenter spend sparked debate on ROI timelines.",
+      "Mega-cap tech reported strong cloud and AI revenue.",
+    detail:
+      "Mega-cap tech reported strong cloud and AI revenue, though guidance on datacenter spend sparked debate on ROI timelines. Tap again to fold that extra guidance talk back into the headline.",
     date: new Date().toISOString().slice(0, 10),
   },
 ];

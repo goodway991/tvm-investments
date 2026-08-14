@@ -107,14 +107,13 @@ function EventsVisual() {
           <div className="wn-event-extra">
             <div>
               <p className="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
-                The note points to stronger AI server demand, so the brief expands past the teaser —
-                source, date, and the tickers that moved with it.
+                The note points to stronger AI server demand, so the card grows with that extra
+                read and the names that moved with it. Tap again to fold it back to the headline.
               </p>
               <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                 <span className="rounded-full bg-violet/10 px-2 py-0.5 text-[10px] font-semibold text-violet">
                   Reuters
                 </span>
-                <span className="text-[10px] font-medium text-ink-soft">Aug 14, 2026</span>
                 <span className="rounded-full bg-violet/10 px-2 py-0.5 text-[10px] font-semibold text-violet">
                   NVDA
                 </span>

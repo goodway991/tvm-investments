@@ -24,6 +24,13 @@ const EMPTY_EVENT: MarketEvent = {
   date: "",
 };
 
+function stripPublishedDate(text: string) {
+  return text
+    .replace(/\bPublished\s+\d{4}-\d{2}-\d{2}\.?/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function EventCard({
   event,
   index,
@@ -36,8 +43,14 @@ function EventCard({
   onToggle: () => void;
 }) {
   const empty = !event.date && event.title === EMPTY_EVENT.title;
-  const detail = (event.detail || event.summary).trim();
-  const teaser = event.summary.trim();
+  const teaser = stripPublishedDate(event.summary);
+  const fuller = stripPublishedDate(event.detail || "");
+  const extra =
+    fuller && fuller !== teaser
+      ? fuller.startsWith(teaser)
+        ? fuller.slice(teaser.length).trim()
+        : fuller
+      : "";
 
   if (empty) {
     return (
@@ -71,17 +84,17 @@ function EventCard({
         </div>
         <h3 className="font-medium text-ink">{event.title}</h3>
         <p className={`mt-2 text-sm leading-relaxed text-ink-soft ${open ? "" : "line-clamp-2"}`}>
-          {open ? detail : teaser}
+          {teaser}
         </p>
-        {open ? (
+        {open && extra ? (
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">{extra}</p>
+        ) : null}
+        {open && (event.source || event.tickers?.length) ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {event.source ? (
               <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet">
                 {event.source}
               </span>
-            ) : null}
-            {event.date ? (
-              <span className="text-[11px] font-medium text-ink-soft">{event.date}</span>
             ) : null}
             {event.tickers?.map((ticker) => (
               <span
@@ -92,9 +105,10 @@ function EventCard({
               </span>
             ))}
           </div>
-        ) : (
-          <p className="mt-2 text-[11px] font-medium text-violet">Tap for more detail</p>
-        )}
+        ) : null}
+        <p className="mt-2 text-[11px] font-medium text-violet">
+          {open ? "Tap to collapse" : "Tap for more detail"}
+        </p>
       </button>
       {open && event.url ? (
         <div className="px-4 pb-4">
@@ -122,7 +136,7 @@ export function MarketEvents({ events }: { events: MarketEvent[] }) {
         <BogenHeading id="market-events">Market-Moving Events</BogenHeading>
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Headlines from this session&apos;s snapshot. Tap a card for the fuller note.
+        Headlines from this session&apos;s snapshot. Tap a card to read more, tap again to fold it back.
       </p>
       <div className="mt-6 grid gap-3">
         {slots.map((event, index) => (

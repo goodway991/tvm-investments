@@ -598,13 +598,17 @@ export async function fetchYahooMarketEvents(): Promise<MarketEvent[]> {
       const tickers = (item.relatedTickers ?? []).slice(0, 6);
       const source = publicPublisher(item.publisher);
       const published = toIso(item.providerPublishTime);
-      const tickerLine = tickers.length ? `Names in the headline: ${tickers.join(", ")}.` : "";
-      const summary = [source, tickerLine].filter(Boolean).join(" ").slice(0, 220);
+      const tickerLine = tickers.length
+        ? `Names in the headline: ${tickers.join(", ")}.`
+        : "";
+      const summary = (
+        tickerLine ||
+        (source ? `${source} filed this as a session headline.` : "A market-moving note from this session.")
+      ).slice(0, 220);
       const detail = [
-        title,
-        source ? `Source: ${source}` : "",
+        `What moved: ${title.endsWith(".") ? title : `${title}.`}`,
         tickerLine,
-        published ? `Published ${published.slice(0, 10)}.` : "",
+        source ? `Reported by ${source}.` : "",
       ]
         .filter(Boolean)
         .join(" ");
