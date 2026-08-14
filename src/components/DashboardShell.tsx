@@ -16,29 +16,7 @@ import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
-import { BogenTip } from "@/components/BogenProvider";
-import type { BogenId } from "@/lib/bogen";
-
-function bogenWrap(
-  id: BogenId,
-  compact: boolean,
-  child: React.ReactNode,
-  options?: { onDark?: boolean; itemKey?: string },
-) {
-  return (
-    <div
-      key={options?.itemKey}
-      className={`flex items-center gap-1.5 ${compact ? "justify-center" : ""}`}
-    >
-      {child}
-      <BogenTip
-        id={id}
-        tone={options?.onDark ? "onDark" : "ink"}
-        className="shrink-0"
-      />
-    </div>
-  );
-}
+import { BogenHit } from "@/components/BogenProvider";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
@@ -79,11 +57,11 @@ function ProfileNavLink({
   onNavigate?: () => void;
 }) {
   return (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      title={compact ? name : undefined}
-      className={`inline-flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+    <BogenHit
+      id="nav-account"
+      compact={compact}
+      onDark={active}
+      className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
         compact ? "justify-center px-2" : "gap-3.5 px-4"
       } ${
         active
@@ -91,24 +69,33 @@ function ProfileNavLink({
           : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
       }`}
     >
+      <Link
+        href={href}
+        onClick={onNavigate}
+        title={compact ? name : undefined}
+        className="absolute inset-0 z-0 rounded-2xl"
+        aria-label={name}
+      />
       <span
-        className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
+        className={`pointer-events-none relative z-[1] grid h-8 w-8 shrink-0 place-items-center rounded-full ${
           active ? "bg-white/20" : "bg-ink/[0.08]"
         }`}
       >
         <TVMIcon name="profile" size={18} />
       </span>
       {!compact && (
-        <span className="min-w-0 truncate leading-tight">{name}</span>
+        <span className="pointer-events-none relative z-[1] min-w-0 truncate leading-tight">
+          {name}
+        </span>
       )}
-    </Link>
+    </BogenHit>
   );
 }
 
 function widgetBox(compact: boolean) {
   return compact
-    ? "grid h-[52px] place-items-center px-2"
-    : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 text-left";
+    ? "h-[52px] justify-center px-2"
+    : "min-h-[52px] gap-3 px-3 py-2.5 text-left";
 }
 
 function UpgradeNavCard({
@@ -120,47 +107,53 @@ function UpgradeNavCard({
   plan: "free" | "pro";
   onUpgrade: () => void;
 }) {
-  if (plan === "pro") {
-    return (
-      <div
-        className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
-        title="Pro account"
-      >
-        {compact ? (
-          <span className="text-[11px] font-bold uppercase">Pro</span>
-        ) : (
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold leading-tight">
-              Pro account
-            </span>
-            <span className="block text-[11px] font-medium leading-tight text-white/80">
-              Unlocked
-            </span>
-          </span>
-        )}
-      </div>
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={onUpgrade}
-      title="Upgrade to Pro"
-      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
-    >
-      {compact ? (
-        <span className="text-[11px] font-bold uppercase">Pro</span>
+  const body =
+    plan === "pro" ? (
+      compact ? (
+        <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">Pro</span>
       ) : (
-        <span className="min-w-0">
+        <span className="pointer-events-none relative z-[1] min-w-0">
           <span className="block text-sm font-semibold leading-tight">
-            Upgrade to Pro
+            Pro account
           </span>
           <span className="block text-[11px] font-medium leading-tight text-white/80">
-            Unlock more
+            Unlocked
           </span>
         </span>
+      )
+    ) : compact ? (
+      <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">Pro</span>
+    ) : (
+      <span className="pointer-events-none relative z-[1] min-w-0">
+        <span className="block text-sm font-semibold leading-tight">
+          Upgrade to Pro
+        </span>
+        <span className="block text-[11px] font-medium leading-tight text-white/80">
+          Unlock more
+        </span>
+      </span>
+    );
+
+  return (
+    <BogenHit
+      id="nav-upgrade"
+      compact={compact}
+      onDark
+      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
+    >
+      {plan === "pro" ? (
+        <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
+      ) : (
+        <button
+          type="button"
+          onClick={onUpgrade}
+          title="Upgrade to Pro"
+          className="absolute inset-0 z-0 rounded-2xl"
+          aria-label="Upgrade to Pro"
+        />
       )}
-    </button>
+      {body}
+    </BogenHit>
   );
 }
 
@@ -183,15 +176,12 @@ function PreviewSidebar({
 
   return (
     <div className="mt-4 flex flex-col gap-2">
-      {bogenWrap(
-        "nav-archive",
-        compact,
-        showArchive ? (
-        <Link
-          href={withArchiveQuery("/dashboard/archive", archive)}
-          onClick={onNavigate}
-          title={compact ? "Archive Calendar" : undefined}
-          className={`inline-flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+      {showArchive ? (
+        <BogenHit
+          id="nav-archive"
+          compact={compact}
+          onDark={archiveRoute && !archiveLive}
+          className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
             compact ? "justify-center px-2" : "gap-3.5 px-4"
           } ${
             archiveLive
@@ -201,30 +191,42 @@ function PreviewSidebar({
                 : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
           }`}
         >
-          <TVMIcon name="calendar" />
+          <Link
+            href={withArchiveQuery("/dashboard/archive", archive)}
+            onClick={onNavigate}
+            title={compact ? "Archive Calendar" : undefined}
+            className="absolute inset-0 z-0 rounded-2xl"
+            aria-label="Archive Calendar"
+          />
+          <span className="pointer-events-none relative z-[1]">
+            <TVMIcon name="calendar" />
+          </span>
           {!compact && (
-            <span className="min-w-0">
+            <span className="pointer-events-none relative z-[1] min-w-0">
               <span className="block leading-tight">Archive Calendar</span>
               {archiveLive && (
                 <span className="archive-active-label mt-0.5 block">ACTIVE</span>
               )}
             </span>
           )}
-        </Link>
+        </BogenHit>
       ) : (
-        <ArchiveCalendarLock compact={compact} />
-      ),
-      { onDark: archiveRoute && !archiveLive },
+        <BogenHit
+          id="nav-archive"
+          compact={compact}
+          className={compact ? "justify-center" : ""}
+        >
+          <div className="min-w-0 flex-1">
+            <ArchiveCalendarLock compact={compact} />
+          </div>
+        </BogenHit>
       )}
-      {bogenWrap(
-        "nav-horizon",
-        compact,
-        showHorizon ? (
-        <Link
-          href={withArchiveQuery("/dashboard/horizon", archive)}
-          onClick={onNavigate}
-          title={compact ? "Horizon Suite" : undefined}
-          className={`inline-flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+      {showHorizon ? (
+        <BogenHit
+          id="nav-horizon"
+          compact={compact}
+          onDark={horizonActive}
+          className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
             compact ? "justify-center px-2" : "gap-3.5 px-4"
           } ${
             horizonActive
@@ -232,13 +234,30 @@ function PreviewSidebar({
               : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
           }`}
         >
-          <TVMIcon name="horizon" />
-          {!compact && "Horizon Suite"}
-        </Link>
+          <Link
+            href={withArchiveQuery("/dashboard/horizon", archive)}
+            onClick={onNavigate}
+            title={compact ? "Horizon Suite" : undefined}
+            className="absolute inset-0 z-0 rounded-2xl"
+            aria-label="Horizon Suite"
+          />
+          <span className="pointer-events-none relative z-[1]">
+            <TVMIcon name="horizon" />
+          </span>
+          {!compact && (
+            <span className="pointer-events-none relative z-[1]">Horizon Suite</span>
+          )}
+        </BogenHit>
       ) : (
-        <TestingSuiteLock compact={compact} />
-      ),
-      { onDark: horizonActive },
+        <BogenHit
+          id="nav-horizon"
+          compact={compact}
+          className={compact ? "justify-center" : ""}
+        >
+          <div className="min-w-0 flex-1">
+            <TestingSuiteLock compact={compact} />
+          </div>
+        </BogenHit>
       )}
     </div>
   );
@@ -330,46 +349,49 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           sidebarMode === "expanded"
             ? "w-[260px] overflow-y-auto border-r border-ink/[0.06] px-6 py-7"
             : sidebarMode === "collapsed"
-              ? "w-[96px] overflow-visible border-r border-ink/[0.06] px-2 py-7"
+              ? "w-[84px] overflow-visible border-r border-ink/[0.06] px-3 py-7"
               : "w-0 overflow-hidden border-0 px-0 py-7 opacity-0"
         }`}
       >
-        {bogenWrap(
-          "nav-logo",
-          sidebarMode !== "expanded",
-          <button
-          type="button"
-          onClick={cycleSidebar}
-          title={
-            sidebarMode === "expanded"
-              ? "Shrink menu to the logo"
-              : "Hide the menu"
-          }
-          aria-label={
-            sidebarMode === "expanded"
-              ? "Shrink menu to the logo"
-              : "Hide the menu"
-          }
-          className={`inline-flex items-center rounded-2xl p-1.5 transition-colors hover:bg-violet/10 ${
-            sidebarMode === "expanded" ? "gap-2.5" : ""
+        <BogenHit
+          id="nav-logo"
+          compact={sidebarMode !== "expanded"}
+          fullWidth={false}
+          className={`rounded-2xl p-1.5 ${
+            sidebarMode === "expanded" ? "gap-2.5 self-start" : "mx-auto"
           }`}
         >
-          <TVMBrand showWordmark={sidebarMode === "expanded"} />
-        </button>,
-        )}
+          <button
+            type="button"
+            onClick={cycleSidebar}
+            title={
+              sidebarMode === "expanded"
+                ? "Shrink menu to the logo"
+                : "Hide the menu"
+            }
+            aria-label={
+              sidebarMode === "expanded"
+                ? "Shrink menu to the logo"
+                : "Hide the menu"
+            }
+            className="absolute inset-0 z-0 rounded-2xl hover:bg-violet/10"
+          />
+          <span className="pointer-events-none relative z-[1]">
+            <TVMBrand showWordmark={sidebarMode === "expanded"} />
+          </span>
+        </BogenHit>
 
         <nav className="mt-10 flex flex-col gap-1.5" aria-label="Dashboard navigation">
           {dashboardNav.map((item) => {
             const active = navIsActive(pathname, item.href);
             const compact = sidebarMode !== "expanded";
-            return bogenWrap(
-              item.bogen,
-              compact,
-              <Link
+            return (
+              <BogenHit
                 key={item.href}
-                href={withArchiveQuery(item.href, archive)}
-                title={compact ? item.label : undefined}
-                className={`inline-flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+                id={item.bogen}
+                compact={compact}
+                onDark={active}
+                className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
                   compact ? "justify-center px-2" : "gap-3.5 px-4"
                 } ${
                   active
@@ -377,10 +399,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
                 }`}
               >
-                <TVMIcon name={item.icon} />
-                {!compact && item.label}
-              </Link>,
-              { onDark: active, itemKey: item.href },
+                <Link
+                  href={withArchiveQuery(item.href, archive)}
+                  title={compact ? item.label : undefined}
+                  className="absolute inset-0 z-0 rounded-2xl"
+                  aria-label={item.label}
+                />
+                <span className="pointer-events-none relative z-[1]">
+                  <TVMIcon name={item.icon} />
+                </span>
+                {!compact && (
+                  <span className="pointer-events-none relative z-[1]">{item.label}</span>
+                )}
+              </BogenHit>
             );
           })}
         </nav>
@@ -389,27 +420,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <div className="mt-auto space-y-2 pt-4">
           <MaintenanceNavCard compact={sidebarMode !== "expanded"} />
-          {bogenWrap(
-            "nav-upgrade",
-            sidebarMode !== "expanded",
-            <UpgradeNavCard
-              compact={sidebarMode !== "expanded"}
-              plan={entitlement.plan}
-              onUpgrade={openUpgrade}
-            />,
-            { onDark: true },
-          )}
-          {bogenWrap(
-            "nav-account",
-            sidebarMode !== "expanded",
-            <ProfileNavLink
-              compact={sidebarMode !== "expanded"}
-              name={accountLabel(profile, user)}
-              active={navIsActive(pathname, "/dashboard/settings")}
-              href={withArchiveQuery("/dashboard/settings", archive)}
-            />,
-            { onDark: navIsActive(pathname, "/dashboard/settings") },
-          )}
+          <UpgradeNavCard
+            compact={sidebarMode !== "expanded"}
+            plan={entitlement.plan}
+            onUpgrade={openUpgrade}
+          />
+          <ProfileNavLink
+            compact={sidebarMode !== "expanded"}
+            name={accountLabel(profile, user)}
+            active={navIsActive(pathname, "/dashboard/settings")}
+            href={withArchiveQuery("/dashboard/settings", archive)}
+          />
         </div>
       </aside>
 
@@ -451,52 +472,47 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <nav className="mt-8 flex flex-col gap-1.5">
                 {dashboardNav.map((item) => {
                   const active = navIsActive(pathname, item.href);
-                  return bogenWrap(
-                    item.bogen,
-                    false,
-                    <Link
+                  return (
+                    <BogenHit
                       key={item.href}
-                      href={withArchiveQuery(item.href, archive)}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`inline-flex items-center gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium duration-300 ${
+                      id={item.bogen}
+                      onDark={active}
+                      className={`gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium duration-300 ${
                         active
                           ? "glass-violet text-white"
                           : "text-ink-soft hover:bg-violet/[0.05] hover:text-ink"
                       }`}
                     >
-                      <TVMIcon name={item.icon} />
-                      {item.label}
-                    </Link>,
-                    { onDark: active, itemKey: item.href },
+                      <Link
+                        href={withArchiveQuery(item.href, archive)}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="absolute inset-0 z-0 rounded-2xl"
+                        aria-label={item.label}
+                      />
+                      <span className="pointer-events-none relative z-[1]">
+                        <TVMIcon name={item.icon} />
+                      </span>
+                      <span className="pointer-events-none relative z-[1]">{item.label}</span>
+                    </BogenHit>
                   );
                 })}
               </nav>
               <PreviewSidebar onNavigate={() => setMobileMenuOpen(false)} />
               <div className="mt-auto space-y-2 pt-4">
                 <MaintenanceNavCard />
-                {bogenWrap(
-                  "nav-upgrade",
-                  false,
-                  <UpgradeNavCard
-                    plan={entitlement.plan}
-                    onUpgrade={() => {
-                      setMobileMenuOpen(false);
-                      openUpgrade();
-                    }}
-                  />,
-                  { onDark: true },
-                )}
-                {bogenWrap(
-                  "nav-account",
-                  false,
-                  <ProfileNavLink
-                    name={accountLabel(profile, user)}
-                    active={navIsActive(pathname, "/dashboard/settings")}
-                    href={withArchiveQuery("/dashboard/settings", archive)}
-                    onNavigate={() => setMobileMenuOpen(false)}
-                  />,
-                  { onDark: navIsActive(pathname, "/dashboard/settings") },
-                )}
+                <UpgradeNavCard
+                  plan={entitlement.plan}
+                  onUpgrade={() => {
+                    setMobileMenuOpen(false);
+                    openUpgrade();
+                  }}
+                />
+                <ProfileNavLink
+                  name={accountLabel(profile, user)}
+                  active={navIsActive(pathname, "/dashboard/settings")}
+                  href={withArchiveQuery("/dashboard/settings", archive)}
+                  onNavigate={() => setMobileMenuOpen(false)}
+                />
               </div>
             </aside>
           </div>

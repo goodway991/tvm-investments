@@ -13,7 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMIcon } from "@/components/TVMBrand";
-import { BogenTip } from "@/components/BogenProvider";
+import { BogenHit } from "@/components/BogenProvider";
 import { getClientFirestore } from "@/lib/firebase/client";
 import {
   formatWarningText,
@@ -108,21 +108,28 @@ export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
 
   return (
     <div ref={cardRef} className="relative">
-      <div className={`flex items-center gap-1.5 ${compact ? "justify-center" : ""}`}>
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+      <BogenHit
+        id="nav-maintenance"
+        compact={compact}
+        onDark
         className={`maintenance-nav-card rounded-2xl ${
           compact
-            ? "grid h-[52px] place-items-center px-2"
-            : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 text-left"
+            ? "h-[52px] justify-center px-2"
+            : "min-h-[52px] gap-3 px-3 py-2.5 text-left"
         }`}
-        title={open ? "Hide maintenance details" : "Show maintenance details"}
       >
-        <TVMIcon name="warning" size={18} />
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          className="absolute inset-0 z-0 rounded-2xl"
+          title={open ? "Hide maintenance details" : "Show maintenance details"}
+        />
+        <span className="pointer-events-none relative z-[1]">
+          <TVMIcon name="warning" size={18} />
+        </span>
         {!compact && (
-          <span className="min-w-0">
+          <span className="pointer-events-none relative z-[1] min-w-0">
             <span className="block text-sm font-semibold leading-tight">
               Maintenance
             </span>
@@ -133,7 +140,7 @@ export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
         )}
         {!compact && (
           <span
-            className={`text-[11px] font-semibold transition-transform ${
+            className={`pointer-events-none relative z-[1] ml-auto text-[11px] font-semibold transition-transform ${
               open ? "rotate-180" : ""
             }`}
             aria-hidden
@@ -141,13 +148,7 @@ export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
             ▾
           </span>
         )}
-      </button>
-      <BogenTip
-        id="nav-maintenance"
-        tone="onDark"
-        className="shrink-0"
-      />
-      </div>
+      </BogenHit>
       {open ? (
         <div
           className={`maintenance-nav-card z-40 rounded-2xl px-3 py-3 text-[12px] font-medium leading-relaxed ${

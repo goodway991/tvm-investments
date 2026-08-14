@@ -162,6 +162,35 @@ export function BogenTip({
   );
 }
 
+export function BogenHit({
+  id,
+  compact = false,
+  onDark = false,
+  fullWidth = true,
+  className,
+  children,
+}: {
+  id: BogenId;
+  compact?: boolean;
+  onDark?: boolean;
+  fullWidth?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`relative flex items-center ${fullWidth ? "w-full" : ""} ${className ?? ""}`}
+    >
+      {children}
+      <BogenTip
+        id={id}
+        tone={onDark ? "onDark" : "ink"}
+        className={`relative z-[2] shrink-0 ${compact ? "ml-1" : "ml-1.5"}`}
+      />
+    </div>
+  );
+}
+
 export function BogenHeading({
   id,
   children,
