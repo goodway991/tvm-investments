@@ -13,27 +13,29 @@ export const RELEASES: ReleaseNote[] = [
   {
     id: "beta-1",
     version: "Beta v1",
-    title: "Research desk",
-    date: "August 2026",
-    summary: "The first live desk: daily screens, a watchlist, and a private account.",
+    title: "We're live",
+    date: "August 12th, 2026",
+    summary:
+      "TVM Investments opens — weekday screens, a watchlist, and a private account for people who research their own names.",
     items: [
-      "Daily brief, movers, screener, and company notes on the weekday snapshot",
-      "Watchlist pulse, portfolio log, and Pro / Free plan limits",
-      "Virtual tour, Settings, and a maintenance lock that ADMIN can still enter",
+      "Daily Brief, movers, screener, and company notes after each weekday session",
+      "Watchlist pulse, a portfolio log, and Pro vs Free",
+      "A first-run tour and Settings so the account feels like yours",
     ],
   },
   {
     id: "beta-2",
     version: "Beta v2",
-    title: "Glass desk",
-    date: "August 2026",
-    summary: "Dark mode, a clearer watchlist, and a heads-up before downtime.",
+    title: "After dark",
+    date: "August 14th, 2026",
+    summary:
+      "Night mode lands. Frosted glass, a sharper watchlist, and a cleaner look from sign-in to Settings.",
     items: [
-      "Dark mode in Settings, with a deep navy desk and frosted glass cards",
-      "Watchlist picker is back: popular names in an Add / Added grid",
-      "Weekday scan covers about 1,500 liquid US names",
-      "Orange maintenance warning you can switch on from Firebase, with dates you type yourself",
-      "Accent color is blue throughout — navy in light mode, white in dark mode",
+      "Dark mode in Settings — near-black glass, bright type, blue where it counts",
+      "Watchlist is back as an Add / Added grid of household names",
+      "Weekday scan now covers about 1,500 liquid US names",
+      "A dismissible orange notice when scheduled downtime is coming",
+      "Blue throughout — navy in light, white in dark",
     ],
   },
 ];

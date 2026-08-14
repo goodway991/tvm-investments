@@ -21,17 +21,16 @@ export function WhatsNewModal() {
       header={
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-            {CURRENT_RELEASE.version}
+            {CURRENT_RELEASE.version} · {CURRENT_RELEASE.date}
           </p>
           <h2
             id="whats-new-title"
             className="mt-2 font-display text-3xl font-bold text-ink sm:text-4xl"
           >
-            What we added
+            {CURRENT_RELEASE.title}
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">
-            {CURRENT_RELEASE.summary} You can reopen every Beta note later in
-            Settings.
+            {CURRENT_RELEASE.summary} Every Beta note stays in Settings.
           </p>
         </div>
       }
@@ -42,7 +41,7 @@ export function WhatsNewModal() {
             onClick={() => void acknowledgeRelease()}
             className="glass-violet rounded-full px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
           >
-            Continue to the desk
+            Let’s go
           </button>
         </div>
       }

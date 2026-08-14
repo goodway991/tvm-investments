@@ -501,8 +501,8 @@ export function SettingsPanel() {
       <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Display appearance</p>
         <p className="mt-1">
-          Switch the desk between light and a glowy blue dark mode. The change
-          stays on this browser.
+          Switch between light and a glowy blue dark mode. The change stays on
+          this browser.
         </p>
         <label className="mt-3 block max-w-xs">
           <span className="sr-only">Display appearance</span>
@@ -539,8 +539,7 @@ export function SettingsPanel() {
       <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Virtual Tour</p>
         <p className="mt-1">
-          Replay the walkthrough of the desk — each feature in a window, with how
-          to use it.
+          Replay the walkthrough — each feature in a window, with how to use it.
         </p>
         <button
           type="button"
