@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export function Header({ dataMode, date }: HeaderProps) {
   return (
-    <header className="border-b border-white/10 bg-tvm-navy/80 backdrop-blur sticky top-0 z-50">
+    <header className="border-b border-white/10 bg-tvm-navy/80 backdrop-blur sticky top-[var(--site-notice,0px)] z-50">
       <div className="mx-auto max-w-7xl px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl text-tvm-gold tracking-tight">

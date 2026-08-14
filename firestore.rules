@@ -41,7 +41,11 @@ service cloud.firestore {
     //   averageCost: number, currentPrice: number, updatedAt: timestamp
     //
     // site/maintenance
-    //   enabled: bool — public read, Admin SDK / console write only
+    //   enabled: bool — lock the desk (Admin SDK / console write only)
+    //   warning: bool — orange top-of-site banner
+    //   start, end: strings shown in the banner (edit these for dates/times)
+    //   message: banner copy; use {start} and {end} as placeholders
+    //   public read, Admin SDK / console write only
     // ===============================================================
 
     function isAuthenticated() {
@@ -88,7 +92,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
           "uid", "email", "displayName", "createdAt", "updatedAt",
           "tosVersion", "tosAcceptedAt", "privacyAcceptedAt",
-          "firstName", "lastName", "tourCompletedAt"
+          "firstName", "lastName", "tourCompletedAt", "seenRelease"
         ])
         && data.keys().hasAll([
           "uid", "email", "displayName", "createdAt", "updatedAt"
@@ -124,6 +128,14 @@ service cloud.firestore {
         && (
           !data.keys().hasAny(["tourCompletedAt"])
           || data.tourCompletedAt is timestamp
+        )
+        && (
+          !data.keys().hasAny(["seenRelease"])
+          || (
+            data.seenRelease is string
+            && data.seenRelease.size() >= 1
+            && data.seenRelease.size() <= 32
+          )
         );
     }
 

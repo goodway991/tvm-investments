@@ -68,15 +68,15 @@ export function InvestmentCalculator({ defaultSymbol }: InvestmentCalculatorProp
 
   return (
     <div className="glass rounded-2xl p-6">
-      <h2 className="font-display text-2xl text-white mb-1">Hypothetical scenario calculator</h2>
-      <p className="text-slate-400 text-sm mb-6">
+      <h2 className="font-display text-2xl text-ink mb-1">Hypothetical scenario calculator</h2>
+      <p className="text-ink-soft text-sm mb-6">
         Illustrative math only — not a recommendation to buy or sell. You can lose
         money. Uses live market quotes when available.
       </p>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
         <label className="block">
-          <span className="text-xs text-slate-400">Stock Symbol</span>
+          <span className="text-xs text-ink-soft">Stock Symbol</span>
           <input
             value={symbol}
             onChange={(e) => setSymbol(e.target.value.toUpperCase())}
@@ -84,7 +84,7 @@ export function InvestmentCalculator({ defaultSymbol }: InvestmentCalculatorProp
           />
         </label>
         <label className="block">
-          <span className="text-xs text-slate-400">Investment (USD)</span>
+          <span className="text-xs text-ink-soft">Investment (USD)</span>
           <input
             type="number"
             value={amount}
@@ -137,19 +137,19 @@ export function InvestmentCalculator({ defaultSymbol }: InvestmentCalculatorProp
         <div className="rounded-xl border border-white/10 overflow-hidden">
           <div className="bg-white/[0.03] px-4 py-3 flex flex-wrap gap-4 text-sm">
             <span>
-              <strong className="text-white">{result.symbol}</strong> @ ${result.currentPrice.toFixed(2)}
+              <strong className="text-ink">{result.symbol}</strong> @ ${result.currentPrice.toFixed(2)}
             </span>
             <span className={result.changePercent >= 0 ? "text-gain" : "text-loss"}>
               {result.changePercent >= 0 ? "+" : ""}
               {result.changePercent.toFixed(2)}% today
             </span>
-            <span className="text-slate-400">
+            <span className="text-ink-soft">
               {result.shares.toFixed(4)} shares for ${result.amountUsd.toFixed(2)}
             </span>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-slate-400 border-b border-white/10">
+              <tr className="text-left text-ink-soft border-b border-white/10">
                 <th className="px-4 py-3">Scenario</th>
                 <th className="px-4 py-3 text-right">Price</th>
                 <th className="px-4 py-3 text-right">Portfolio Value</th>
@@ -161,7 +161,7 @@ export function InvestmentCalculator({ defaultSymbol }: InvestmentCalculatorProp
                 .sort((a, b) => a.percent - b.percent)
                 .map((s) => (
                   <tr key={s.percent} className="border-b border-white/5">
-                    <td className="px-4 py-3 text-white">
+                    <td className="px-4 py-3 text-ink">
                       {s.percent > 0 ? "+" : ""}
                       {s.percent}%
                     </td>

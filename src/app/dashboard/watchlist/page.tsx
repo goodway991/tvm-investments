@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { WatchlistPanel } from "@/components/WatchlistPanel";
 import { uniqueStocks } from "@/lib/chart-series";
-import { YAHOO_SCAN_UNIVERSE } from "@/lib/watchlist-symbols";
+import { POPULAR_WATCHLIST } from "@/lib/watchlist-symbols";
 import { getDashboardSnapshot } from "@/lib/snapshot";
 
 export const metadata: Metadata = {
@@ -15,21 +15,21 @@ export default async function WatchlistPage({
 }) {
   const { q, archive } = await searchParams;
   const snapshot = await getDashboardSnapshot(archive);
-  const stocks = new Map<string, { symbol: string; name: string }>();
-  snapshot.screenedStocks.forEach((stock) => {
-    stocks.set(stock.symbol, { symbol: stock.symbol, name: stock.name });
-  });
+  const names = new Map<string, string>();
+  snapshot.screenedStocks.forEach((stock) => names.set(stock.symbol, stock.name));
   [...snapshot.topMovers, ...snapshot.topPicks].forEach((stock) => {
-    stocks.set(stock.symbol, { symbol: stock.symbol, name: stock.name });
+    names.set(stock.symbol, stock.name);
   });
-  YAHOO_SCAN_UNIVERSE.forEach((symbol) => {
-    if (!stocks.has(symbol)) stocks.set(symbol, { symbol, name: symbol });
-  });
+
+  const stocks = POPULAR_WATCHLIST.map((stock) => ({
+    symbol: stock.symbol,
+    name: names.get(stock.symbol) ?? stock.name,
+  }));
 
   return (
     <div className="dashboard-research">
       <WatchlistPanel
-        stocks={Array.from(stocks.values())}
+        stocks={stocks}
         quoted={uniqueStocks([...snapshot.topMovers, ...snapshot.topPicks])}
         screened={snapshot.screenedStocks}
         reports={snapshot.reports}

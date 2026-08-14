@@ -130,7 +130,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center bg-[#f7f8fc]">
+      <div className="grid min-h-screen place-items-center bg-surface">
         <div className="glass-strong rounded-[24px] px-8 py-6 text-center">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet/20 border-t-violet" />
           <p className="mt-3 text-sm text-ink-soft">Loading your TVM account…</p>
@@ -141,7 +141,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return (
-      <div className="grid min-h-screen place-items-center bg-[#f7f8fc] px-5">
+      <div className="grid min-h-screen place-items-center bg-surface px-5">
         <div className="glass-strong max-w-md rounded-[28px] p-8 text-center">
           <TVMBrand />
           <h1 className="mt-6 font-display text-3xl font-bold text-ink">
@@ -168,12 +168,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f7f8fc]">
+    <div className="flex min-h-screen bg-surface">
       {sidebarMode === "hidden" && (
         <button
           type="button"
           onClick={cycleSidebar}
-          className="glass fixed left-4 top-4 z-30 hidden h-11 w-11 place-items-center rounded-full text-violet lg:grid"
+          className="glass fixed left-4 top-[calc(1rem+var(--site-notice,0px))] z-30 hidden h-11 w-11 place-items-center rounded-full text-violet lg:grid"
           aria-label="Open dashboard menu"
         >
           <TVMIcon name="menu" />
@@ -181,7 +181,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       )}
 
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col bg-white transition-all duration-500 lg:flex ${
+        className={`sticky top-[var(--site-notice,0px)] hidden h-[calc(100vh-var(--site-notice,0px))] shrink-0 flex-col bg-chrome transition-all duration-500 lg:flex ${
           sidebarMode === "expanded"
             ? "w-[260px] overflow-y-auto border-r border-ink/[0.06] px-6 py-7"
             : sidebarMode === "collapsed"
@@ -268,7 +268,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-ink/[0.06] bg-white/90 px-5 py-3 backdrop-blur lg:hidden">
+        <div className="sticky top-[var(--site-notice,0px)] z-20 flex items-center justify-between border-b border-ink/[0.06] bg-white/90 px-5 py-3 backdrop-blur lg:hidden">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}

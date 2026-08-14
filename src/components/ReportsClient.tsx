@@ -70,7 +70,7 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
                 <div className="grid gap-4 sm:grid-cols-3">
                   {["1-Day Avg Return", "1-Week Avg Return", "1-Month Avg Return"].map(
                     (label) => (
-                      <div key={label} className="rounded-2xl bg-[#f7f8fc] p-4">
+                      <div key={label} className="rounded-2xl bg-surface p-4">
                         <p className="text-xs text-ink-soft">{label}</p>
                         <p className="mt-1 font-display text-2xl font-bold text-ink">—</p>
                       </div>

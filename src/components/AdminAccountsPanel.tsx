@@ -163,7 +163,7 @@ export function AdminAccountsPanel() {
             return (
               <div
                 key={row.uid}
-                className={`rounded-2xl bg-[#f7f8fc] p-4 ${paid ? "paid-pro-glow" : ""}`}
+                className={`rounded-2xl bg-surface p-4 ${paid ? "paid-pro-glow" : ""}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>

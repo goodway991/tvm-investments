@@ -37,6 +37,9 @@ service-account.json
 # local Yahoo snapshot cache when Firebase Admin is not configured
 .data/
 
+# trailer experiments stay local
+trailer/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

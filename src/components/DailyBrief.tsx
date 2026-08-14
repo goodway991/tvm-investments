@@ -19,8 +19,8 @@ export function DailyBrief({ snapshot }: { snapshot: DailySnapshot }) {
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold text-ink">Daily Brief</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-          Headlines and sector dives rebuilt from this session&apos;s scan — not a
-          leftover from a prior day.
+        Headlines and sector dives rebuilt from this session&apos;s scan of about
+        1,500 liquid US names — not a leftover from a prior day.
         </p>
       </div>
       <div className="grid gap-8 lg:grid-cols-2">

@@ -92,8 +92,8 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
     <div className="glass rounded-2xl p-6">
       <h2 className="font-display text-2xl text-ink mb-1">Stock Filter</h2>
       <p className="text-ink-soft text-sm mb-6">
-        Filter today&apos;s scored scan by P/E, Beta, Volume, EPS, and Market Cap.
-        Use Watchlist search to add any listed name — scores here only cover the daily scan.
+        Filter today&apos;s scored scan of about 1,500 liquid US names by P/E,
+        Beta, Volume, EPS, and Market Cap.
       </p>
 
       <label className="mb-5 block">
@@ -101,7 +101,7 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
         <input
           value={find}
           onChange={(event) => setFind(event.target.value)}
-          placeholder="Find a ticker in today’s scan…"
+          placeholder="Find a ticker in today’s 1,500-name scan…"
           className="field w-full rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-ink-soft/50"
         />
       </label>

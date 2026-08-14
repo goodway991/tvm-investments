@@ -236,7 +236,7 @@ async function runLiveAnalysis(useLLM: boolean): Promise<DailySnapshot> {
     marketEvents,
     sectorDives,
     techSectorAnalysis,
-    methodologyNote: `${METHODOLOGY_NOTE} Live snapshots scan the S&P 500, Dow 30, and other liquid US names after the weekday close. The daily brief and sector deep dives are rewritten from that session’s closes and headlines.`,
+    methodologyNote: `${METHODOLOGY_NOTE} Live snapshots scan about 1,500 liquid US names after the weekday close, including the S&P 500 and Dow 30. The daily brief and sector deep dives are rewritten from that session’s closes and headlines.`,
     disclaimer: DISCLAIMER,
   };
 }

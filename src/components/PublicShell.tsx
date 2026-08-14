@@ -25,7 +25,7 @@ const workspaceLinks = [
 
 function LandingAuthBar() {
   return (
-    <header className="sticky top-0 z-30 px-4 pb-2 pt-4">
+    <header className="sticky top-[var(--site-notice,0px)] z-30 px-4 pb-2 pt-4">
       <div className="glass mx-auto flex w-[min(1180px,100%)] items-center gap-3 rounded-full py-2.5 pl-4 pr-2.5">
         <Link href="/" className="shrink-0" aria-label="TVM Investments home">
           <TVMBrand />
@@ -92,7 +92,7 @@ export function PublicShell({
 
   return (
     <div className="min-h-screen">
-      <header className="fixed left-1/2 top-4 z-30 w-[min(1180px,calc(100%-2rem))] -translate-x-1/2">
+      <header className="fixed left-1/2 top-[calc(1rem+var(--site-notice,0px))] z-30 w-[min(1180px,calc(100%-2rem))] -translate-x-1/2">
         <div className="glass flex items-center gap-4 rounded-full py-2.5 pl-3 pr-3">
           <button
             type="button"
@@ -150,7 +150,7 @@ export function PublicShell({
         className="fixed inset-0 z-40 cursor-default transition-all duration-500"
         style={{
           backdropFilter: menuOpen ? "blur(6px)" : "blur(0px)",
-          background: menuOpen ? "rgba(40, 32, 90, 0.12)" : "rgba(40, 32, 90, 0)",
+          background: menuOpen ? "rgba(18, 32, 60, 0.12)" : "rgba(18, 32, 60, 0)",
           pointerEvents: menuOpen ? "auto" : "none",
         }}
         onClick={() => setMenuOpen(false)}
@@ -159,7 +159,7 @@ export function PublicShell({
       />
 
       <aside
-        className="glass-strong fixed bottom-4 left-4 top-4 z-50 flex w-[300px] max-w-[82vw] flex-col rounded-[28px] p-6"
+        className="glass-strong fixed bottom-4 left-4 top-[calc(1rem+var(--site-notice,0px))] z-50 flex w-[300px] max-w-[82vw] flex-col rounded-[28px] p-6"
         style={{
           transform: menuOpen ? "translateX(0) scale(1)" : "translateX(-118%) scale(.96)",
           opacity: menuOpen ? 1 : 0,

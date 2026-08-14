@@ -19,6 +19,19 @@ import {
   type ChartRange,
 } from "@/lib/chart-series";
 
+function useDarkDesk() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => setDark(root.classList.contains("dark"));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return dark;
+}
+
 export function TimeSeriesChart({
   data,
   height = 180,
@@ -31,6 +44,10 @@ export function TimeSeriesChart({
   rangeLabel?: string;
 }) {
   const gradientId = `pulseFill-${useId().replace(/:/g, "")}`;
+  const dark = useDarkDesk();
+  const tick = dark ? "#d2dcf0" : "#51607a";
+  const grid = dark ? "rgba(255,255,255,0.12)" : "#ece9f6";
+  const axis = dark ? "rgba(255,255,255,0.16)" : "#e4e0f0";
   const drawKey = useChartDrawKey(
     `${data[0]?.label}-${data[data.length - 1]?.label}-${data.length}`,
   );
@@ -56,19 +73,19 @@ export function TimeSeriesChart({
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="#ece9f6" vertical={false} />
+          <CartesianGrid stroke={grid} vertical={false} />
           <XAxis
             dataKey="label"
-            tick={{ fill: "#51607a", fontSize: 11 }}
+            tick={{ fill: tick, fontSize: 11 }}
             tickLine={false}
-            axisLine={{ stroke: "#e4e0f0" }}
+            axisLine={{ stroke: axis }}
             interval="preserveStartEnd"
             minTickGap={18}
           />
           <YAxis
             domain={["auto", "auto"]}
             width={58}
-            tick={{ fill: "#51607a", fontSize: 11 }}
+            tick={{ fill: tick, fontSize: 11 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(value: number) => formatPrice(value)}
@@ -77,9 +94,11 @@ export function TimeSeriesChart({
             formatter={(value) => [formatPrice(Number(value)), "Price"]}
             labelFormatter={(label) => (rangeLabel ? `${rangeLabel} · ${label}` : String(label))}
             contentStyle={{
-              color: "#12203c",
-              background: "#ffffff",
-              border: "1px solid rgba(120,108,200,.18)",
+              color: dark ? "#f4f7ff" : "#12203c",
+              background: dark ? "#2a3a58" : "#ffffff",
+              border: dark
+                ? "1px solid rgba(158,196,255,.28)"
+                : "1px solid rgba(37,99,235,.18)",
               borderRadius: 12,
               boxShadow: "0 14px 34px -20px rgba(30,70,160,.3)",
             }}

@@ -1,19 +1,24 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
-        ink: "#12203c",
-        "ink-soft": "#51607a",
-        violet: "#2f62ff",
+        background: "rgb(var(--background) / <alpha-value>)",
+        foreground: "rgb(var(--foreground) / <alpha-value>)",
+        surface: "rgb(var(--surface) / <alpha-value>)",
+        chrome: "rgb(var(--chrome) / <alpha-value>)",
+        ink: "rgb(var(--ink) / <alpha-value>)",
+        "ink-soft": "rgb(var(--ink-soft) / <alpha-value>)",
+        violet: "rgb(var(--violet) / <alpha-value>)",
         coral: "#f47174",
         tvm: {
-          navy: "#12203c",
-          slate: "#51607a",
-          gold: "#2f62ff",
-          accent: "#2f62ff",
+          navy: "rgb(var(--ink) / <alpha-value>)",
+          slate: "rgb(var(--ink-soft) / <alpha-value>)",
+          gold: "rgb(var(--violet) / <alpha-value>)",
+          accent: "rgb(var(--violet) / <alpha-value>)",
           gain: "#059669",
           loss: "#e2555a",
         },

@@ -30,7 +30,7 @@ const LIGHT = {
   axis: "#e4e0f0",
   tooltipBg: "#ffffff",
   tooltipColor: "#12203c",
-  tooltipBorder: "1px solid rgba(120,108,200,.18)",
+  tooltipBorder: "1px solid rgba(37,99,235,.18)",
   ref: "rgba(81, 96, 122, 0.35)",
 };
 

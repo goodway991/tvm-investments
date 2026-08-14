@@ -14,7 +14,7 @@ export function Methodology() {
         {strategies.map(([id, name], i) => (
           <div
             key={id}
-            className="rounded-xl border border-ink/[0.08] bg-[#f7f8fc] p-4"
+            className="rounded-xl border border-ink/[0.08] bg-surface p-4"
           >
             <span className="text-violet text-xs font-semibold">#{i + 1}</span>
             <p className="mt-1 text-sm font-semibold text-ink">{name}</p>

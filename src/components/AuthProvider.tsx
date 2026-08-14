@@ -40,6 +40,7 @@ import {
   readSignupName,
 } from "@/lib/person-name";
 import { parseTicker } from "@/lib/ticker";
+import { CURRENT_RELEASE_ID } from "@/lib/release-notes";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
@@ -53,6 +54,7 @@ export interface AccountProfile {
   lastName: string;
   createdAt: Date | null;
   tourCompletedAt: Date | null;
+  seenRelease: string;
 }
 
 export interface AccountEntitlement {
@@ -92,9 +94,11 @@ interface AuthContextValue {
   error: string;
   giftPending: boolean;
   tourPending: boolean;
+  releasePending: boolean;
   logout: () => Promise<void>;
   acknowledgeGift: () => Promise<void>;
   completeTour: () => Promise<void>;
+  acknowledgeRelease: () => Promise<void>;
   updateDisplayName: (firstName: string, lastName: string) => Promise<void>;
   updateWatchlist: (symbols: string[]) => Promise<void>;
   updatePortfolio: (cash: number, totalValue: number) => Promise<void>;
@@ -168,6 +172,26 @@ function writeTourSeen(uid: string) {
   }
 }
 
+function releaseSeenKey(uid: string) {
+  return `tvm-release-seen:${uid}`;
+}
+
+function readReleaseSeen(uid: string) {
+  try {
+    return window.localStorage.getItem(releaseSeenKey(uid)) || "";
+  } catch {
+    return "";
+  }
+}
+
+function writeReleaseSeen(uid: string, releaseId: string) {
+  try {
+    window.localStorage.setItem(releaseSeenKey(uid), releaseId);
+  } catch {
+    /* private mode */
+  }
+}
+
 function grantIdFrom(data: DocumentData) {
   const gifted = asDate(data.giftedAt);
   if (gifted) return String(gifted.getTime());
@@ -183,6 +207,7 @@ function profileFrom(data: DocumentData): AccountProfile {
     lastName: String(data.lastName || ""),
     createdAt: asDate(data.createdAt),
     tourCompletedAt: asDate(data.tourCompletedAt),
+    seenRelease: typeof data.seenRelease === "string" ? data.seenRelease : "",
   };
 }
 
@@ -276,6 +301,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [giftPending, setGiftPending] = useState(false);
   const [giftGrantId, setGiftGrantId] = useState("comp");
   const [tourPending, setTourPending] = useState(false);
+  const [releasePending, setReleasePending] = useState(false);
 
   useEffect(() => {
     const auth = getClientAuth();
@@ -307,6 +333,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setGiftPending(false);
         setGiftGrantId("comp");
         setTourPending(false);
+        setReleasePending(false);
         setLoading(false);
         return;
       }
@@ -323,11 +350,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setProfile(profileFrom(data));
             const roleIsAdmin =
               nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-            setTourPending(
+            const tourIsPending =
               !roleIsAdmin &&
-                !asDate(data.tourCompletedAt) &&
-                !readTourSeen(nextUser.uid),
-            );
+              !asDate(data.tourCompletedAt) &&
+              !readTourSeen(nextUser.uid);
+            setTourPending(tourIsPending);
+            const seen =
+              (typeof data.seenRelease === "string" && data.seenRelease) ||
+              readReleaseSeen(nextUser.uid);
+            setReleasePending(!tourIsPending && seen !== CURRENT_RELEASE_ID);
           }),
           onSnapshot(doc(db, "entitlements", nextUser.uid), (snapshot) => {
             if (!snapshot.exists()) return;
@@ -458,15 +489,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const db = getClientFirestore();
     if (!user) return;
     writeTourSeen(user.uid);
+    writeReleaseSeen(user.uid, CURRENT_RELEASE_ID);
     setTourPending(false);
+    setReleasePending(false);
     if (!db) return;
     try {
       await updateDoc(doc(db, "users", user.uid), {
         tourCompletedAt: serverTimestamp(),
+        seenRelease: CURRENT_RELEASE_ID,
         updatedAt: serverTimestamp(),
       });
     } catch (tourError) {
       console.error(tourError);
+    }
+  }, [user]);
+
+  const acknowledgeRelease = useCallback(async () => {
+    const db = getClientFirestore();
+    if (!user) return;
+    writeReleaseSeen(user.uid, CURRENT_RELEASE_ID);
+    setReleasePending(false);
+    if (!db) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        seenRelease: CURRENT_RELEASE_ID,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (releaseError) {
+      console.error(releaseError);
     }
   }, [user]);
 
@@ -621,9 +671,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       error,
       giftPending,
       tourPending,
+      releasePending,
       logout,
       acknowledgeGift,
       completeTour,
+      acknowledgeRelease,
       updateDisplayName,
       updateWatchlist,
       updatePortfolio,
@@ -635,10 +687,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       error,
       giftPending,
       tourPending,
+      releasePending,
       loading,
       logout,
       acknowledgeGift,
       completeTour,
+      acknowledgeRelease,
       updateDisplayName,
       portfolio,
       positions,

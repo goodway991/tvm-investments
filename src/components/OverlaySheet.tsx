@@ -77,10 +77,10 @@ export function OverlaySheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className={`fixed inset-0 ${zIndexClass} flex flex-col overflow-hidden bg-[#f7f8fc]`}
+        className={`fixed inset-0 ${zIndexClass} flex flex-col overflow-hidden bg-surface`}
         style={{ inset: 0, width: "100%", height: "100svh", maxHeight: "100svh" }}
       >
-        <div className="shrink-0 border-b border-ink/[0.08] bg-[#f7f8fc] px-4 py-3 sm:px-6">
+        <div className="shrink-0 border-b border-ink/[0.08] bg-surface px-4 py-3 sm:px-6">
           {header}
         </div>
         <div
@@ -90,7 +90,7 @@ export function OverlaySheet({
           <div className="mx-auto w-full max-w-3xl pb-10">{children}</div>
         </div>
         {footer ? (
-          <div className="shrink-0 border-t border-ink/[0.08] bg-[#f7f8fc] px-4 py-3 sm:px-6">
+          <div className="shrink-0 border-t border-ink/[0.08] bg-surface px-4 py-3 sm:px-6">
             {footer}
           </div>
         ) : null}

@@ -444,7 +444,7 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
           </div>
 
           {watchSymbols.length === 0 ? (
-            <p className="rounded-2xl bg-[#f7f8fc] px-4 py-3 text-sm text-ink-soft">
+            <p className="rounded-2xl bg-surface px-4 py-3 text-sm text-ink-soft">
               Add names on{" "}
               <Link href="/dashboard/watchlist" className="font-semibold text-violet">
                 Watchlist
@@ -463,7 +463,7 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
                     className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
                       active
                         ? "bg-violet text-white"
-                        : "bg-[#f7f8fc] text-ink hover:bg-violet/10"
+                        : "bg-surface text-ink hover:bg-violet/10"
                     }`}
                   >
                     {symbol}
@@ -473,7 +473,7 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
             </div>
           )}
 
-          <div className="rounded-2xl bg-[#f7f8fc] p-4">
+          <div className="rounded-2xl bg-surface p-4">
             <p className="text-sm font-semibold text-ink">
               {selected} · {quoteName}
             </p>
@@ -539,7 +539,7 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
                   return (
                     <li
                       key={position.symbol}
-                      className="flex items-center justify-between gap-3 rounded-2xl bg-[#f7f8fc] px-3 py-2.5"
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-surface px-3 py-2.5"
                     >
                       <button
                         type="button"

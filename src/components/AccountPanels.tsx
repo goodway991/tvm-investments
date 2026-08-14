@@ -5,8 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMIcon } from "@/components/TVMBrand";
+import { useTheme, type Appearance } from "@/components/ThemeProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
+import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -148,7 +150,7 @@ export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
-        <div className="rounded-2xl bg-[#f7f8fc] p-4">
+        <div className="rounded-2xl bg-surface p-4">
           <label className="text-sm font-semibold text-ink" htmlFor="portfolio-cash">
             Cash balance
           </label>
@@ -173,7 +175,7 @@ export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-[#f7f8fc] p-4">
+        <div className="rounded-2xl bg-surface p-4">
           <p className="text-sm font-semibold text-ink">Add or update a position</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-4">
             <select
@@ -282,6 +284,54 @@ export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   );
 }
 
+function VersionCard({
+  release,
+  current,
+}: {
+  release: (typeof RELEASES)[number];
+  current: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="glass overflow-hidden rounded-2xl">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left"
+      >
+        <span>
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="font-display text-sm font-bold text-ink">
+              {release.version}
+            </span>
+            {current ? (
+              <span className="rounded-full bg-violet/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-violet">
+                Current
+              </span>
+            ) : null}
+          </span>
+          <span className="mt-0.5 block text-xs text-ink-soft">
+            {release.title} · {release.date}
+          </span>
+        </span>
+        <span className="text-xs font-semibold text-violet">
+          {open ? "Close" : "Open"}
+        </span>
+      </button>
+      {open ? (
+        <div className="border-t border-ink/[0.06] px-4 py-3">
+          <p className="text-sm text-ink">{release.summary}</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+            {release.items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function SettingsPanel() {
   const {
     user,
@@ -294,6 +344,7 @@ export function SettingsPanel() {
   } = useAuth();
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
+  const { appearance, setAppearance } = useTheme();
   const [loggingOut, setLoggingOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -413,19 +464,19 @@ export function SettingsPanel() {
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl bg-[#f7f8fc] p-4">
+        <div className="rounded-2xl bg-surface p-4">
           <p className="text-xs text-ink-soft">Watched stocks</p>
           <p className="mt-1 font-display text-2xl font-bold text-ink">
             {watchlist.symbols.length}
           </p>
         </div>
-        <div className="rounded-2xl bg-[#f7f8fc] p-4">
+        <div className="rounded-2xl bg-surface p-4">
           <p className="text-xs text-ink-soft">Portfolio positions</p>
           <p className="mt-1 font-display text-2xl font-bold text-ink">
             {positions.length}
           </p>
         </div>
-        <div className="rounded-2xl bg-[#f7f8fc] p-4">
+        <div className="rounded-2xl bg-surface p-4">
           <p className="text-xs text-ink-soft">Watchlist limit</p>
           <p className="mt-1 font-display text-2xl font-bold text-ink">
             {entitlement.watchlistLimit}
@@ -433,7 +484,7 @@ export function SettingsPanel() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl bg-[#f7f8fc] p-4 text-sm leading-relaxed text-ink-soft">
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Plan</p>
         <p className="mt-1">
           You are on <span className="font-semibold capitalize text-ink">{entitlement.plan}</span>.
@@ -447,7 +498,45 @@ export function SettingsPanel() {
         </button>
       </div>
 
-      <div className="mt-6 rounded-2xl bg-[#f7f8fc] p-4 text-sm leading-relaxed text-ink-soft">
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="font-semibold text-ink">Display appearance</p>
+        <p className="mt-1">
+          Switch the desk between light and a glowy blue dark mode. The change
+          stays on this browser.
+        </p>
+        <label className="mt-3 block max-w-xs">
+          <span className="sr-only">Display appearance</span>
+          <select
+            value={appearance}
+            onChange={(event) =>
+              setAppearance(event.target.value as Appearance)
+            }
+            className="field w-full appearance-none rounded-2xl px-4 py-3 text-sm font-semibold text-ink"
+          >
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="system">Match system</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="font-semibold text-ink">Version history</p>
+        <p className="mt-1">
+          TVM Investments is in Beta. Open a version to read what landed.
+        </p>
+        <div className="mt-3 space-y-2">
+          {[...RELEASES].reverse().map((release) => (
+            <VersionCard
+              key={release.id}
+              release={release}
+              current={release.id === CURRENT_RELEASE_ID}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Virtual Tour</p>
         <p className="mt-1">
           Replay the walkthrough of the desk — each feature in a window, with how
@@ -462,7 +551,7 @@ export function SettingsPanel() {
         </button>
       </div>
 
-      <div className="mt-6 rounded-2xl bg-[#f7f8fc] p-4 text-sm leading-relaxed text-ink-soft">
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Legal &amp; privacy</p>
         <p className="mt-1">
           Your account, watchlist, and portfolio are private to you. Passwords are

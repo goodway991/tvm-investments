@@ -119,8 +119,8 @@ export function LandingPage() {
                           height: `${height}%`,
                           background:
                             index === 6
-                              ? "linear-gradient(#2f62ff, #3f6bff)"
-                              : "linear-gradient(rgba(47,98,255,.35), rgba(47,98,255,.12))",
+                              ? "linear-gradient(#2563eb, #3b82f6)"
+                              : "linear-gradient(rgba(37,99,235,.35), rgba(37,99,235,.12))",
                         }}
                       />
                     </div>

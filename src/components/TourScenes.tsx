@@ -81,7 +81,7 @@ function BriefScene() {
           (line, index) => (
             <div
               key={line}
-              className="tour-slide-right rounded-xl bg-[#f7f8fc] px-3 py-2 text-xs text-ink-soft"
+              className="tour-slide-right rounded-xl bg-surface px-3 py-2 text-xs text-ink-soft"
               style={{ animationDelay: `${0.12 * (index + 1)}s` }}
             >
               {line}
@@ -175,7 +175,7 @@ function PortfolioScene() {
           <p className="mt-1 font-display text-3xl font-bold text-ink">$0.00</p>
           <p className="mt-1 text-xs text-ink-soft">New accounts start at zero</p>
         </div>
-        <div className="tour-pop rounded-xl bg-[#f7f8fc] px-3 py-2 text-xs text-ink-soft" style={{ animationDelay: "0.16s" }}>
+        <div className="tour-pop rounded-xl bg-surface px-3 py-2 text-xs text-ink-soft" style={{ animationDelay: "0.16s" }}>
           Add cash and positions you want to follow.
         </div>
       </div>

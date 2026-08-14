@@ -68,7 +68,8 @@ export function MoversTable({ movers }: MoversTableProps) {
         Top {isPro ? Math.min(ranked.length, PRO_MOVER_LIMIT) : FREE_MOVER_LIMIT} Price Movers
       </h2>
       <p className="text-ink-soft text-sm mb-6">
-        Largest moves versus the previous close across the scanned S&amp;P 500 and Dow names.
+        Largest moves versus the previous close across the daily scan of about
+        1,500 liquid US names.
         {isPro ? " Pro shows the top 20." : " Free shows the top 10."}
       </p>
       <MoverRows movers={visible} />

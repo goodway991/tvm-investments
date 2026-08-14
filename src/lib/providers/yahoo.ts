@@ -1,11 +1,11 @@
 import YahooFinance from "yahoo-finance2";
 import type { ChartPoint, ChartRange } from "@/lib/chart-series";
 import type { MarketEvent, NewsHeadline, OHLCVBar, StockCandidate } from "@/types";
-import { YAHOO_SCAN_UNIVERSE } from "@/lib/watchlist-symbols";
-import { fetchNasdaqQuoteMap, type NasdaqQuote } from "@/lib/providers/nasdaq";
+import { YAHOO_SCAN_UNIVERSE, SCAN_UNIVERSE_LIMIT } from "@/lib/watchlist-symbols";
+import { fetchNasdaqScreener, type NasdaqQuote } from "@/lib/providers/nasdaq";
 import { sectorNewsSymbols } from "@/lib/sector-dives";
 
-export { YAHOO_SCAN_UNIVERSE, WATCHLIST_ALLOWED_SYMBOLS, WATCHLIST_EXTRA_SYMBOLS } from "@/lib/watchlist-symbols";
+export { YAHOO_SCAN_UNIVERSE, WATCHLIST_ALLOWED_SYMBOLS, WATCHLIST_EXTRA_SYMBOLS, SCAN_UNIVERSE_LIMIT, POPULAR_WATCHLIST_SYMBOLS } from "@/lib/watchlist-symbols";
 
 let yahooClient: InstanceType<typeof YahooFinance> | null = null;
 
@@ -526,20 +526,35 @@ export async function fetchYahooChartSeries(
 }
 
 export async function fetchYahooUniverse(): Promise<StockCandidate[]> {
-  const nasdaqMap = await fetchNasdaqQuoteMap(1500);
-  const extraLiquid = [...nasdaqMap.values()]
-    .filter((row) => (row.marketCap ?? 0) >= 8_000_000_000)
-    .map((row) => row.symbol);
-  const symbols = Array.from(
-    new Set([...YAHOO_SCAN_UNIVERSE, ...extraLiquid]),
-  ).sort();
+  let nasdaqRows: NasdaqQuote[] = [];
+  try {
+    nasdaqRows = await fetchNasdaqScreener(SCAN_UNIVERSE_LIMIT);
+  } catch (error) {
+    console.warn("NASDAQ screener unavailable for universe:", error);
+  }
+  const nasdaqMap = new Map(nasdaqRows.map((row) => [row.symbol, row]));
+  const symbols: string[] = [];
+  const seen = new Set<string>();
+
+  function addSymbol(symbol: string) {
+    if (seen.has(symbol) || symbols.length >= SCAN_UNIVERSE_LIMIT) return;
+    seen.add(symbol);
+    symbols.push(symbol);
+  }
+
+  for (const row of nasdaqRows) addSymbol(row.symbol);
+  for (const symbol of YAHOO_SCAN_UNIVERSE) addSymbol(symbol);
+
+  if (symbols.length === 0) {
+    YAHOO_SCAN_UNIVERSE.forEach(addSymbol);
+  }
 
   const quotes = await fetchYahooQuotesBatch(symbols);
   const bars = new Array<{ ohlcv: OHLCVBar[]; yearCloses: OHLCVBar[] } | null>(
     symbols.length,
   ).fill(null);
   let cursor = 0;
-  const workers = 8;
+  const workers = 16;
 
   async function worker() {
     while (cursor < symbols.length) {
@@ -550,7 +565,7 @@ export async function fetchYahooUniverse(): Promise<StockCandidate[]> {
       } catch (error) {
         console.warn(`Skipping ${symbol} chart:`, error);
       }
-      await sleep(20);
+      await sleep(8);
     }
   }
 
