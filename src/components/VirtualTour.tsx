@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { LoopMotion } from "@/components/LoopMotion";
 import { TourScene } from "@/components/TourScenes";
 import { TOUR_SLIDES } from "@/lib/virtual-tour";
 
@@ -83,9 +84,9 @@ export function VirtualTour({
           ) : null}
         </div>
 
-        <div className="tour-stage" key={slide.id}>
+        <LoopMotion className="tour-stage" key={slide.id}>
           <TourScene id={slide.id} />
-        </div>
+        </LoopMotion>
 
         <p className="mx-auto max-w-md text-center text-sm leading-relaxed text-ink-soft">
           {slide.how}

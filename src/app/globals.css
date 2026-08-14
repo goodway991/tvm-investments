@@ -1750,6 +1750,171 @@ html.dark .plan-current-pane {
   }
 }
 
+.wn-events-stage {
+  min-height: 268px;
+}
+
+.wn-events-cursor {
+  position: absolute;
+  z-index: 6;
+  width: 18px;
+  height: 22px;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(18, 32, 60, 0.28));
+  animation: wn-events-cursor 5.6s ease-in-out infinite;
+}
+
+.wn-event-hit {
+  animation: wn-events-press 5.6s ease-in-out infinite;
+}
+
+.wn-event-more {
+  animation: wn-events-more 5.6s ease-in-out infinite;
+}
+
+.wn-event-hint {
+  animation: wn-events-hint 5.6s ease-in-out infinite;
+}
+
+.wn-event-extra {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  animation: wn-events-expand 5.6s ease-in-out infinite;
+}
+
+.wn-event-extra > * {
+  overflow: hidden;
+}
+
+.wn-event-more,
+.wn-event-close {
+  display: inline-block;
+}
+
+.wn-event-close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  opacity: 0;
+  animation: wn-events-close 5.6s ease-in-out infinite;
+}
+
+@keyframes wn-events-cursor {
+  0%,
+  8% {
+    top: 74%;
+    left: 84%;
+    transform: scale(1);
+  }
+  22% {
+    top: 13%;
+    left: 86%;
+    transform: scale(1);
+  }
+  26% {
+    top: 13%;
+    left: 86%;
+    transform: scale(0.82);
+  }
+  32%,
+  78% {
+    top: 13%;
+    left: 86%;
+    transform: scale(1);
+  }
+  90%,
+  100% {
+    top: 74%;
+    left: 84%;
+    transform: scale(1);
+  }
+}
+
+@keyframes wn-events-press {
+  0%,
+  22%,
+  34%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 12px 24px -18px rgba(30, 70, 160, 0.4);
+  }
+  26%,
+  30% {
+    transform: scale(0.985);
+    box-shadow: 0 0 0 2px rgba(47, 98, 255, 0.4);
+  }
+}
+
+@keyframes wn-events-expand {
+  0%,
+  24%,
+  82%,
+  100% {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+  32%,
+  74% {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+@keyframes wn-events-close {
+  0%,
+  24%,
+  82%,
+  100% {
+    opacity: 0;
+  }
+  32%,
+  74% {
+    opacity: 1;
+  }
+}
+
+@keyframes wn-events-more {
+  0%,
+  24%,
+  82%,
+  100% {
+    opacity: 1;
+  }
+  32%,
+  74% {
+    opacity: 0;
+  }
+}
+
+@keyframes wn-events-hint {
+  0%,
+  24%,
+  82%,
+  100% {
+    opacity: 1;
+    max-height: 1.4rem;
+  }
+  32%,
+  74% {
+    opacity: 0;
+    max-height: 0;
+  }
+}
+
+html.motion-paused .loop-motion,
+html.motion-paused .loop-motion *,
+html.motion-paused .loop-motion *::before,
+html.motion-paused .loop-motion *::after,
+.loop-motion.is-paused,
+.loop-motion.is-paused *,
+.loop-motion.is-paused *::before,
+.loop-motion.is-paused *::after,
+html.motion-paused .plan-mark-yes,
+html.motion-paused .plan-mark-no {
+  animation-play-state: paused !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

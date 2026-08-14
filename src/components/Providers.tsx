@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { TourProvider } from "@/components/TourProvider";
 import { UpgradeProvider } from "@/components/UpgradeProvider";
 import { BogenProvider } from "@/components/BogenProvider";
+import { MotionPauseRoot } from "@/components/LoopMotion";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <TourProvider>
             <BogenProvider>
               <MaintenanceGate>
+                <MotionPauseRoot />
                 {children}
                 <GiftedProModal />
                 <WhatsNewModal />

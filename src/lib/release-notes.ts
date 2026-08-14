@@ -1,6 +1,6 @@
 export const CURRENT_RELEASE_ID = "beta-2.1";
 
-export type ReleaseFeatureVisualId = "bogen";
+export type ReleaseFeatureVisualId = "bogen" | "events";
 
 export type ReleaseFeature = {
   title: string;
@@ -62,6 +62,7 @@ export const RELEASES: ReleaseNote[] = [
       },
       {
         title: "Market-moving events",
+        visual: "events",
         body: "On Daily Brief, tap a market-moving event card to expand it. You get the fuller note, source, date, and any tickers — not just the one-line teaser.",
       },
       {

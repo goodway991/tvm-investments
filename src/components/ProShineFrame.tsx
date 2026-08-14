@@ -15,7 +15,7 @@ export function ProShineFrame({
   const rx = round === "pill" ? 999 : 16;
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`loop-motion relative ${className}`}>
       {children}
       <svg className="pro-shine-svg" aria-hidden>
         <defs>
