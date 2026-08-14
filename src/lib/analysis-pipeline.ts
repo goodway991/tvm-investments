@@ -12,6 +12,7 @@ import {
   applyProCulture,
   buildProCultureMap,
   generateCompanyReport,
+  generateProCulture,
   rankCandidates,
   toScreenedStock,
 } from "./scoring";
@@ -304,4 +305,38 @@ export async function getStockQuote(symbol: string): Promise<{
 
   const { fetchYahooQuote } = await import("./providers/yahoo");
   return fetchYahooQuote(symbol);
+}
+
+export async function researchSymbol(
+  symbol: string,
+  withProCulture = false,
+): Promise<{ stock: StockCandidate; report: ReturnType<typeof generateCompanyReport> }> {
+  if (isDemoMode()) {
+    const candidates = buildDemoCandidates();
+    const found =
+      candidates.find((stock) => stock.symbol === symbol.toUpperCase()) ??
+      candidates[0];
+    const analyzed = await analyzeStock(
+      addIndexMembership(found),
+      found.changePercent,
+      found.changePercent,
+      false,
+    );
+    return { stock: analyzed, report: generateCompanyReport(analyzed) };
+  }
+
+  const yahoo = await import("./providers/yahoo");
+  const raw = await yahoo.fetchYahooCandidate(symbol);
+  const analyzed = await analyzeStock(
+    addIndexMembership(raw),
+    raw.changePercent,
+    raw.changePercent,
+    false,
+  );
+  let report = generateCompanyReport(analyzed);
+  if (withProCulture) {
+    const culture = await generateProCulture(analyzed);
+    if (culture) report = { ...report, cultureAndLongTermPro: culture };
+  }
+  return { stock: analyzed, report };
 }

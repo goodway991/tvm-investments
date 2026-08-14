@@ -49,7 +49,16 @@ function toRow(stock: ScreenedStock) {
 export function FilterPanel({ initialStocks }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [results, setResults] = useState(initialStocks.map(toRow));
+  const [find, setFind] = useState("");
   const [loading, setLoading] = useState(false);
+  const visible = results.filter((stock) => {
+    const needle = find.trim().toLowerCase();
+    if (!needle) return true;
+    return (
+      stock.symbol.toLowerCase().includes(needle) ||
+      stock.name.toLowerCase().includes(needle)
+    );
+  });
 
   async function applyFilters() {
     setLoading(true);
@@ -83,8 +92,19 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
     <div className="glass rounded-2xl p-6">
       <h2 className="font-display text-2xl text-ink mb-1">Stock Filter</h2>
       <p className="text-ink-soft text-sm mb-6">
-        Filter the full scanned universe by P/E, Beta, Volume, EPS, and Market Cap.
+        Filter today&apos;s scored scan by P/E, Beta, Volume, EPS, and Market Cap.
+        Use Watchlist search to add any listed name — scores here only cover the daily scan.
       </p>
+
+      <label className="mb-5 block">
+        <span className="sr-only">Find a ticker in today&apos;s scan</span>
+        <input
+          value={find}
+          onChange={(event) => setFind(event.target.value)}
+          placeholder="Find a ticker in today’s scan…"
+          className="field w-full rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-ink-soft/50"
+        />
+      </label>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {fields.map(({ key, label, placeholder }) => (
@@ -117,7 +137,7 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
         </button>
       </div>
 
-      <p className="text-sm text-ink-soft mb-4">{results.length} stocks match</p>
+      <p className="text-sm text-ink-soft mb-4">{visible.length} stocks match</p>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -135,7 +155,7 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
             </tr>
           </thead>
           <tbody>
-            {results.map((s) => (
+            {visible.map((s) => (
               <tr key={s.symbol} className="border-b border-ink/[0.05]">
                 <td className="py-2 pr-4 font-medium text-ink">{s.symbol}</td>
                 <td className="py-2 pr-4 text-right">{s.peRatio?.toFixed(1) ?? "—"}</td>

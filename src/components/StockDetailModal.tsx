@@ -342,10 +342,12 @@ export function FlaggedPickButton({
   stock,
   index,
   onOpen,
+  summary,
 }: {
   stock: StockCandidate;
   index: number;
   onOpen: () => void;
+  summary?: string;
 }) {
   const spark = sparklineValues(stock.ohlcv, 12);
   return (
@@ -373,6 +375,11 @@ export function FlaggedPickButton({
         id={`flagged-${stock.symbol}-${index}`}
         height={54}
       />
+      {summary ? (
+        <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-ink-soft">
+          {summary}
+        </p>
+      ) : null}
       <div className="flex items-center justify-between">
         <span className="font-display text-sm font-bold text-ink">
           ${stock.price.toFixed(2)}

@@ -59,3 +59,36 @@ export async function fetchNasdaqQuoteMap(limit = 1500) {
     return new Map<string, NasdaqQuote>();
   }
 }
+
+const LISTED_TTL_MS = 6 * 60 * 60 * 1000;
+let listedCache: { at: number; rows: NasdaqQuote[] } | null = null;
+
+export async function getListedUsStocks(): Promise<NasdaqQuote[]> {
+  if (listedCache && Date.now() - listedCache.at < LISTED_TTL_MS) {
+    return listedCache.rows;
+  }
+  const rows = await fetchNasdaqScreener(10_000);
+  listedCache = { at: Date.now(), rows };
+  return rows;
+}
+
+export async function searchListedUsStocks(query: string, limit = 24) {
+  const needle = query.trim().toLowerCase();
+  if (needle.length < 1) return [];
+  try {
+    const rows = await getListedUsStocks();
+    const starts: NasdaqQuote[] = [];
+    const named: NasdaqQuote[] = [];
+    for (const row of rows) {
+      if (row.symbol.toLowerCase().startsWith(needle)) starts.push(row);
+      else if (row.name.toLowerCase().includes(needle)) named.push(row);
+    }
+    return [...starts, ...named].slice(0, limit).map((row) => ({
+      symbol: row.symbol,
+      name: row.name,
+    }));
+  } catch (error) {
+    console.warn("Listed US stock search unavailable:", error);
+    return [];
+  }
+}

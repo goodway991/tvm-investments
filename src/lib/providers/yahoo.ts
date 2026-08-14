@@ -117,6 +117,47 @@ export async function fetchYahooNews(
   }
 }
 
+export async function searchYahooSymbols(
+  query: string,
+  limit = 12,
+): Promise<Array<{ symbol: string; name: string }>> {
+  const needle = query.trim();
+  if (needle.length < 1) return [];
+  try {
+    const yahooFinance = getYahoo();
+    const result = await yahooFinance.search(needle, {
+      quotesCount: limit,
+      newsCount: 0,
+    });
+    const seen = new Set<string>();
+    const matches: Array<{ symbol: string; name: string }> = [];
+    for (const quote of result.quotes ?? []) {
+      const type = String(
+        (quote as { quoteType?: string }).quoteType ?? "",
+      ).toUpperCase();
+      if (type && type !== "EQUITY" && type !== "ETF") continue;
+      const symbol = String(quote.symbol ?? "")
+        .trim()
+        .toUpperCase();
+      if (!symbol || seen.has(symbol)) continue;
+      seen.add(symbol);
+      matches.push({
+        symbol,
+        name:
+          quote.longname ||
+          quote.shortname ||
+          (quote as { longName?: string; shortName?: string }).longName ||
+          (quote as { longName?: string; shortName?: string }).shortName ||
+          symbol,
+      });
+    }
+    return matches.slice(0, limit);
+  } catch (error) {
+    console.error("Symbol search error:", error);
+    return [];
+  }
+}
+
 function inferSector(sector: string, industry: string): string {
   const text = `${sector} ${industry}`.toLowerCase();
   if (text.includes("semiconductor") || text.includes("software") || text.includes("technology")) {

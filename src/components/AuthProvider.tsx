@@ -39,7 +39,7 @@ import {
   normalizePersonName,
   readSignupName,
 } from "@/lib/person-name";
-import { WATCHLIST_ALLOWED_SYMBOLS } from "@/lib/watchlist-symbols";
+import { parseTicker } from "@/lib/ticker";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
@@ -496,16 +496,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const db = getClientFirestore();
       if (!db || !user) throw new Error("Sign in to update your watchlist.");
 
-      const normalized = Array.from(
-        new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)),
-      );
-      const allowed = new Set(WATCHLIST_ALLOWED_SYMBOLS);
-      const blocked = normalized.filter((symbol) => !allowed.has(symbol));
-      if (blocked.length) {
-        throw new Error(
-          `Watchlist can only include TVM scan names (S&P 500, Dow 30, and extra liquid names). Remove ${blocked.join(", ")}.`,
-        );
+      const invalid = symbols
+        .map((symbol) => symbol.trim())
+        .filter(Boolean)
+        .filter((symbol) => !parseTicker(symbol));
+      if (invalid.length) {
+        throw new Error(`Watchlist can only include listed tickers. Remove ${invalid.join(", ")}.`);
       }
+      const normalized = Array.from(
+        new Set(
+          symbols
+            .map((symbol) => parseTicker(symbol))
+            .filter((symbol): symbol is string => Boolean(symbol)),
+        ),
+      );
       if (normalized.length > entitlement.watchlistLimit) {
         throw new Error(
           `Your ${entitlement.plan} plan allows ${entitlement.watchlistLimit} watched stocks.`,
