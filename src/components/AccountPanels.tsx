@@ -13,6 +13,7 @@ import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
+import { ProShineFrame } from "@/components/ProShineFrame";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -494,13 +495,17 @@ export function SettingsPanel() {
           )}
           <p className="mt-1 text-sm text-ink-soft">{user?.email}</p>
         </div>
-        <span
-          className={`glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white ${
-            entitlement.plan === "pro" ? "pro-border-shine" : ""
-          }`}
-        >
-          {entitlement.plan === "pro" ? "Pro" : "Free"}
-        </span>
+        {entitlement.plan === "pro" ? (
+          <ProShineFrame round="pill">
+            <span className="glass-violet block rounded-full px-4 py-2 text-sm font-semibold text-white">
+              Pro
+            </span>
+          </ProShineFrame>
+        ) : (
+          <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white">
+            Free
+          </span>
+        )}
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">

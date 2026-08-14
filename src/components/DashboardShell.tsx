@@ -17,6 +17,7 @@ import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
+import { ProShineFrame } from "@/components/ProShineFrame";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
@@ -134,14 +135,12 @@ function UpgradeNavCard({
       </span>
     );
 
-  return (
+  const card = (
     <BogenHit
       id="nav-upgrade"
       compact={compact}
       onDark
-      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)} ${
-        plan === "pro" ? "pro-border-shine" : ""
-      }`}
+      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
     >
       {plan === "pro" ? (
         <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
@@ -156,6 +155,14 @@ function UpgradeNavCard({
       )}
       {body}
     </BogenHit>
+  );
+
+  return plan === "pro" ? (
+    <ProShineFrame className="w-full" round="card">
+      {card}
+    </ProShineFrame>
+  ) : (
+    card
   );
 }
 
