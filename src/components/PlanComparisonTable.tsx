@@ -77,7 +77,9 @@ export function PlanComparisonTable({
           </tr>
         </thead>
         <tbody>
-          {PLAN_FEATURES.map((feature) => (
+          {[...PLAN_FEATURES]
+            .sort((left, right) => Number(left.free) - Number(right.free))
+            .map((feature) => (
             <tr key={feature.name} className="border-t border-violet/10">
               <th className="px-4 py-3.5 font-medium text-ink sm:px-5">
                 {feature.name}

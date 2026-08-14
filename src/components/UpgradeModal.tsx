@@ -47,33 +47,61 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
       labelledBy="upgrade-title"
       onClose={onClose}
       variant="card"
+      headerClassName="px-5 pt-8 sm:px-8 sm:pt-10"
+      footerClassName="px-5 pb-4 sm:px-8 sm:pb-4"
       header={
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-              Your plan
-            </p>
-            <h2 id="upgrade-title" className="mt-1 font-display text-3xl font-bold text-ink">
-              {alreadyPro ? "Your plan" : "Free vs Pro"}
-            </h2>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
-              Pro unlocks separate short-term and long-term lists, richer culture
-              write-ups, larger watchlists, and full backtests.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-violet/10 hover:text-violet"
-          >
-            <TVMIcon name="close" size={16} />
-            Close
-          </button>
-        </div>
-      }
-      footer={
         <div>
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-violet">
+                Your plan
+              </p>
+              <h2 id="upgrade-title" className="mt-1 font-display text-3xl font-bold text-ink">
+                {alreadyPro ? "Your plan" : "Free vs Pro"}
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
+                Pro unlocks separate short-term and long-term lists, richer culture
+                write-ups, larger watchlists, and full backtests.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-violet/10 hover:text-violet"
+            >
+              <TVMIcon name="close" size={16} />
+              Close
+            </button>
+          </div>
+
+          <div className="mt-6 mb-2 flex flex-wrap items-center justify-center gap-2">
+            {(
+              [
+                ["monthly", "Monthly"],
+                ["yearly", "Yearly"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setBilling(value)}
+                className={`relative rounded-full px-5 py-2 text-sm font-semibold transition-all ${
+                  billing === value
+                    ? "glass-violet text-white"
+                    : "bg-white/60 text-ink-soft hover:text-ink"
+                }`}
+              >
+                {label}
+                {value === "yearly" ? (
+                  <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-coral px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                    Save {savePercent}%
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
             <div>
               <p className="font-display text-3xl font-bold text-ink">
                 ${price.perMonth}
@@ -115,40 +143,14 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
               {error}
             </p>
           ) : null}
-
-          <p className="mt-4 text-[11px] leading-relaxed text-ink-soft">
-            Secure checkout is powered by Stripe. Cancel anytime. TVM Investments is
-            not a broker or investment adviser.
-          </p>
         </div>
       }
+      footer={
+        <p className="text-[11px] leading-relaxed text-ink-soft">
+          Secure checkout is powered by Stripe. Cancel anytime.
+        </p>
+      }
     >
-      <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
-        {(
-          [
-            ["monthly", "Monthly"],
-            ["yearly", "Yearly"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setBilling(value)}
-            className={`relative rounded-full px-5 py-2 text-sm font-semibold transition-all ${
-              billing === value
-                ? "glass-violet text-white"
-                : "bg-white/60 text-ink-soft hover:text-ink"
-            }`}
-          >
-            {label}
-            {value === "yearly" ? (
-              <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-coral px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                Save {savePercent}%
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
       <PlanComparisonTable currentPlan={entitlement.plan} />
     </OverlaySheet>
   );

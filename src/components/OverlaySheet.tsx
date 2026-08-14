@@ -36,6 +36,8 @@ export function OverlaySheet({
   variant = "screen",
   zIndexClass = "z-[100]",
   closeOnBackdrop = true,
+  headerClassName,
+  footerClassName,
 }: {
   labelledBy: string;
   onClose?: () => void;
@@ -45,6 +47,8 @@ export function OverlaySheet({
   variant?: "screen" | "card";
   zIndexClass?: string;
   closeOnBackdrop?: boolean;
+  headerClassName?: string;
+  footerClassName?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -116,12 +120,12 @@ export function OverlaySheet({
           aria-labelledby={labelledBy}
           className="glass-strong relative z-10 mx-auto w-full max-w-[920px] rounded-[28px]"
         >
-          <div className="px-5 pt-5 sm:px-8 sm:pt-7">{header}</div>
+          <div className={headerClassName ?? "px-5 pt-5 sm:px-8 sm:pt-7"}>{header}</div>
           <div ref={scrollRef} className="px-5 py-5 sm:px-8">
             {children}
           </div>
           {footer ? (
-            <div className="px-5 pb-5 sm:px-8 sm:pb-7">{footer}</div>
+            <div className={footerClassName ?? "px-5 pb-5 sm:px-8 sm:pb-7"}>{footer}</div>
           ) : null}
         </div>
       </div>
