@@ -26,16 +26,15 @@ function bogenWrap(
   options?: { onDark?: boolean; itemKey?: string },
 ) {
   return (
-    <div key={options?.itemKey} className="relative">
+    <div
+      key={options?.itemKey}
+      className={`flex items-center gap-1.5 ${compact ? "justify-center" : ""}`}
+    >
       {child}
       <BogenTip
         id={id}
         tone={options?.onDark ? "onDark" : "ink"}
-        className={
-          compact
-            ? "absolute -right-0.5 -top-0.5 z-[2]"
-            : "absolute right-2 top-1/2 z-[2] -translate-y-1/2"
-        }
+        className="shrink-0"
       />
     </div>
   );
@@ -84,8 +83,8 @@ function ProfileNavLink({
       href={href}
       onClick={onNavigate}
       title={compact ? name : undefined}
-      className={`flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-        compact ? "justify-center px-2" : "gap-3.5 px-4 pr-9"
+      className={`inline-flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+        compact ? "justify-center px-2" : "gap-3.5 px-4"
       } ${
         active
           ? "glass-violet text-white"
@@ -100,7 +99,7 @@ function ProfileNavLink({
         <TVMIcon name="profile" size={18} />
       </span>
       {!compact && (
-        <span className="min-w-0 flex-1 truncate leading-tight">{name}</span>
+        <span className="min-w-0 truncate leading-tight">{name}</span>
       )}
     </Link>
   );
@@ -108,8 +107,8 @@ function ProfileNavLink({
 
 function widgetBox(compact: boolean) {
   return compact
-    ? "grid h-[52px] w-full place-items-center px-2"
-    : "flex min-h-[52px] w-full items-center gap-3 px-3 py-2.5 pr-9 text-left";
+    ? "grid h-[52px] place-items-center px-2"
+    : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 text-left";
 }
 
 function UpgradeNavCard({
@@ -192,8 +191,8 @@ function PreviewSidebar({
           href={withArchiveQuery("/dashboard/archive", archive)}
           onClick={onNavigate}
           title={compact ? "Archive Calendar" : undefined}
-          className={`flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-            compact ? "justify-center px-2" : "gap-3.5 px-4 pr-9"
+          className={`inline-flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+            compact ? "justify-center px-2" : "gap-3.5 px-4"
           } ${
             archiveLive
               ? "archive-widget-live bg-sky-50 text-ink"
@@ -204,7 +203,7 @@ function PreviewSidebar({
         >
           <TVMIcon name="calendar" />
           {!compact && (
-            <span className="min-w-0 flex-1">
+            <span className="min-w-0">
               <span className="block leading-tight">Archive Calendar</span>
               {archiveLive && (
                 <span className="archive-active-label mt-0.5 block">ACTIVE</span>
@@ -225,8 +224,8 @@ function PreviewSidebar({
           href={withArchiveQuery("/dashboard/horizon", archive)}
           onClick={onNavigate}
           title={compact ? "Horizon Suite" : undefined}
-          className={`flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-            compact ? "justify-center px-2" : "gap-3.5 px-4 pr-9"
+          className={`inline-flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+            compact ? "justify-center px-2" : "gap-3.5 px-4"
           } ${
             horizonActive
               ? "glass-violet text-white"
@@ -331,7 +330,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           sidebarMode === "expanded"
             ? "w-[260px] overflow-y-auto border-r border-ink/[0.06] px-6 py-7"
             : sidebarMode === "collapsed"
-              ? "w-[84px] overflow-visible border-r border-ink/[0.06] px-3 py-7"
+              ? "w-[96px] overflow-visible border-r border-ink/[0.06] px-2 py-7"
               : "w-0 overflow-hidden border-0 px-0 py-7 opacity-0"
         }`}
       >
@@ -351,8 +350,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               ? "Shrink menu to the logo"
               : "Hide the menu"
           }
-          className={`flex items-center rounded-2xl p-1.5 transition-colors hover:bg-violet/10 ${
-            sidebarMode === "expanded" ? "gap-2.5 self-start" : "mx-auto"
+          className={`inline-flex items-center rounded-2xl p-1.5 transition-colors hover:bg-violet/10 ${
+            sidebarMode === "expanded" ? "gap-2.5" : ""
           }`}
         >
           <TVMBrand showWordmark={sidebarMode === "expanded"} />
@@ -370,8 +369,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={withArchiveQuery(item.href, archive)}
                 title={compact ? item.label : undefined}
-                className={`flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-                  compact ? "justify-center px-2" : "gap-3.5 px-4 pr-9"
+                className={`inline-flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+                  compact ? "justify-center px-2" : "gap-3.5 px-4"
                 } ${
                   active
                     ? "glass-violet text-white"
@@ -459,7 +458,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       key={item.href}
                       href={withArchiveQuery(item.href, archive)}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3.5 rounded-2xl px-4 py-3 pr-9 text-[15px] font-medium duration-300 ${
+                      className={`inline-flex items-center gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium duration-300 ${
                         active
                           ? "glass-violet text-white"
                           : "text-ink-soft hover:bg-violet/[0.05] hover:text-ink"

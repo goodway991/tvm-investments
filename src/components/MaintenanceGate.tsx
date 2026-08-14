@@ -108,20 +108,21 @@ export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
 
   return (
     <div ref={cardRef} className="relative">
+      <div className={`flex items-center gap-1.5 ${compact ? "justify-center" : ""}`}>
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className={`maintenance-nav-card w-full rounded-2xl ${
+        className={`maintenance-nav-card rounded-2xl ${
           compact
             ? "grid h-[52px] place-items-center px-2"
-            : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 pr-9 text-left"
+            : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 text-left"
         }`}
         title={open ? "Hide maintenance details" : "Show maintenance details"}
       >
         <TVMIcon name="warning" size={18} />
         {!compact && (
-          <span className="min-w-0 flex-1">
+          <span className="min-w-0">
             <span className="block text-sm font-semibold leading-tight">
               Maintenance
             </span>
@@ -144,12 +145,9 @@ export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
       <BogenTip
         id="nav-maintenance"
         tone="onDark"
-        className={
-          compact
-            ? "absolute -right-0.5 -top-0.5 z-[2]"
-            : "absolute right-2 top-1/2 z-[2] -translate-y-1/2"
-        }
+        className="shrink-0"
       />
+      </div>
       {open ? (
         <div
           className={`maintenance-nav-card z-40 rounded-2xl px-3 py-3 text-[12px] font-medium leading-relaxed ${

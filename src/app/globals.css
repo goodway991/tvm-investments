@@ -365,6 +365,60 @@ html.dark .tour-window-title {
   color: #c6d2ea;
 }
 
+html.dark .tour-window {
+  background: linear-gradient(180deg, #1b2438 0%, #12192c 100%);
+  border-color: rgba(158, 196, 255, 0.16);
+  box-shadow:
+    0 22px 40px -22px rgba(0, 0, 0, 0.55),
+    inset 0 1px rgba(255, 255, 255, 0.08);
+}
+
+html.dark .tour-window-bar {
+  background: rgba(16, 22, 38, 0.92);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .tour-flash {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 24px -16px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .tour-window .bg-surface {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+html.dark .tour-menu-stage {
+  background: #101624;
+}
+
+html.dark .tour-mini-sidebar {
+  background: #151c2e;
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .tour-mini-wordmark {
+  color: #f4f7ff;
+}
+
+html.dark .tour-mini-link {
+  color: #c6d2ea;
+}
+
+html.dark .tour-mini-chip {
+  color: #f4f7ff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .tour-mini-fab {
+  background: #1b2438;
+  box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.55);
+}
+
+html.dark .tour-cursor path {
+  fill: #f4f7ff;
+  stroke: #12192c;
+}
+
 .dashboard-research .glass-violet,
 .dashboard-research .glass-violet.text-white,
 .dashboard-research .glass-violet .text-white,
@@ -914,8 +968,6 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 .bogen-tip {
-  position: relative;
-  z-index: 2;
   display: grid;
   width: 18px;
   height: 18px;
@@ -1054,6 +1106,10 @@ button:not(:disabled):hover .archive-flow-node {
 
 .tour-window-body {
   height: calc(100% - 36px);
+}
+
+.tour-flash {
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .tour-pop {

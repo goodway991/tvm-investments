@@ -68,7 +68,7 @@ function DashboardScene() {
           {cards.map((card, index) => (
             <div
               key={card.label}
-              className={`rounded-2xl bg-white/80 p-3 shadow-[0_10px_24px_-16px_rgba(30,70,160,0.35)] ${
+              className={`tour-flash rounded-2xl p-3 shadow-[0_10px_24px_-16px_rgba(30,70,160,0.35)] ${
                 index === 0 ? "tour-dash-hit" : "tour-pop"
               }`}
               style={index === 0 ? undefined : { animationDelay: card.delay }}
@@ -90,7 +90,7 @@ function BriefScene() {
   return (
     <WindowFrame title="Daily Brief">
       <div className="flex h-full flex-col gap-2.5 p-4">
-        <div className="tour-slide-right rounded-2xl bg-white/80 p-3">
+        <div className="tour-slide-right tour-flash rounded-2xl p-3">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
             Today
           </p>
@@ -173,7 +173,7 @@ function WatchlistScene() {
         {["AAPL", "MSFT", "GOOGL"].map((symbol, index) => (
           <div
             key={symbol}
-            className="tour-slide-right flex items-center justify-between rounded-2xl bg-white/80 px-3 py-2.5"
+            className="tour-slide-right tour-flash flex items-center justify-between rounded-2xl px-3 py-2.5"
             style={{ animationDelay: `${index * 0.14}s` }}
           >
             <span className="font-display text-sm font-bold text-ink">{symbol}</span>
@@ -193,7 +193,7 @@ function PortfolioScene() {
   return (
     <WindowFrame title="Portfolio">
       <div className="flex h-full flex-col justify-center gap-3 p-5">
-        <div className="tour-pop rounded-2xl bg-white/85 p-4">
+        <div className="tour-pop tour-flash rounded-2xl p-4">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
             Tracked value
           </p>
@@ -215,7 +215,7 @@ function ReportsScene() {
         {["Flagged pick note", "Short-term score", "Long-term score"].map((line, index) => (
           <div
             key={line}
-            className="tour-pop rounded-2xl bg-white/80 px-3 py-3"
+            className="tour-pop tour-flash rounded-2xl px-3 py-3"
             style={{ animationDelay: `${index * 0.12}s` }}
           >
             <div className="mb-2 h-2 w-16 rounded-full bg-violet/30" />
@@ -280,7 +280,7 @@ function SettingsScene() {
   return (
     <WindowFrame title="Settings">
       <div className="flex h-full flex-col justify-center gap-3 p-5">
-        <div className="tour-pop rounded-2xl bg-white/85 p-4">
+        <div className="tour-pop tour-flash rounded-2xl p-4">
           <p className="text-sm font-semibold text-ink">Your name · bottom of the sidebar</p>
           <p className="mt-1 text-xs text-ink-soft">
             Plan, appearance, Bogen mode, and this tour live here.
@@ -307,7 +307,7 @@ function BogenScene() {
   return (
     <WindowFrame title="Bogen mode">
       <div className="relative flex h-full flex-col gap-2.5 p-4">
-        <div className="tour-pop flex items-center justify-between rounded-2xl bg-white/85 px-3 py-2">
+        <div className="tour-pop tour-flash flex items-center justify-between rounded-2xl px-3 py-2">
           <span className="text-xs font-semibold text-ink">Settings</span>
           <span className="flex items-center gap-1.5">
             <span className="new-badge">New</span>
@@ -316,7 +316,7 @@ function BogenScene() {
             </span>
           </span>
         </div>
-        <div className="tour-bogen-stage relative flex-1 rounded-2xl bg-white/80 p-3">
+        <div className="tour-bogen-stage relative flex-1 rounded-2xl tour-flash p-3">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
@@ -328,7 +328,7 @@ function BogenScene() {
               ?
             </span>
           </div>
-          <div className="tour-bogen-card mt-3 rounded-2xl bg-white p-3 shadow-[0_12px_24px_-16px_rgba(30,70,160,0.5)]">
+          <div className="tour-bogen-card tour-flash mt-3 rounded-2xl p-3 shadow-[0_12px_24px_-16px_rgba(30,70,160,0.5)]">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
               What it is
             </p>
