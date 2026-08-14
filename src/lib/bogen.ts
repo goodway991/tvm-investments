@@ -122,9 +122,9 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     how: "Tap to open the full movers table. Free shows the top 10; Pro shows the top 20.",
   },
   composite: {
-    title: "Composite average",
-    what: "The average composite score across today’s flagged picks, out of 100.",
-    how: "Tap to jump down to the flagged-picks row on this page.",
+    title: "Account score",
+    what: "A 0–100 rating of your book: watchlist and portfolio names, using each stock’s scan score, niche, P/E, and RSI when we have them.",
+    how: "Tap to open Watchlist. Add or drop names there (and in Portfolio) to move the score. Empty books show a dash until something is on the account.",
   },
   "ticker-search": {
     title: "Ticker search",

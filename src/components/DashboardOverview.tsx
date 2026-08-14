@@ -15,7 +15,7 @@ import {
   sparklineValues,
   uniqueStocks,
 } from "@/lib/chart-series";
-import { resolveAccountName } from "@/lib/person-name";
+import { computeAccountScore } from "@/lib/account-score";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
 
 function signedPercent(value: number) {
@@ -23,7 +23,7 @@ function signedPercent(value: number) {
 }
 
 export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
-  const { profile, user, entitlement } = useAuth();
+  const { profile, user, entitlement, watchlist, positions } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [investment, setInvestment] = useState(0);
@@ -34,11 +34,15 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
     [snapshot.topMovers, snapshot.topPicks],
   );
   const topPick = snapshot.topPicks[0] ?? snapshot.topMovers[0];
-  const averageScore =
-    snapshot.topPicks.length > 0
-      ? snapshot.topPicks.reduce((total, stock) => total + stock.compositeScore, 0) /
-        snapshot.topPicks.length
-      : 0;
+  const accountScore = useMemo(
+    () =>
+      computeAccountScore({
+        watchlist: watchlist.symbols,
+        positions,
+        snapshot,
+      }),
+    [positions, snapshot, watchlist.symbols],
+  );
   const filteredMovers = useMemo(() => {
     const query = search.trim().toLowerCase();
     const ranked = [...snapshot.topMovers].sort((left, right) => {
@@ -104,11 +108,12 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       href: "/dashboard/movers",
     },
     {
-      label: "Composite avg",
-      value: `${averageScore.toFixed(0)} / 100`,
+      label: "Account score",
+      value: accountScore.score == null ? "—" : `${accountScore.score.toFixed(0)} / 100`,
+      badge: accountScore.counted ? `${accountScore.counted} names` : "your book",
       gradient: true,
       bogen: "composite" as const,
-      href: "#flagged-picks",
+      href: "/dashboard/watchlist",
     },
   ];
 

@@ -59,7 +59,7 @@ function DashboardScene() {
     { label: "Top pick", value: "NVDA", delay: "0s" },
     { label: "Screened", value: "48", delay: "0.12s" },
     { label: "Movers", value: "↑ 12", delay: "0.24s" },
-    { label: "Composite", value: "72", delay: "0.36s" },
+    { label: "Account", value: "72", delay: "0.36s" },
   ];
   return (
     <WindowFrame title="Dashboard">
