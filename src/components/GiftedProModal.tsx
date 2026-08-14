@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { PlanComparisonTable } from "@/components/PlanComparisonTable";
+import { useTour } from "@/components/TourProvider";
 
 export function GiftedProModal() {
   const { giftPending, acknowledgeGift } = useAuth();
+  const { isOpen: tourOpen } = useTour();
   const [busy, setBusy] = useState(false);
 
-  if (!giftPending) return null;
+  if (!giftPending || tourOpen) return null;
 
   async function continueOn() {
     if (busy) return;

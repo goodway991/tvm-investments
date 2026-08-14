@@ -13,13 +13,20 @@ import {
 import { useAuth } from "@/components/AuthProvider";
 import { getClientFirestore } from "@/lib/firebase/client";
 
+type PlanSource = "comp" | "paid" | "none";
+
 type AccountRow = {
   uid: string;
   email: string;
   displayName: string;
   role: "client" | "admin";
   plan: "free" | "pro";
+  source: PlanSource;
 };
+
+function paidLook(row: AccountRow) {
+  return row.role === "admin" || row.source === "paid";
+}
 
 export function AdminAccountsPanel() {
   const { entitlement } = useAuth();
@@ -43,11 +50,18 @@ export function AdminAccountsPanel() {
     const entitlements = new Map(
       entitlementsSnap.docs.map((item) => {
         const data = item.data();
+        const source: PlanSource =
+          data.source === "stripe" || data.source === "paid"
+            ? "paid"
+            : data.source === "comp"
+              ? "comp"
+              : "none";
         return [
           item.id,
           {
             role: data.role === "admin" ? "admin" : "client",
             plan: data.plan === "pro" ? "pro" : "free",
+            source,
           } as const,
         ];
       }),
@@ -63,6 +77,7 @@ export function AdminAccountsPanel() {
             displayName: String(data.displayName || "TVM user"),
             role: next?.role ?? "client",
             plan: next?.plan ?? "free",
+            source: next?.source ?? "none",
           } satisfies AccountRow;
         })
         .sort((a, b) => a.email.localeCompare(b.email)),
@@ -82,7 +97,7 @@ export function AdminAccountsPanel() {
 
   async function setComplimentaryPro(row: AccountRow, grant: boolean) {
     const db = getClientFirestore();
-    if (!db || row.role === "admin") return;
+    if (!db || row.role === "admin" || paidLook(row)) return;
     setBusyUid(row.uid);
     setError("");
     try {
@@ -122,35 +137,40 @@ export function AdminAccountsPanel() {
         Complimentary Pro
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Give friends Pro without charging them. They stay regular accounts —
-        only the plan changes.
+        Give friends Pro without charging them. Paid Pro boxes glow blue — leave
+        those alone.
       </p>
 
       {loading ? (
         <p className="mt-4 text-sm text-ink-soft">Loading accounts…</p>
       ) : (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[28rem] text-left text-sm">
-            <thead>
-              <tr className="text-xs uppercase tracking-widest text-ink-soft">
-                <th className="pb-2 font-semibold">Account</th>
-                <th className="pb-2 font-semibold">Type</th>
-                <th className="pb-2 font-semibold">Plan</th>
-                <th className="pb-2 font-semibold"> </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.uid} className="border-t border-violet/10">
-                  <td className="py-3">
+        <div className="mt-4 grid gap-3">
+          {rows.map((row) => {
+            const paid = paidLook(row);
+            return (
+              <div
+                key={row.uid}
+                className={`rounded-2xl bg-[#f7f8fc] p-4 ${paid ? "paid-pro-glow" : ""}`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
                     <p className="font-semibold text-ink">{row.displayName}</p>
-                    <p className="text-ink-soft">{row.email}</p>
-                  </td>
-                  <td className="py-3 capitalize text-ink">{row.role}</td>
-                  <td className="py-3 uppercase text-ink">{row.plan}</td>
-                  <td className="py-3 text-right">
+                    <p className="text-sm text-ink-soft">{row.email}</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-ink-soft">
+                      {row.role}
+                      {" · "}
+                      {paid
+                        ? "Paid Pro"
+                        : row.plan === "pro"
+                          ? "Complimentary Pro"
+                          : "Free"}
+                    </p>
+                  </div>
+                  <div>
                     {row.role === "admin" ? (
-                      <span className="text-xs text-ink-soft">Admin</span>
+                      <span className="text-xs font-semibold text-ink-soft">Admin</span>
+                    ) : paid ? (
+                      <span className="text-xs font-semibold text-violet">Paid</span>
                     ) : row.plan === "pro" ? (
                       <button
                         type="button"
@@ -170,11 +190,11 @@ export function AdminAccountsPanel() {
                         {busyUid === row.uid ? "Saving…" : "Give Pro"}
                       </button>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
       {error && (

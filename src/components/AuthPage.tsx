@@ -10,6 +10,7 @@ import {
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
+  updateProfile,
 } from "firebase/auth";
 import { type FormEvent, useState } from "react";
 import { MiniChart } from "@/components/MiniChart";
@@ -20,6 +21,13 @@ import {
   isFirebaseConfigured,
 } from "@/lib/firebase/client";
 import { LEGAL_STORAGE_KEY, TOS_VERSION } from "@/lib/legal";
+import {
+  clearSignupName,
+  fullDisplayName,
+  isPersonName,
+  normalizePersonName,
+  writeSignupName,
+} from "@/lib/person-name";
 
 type AuthMode = "login" | "signup";
 const ADMIN_EMAIL =
@@ -30,6 +38,8 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -57,6 +67,14 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
     if (mode === "signup" && password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
+    }
+    if (mode === "signup") {
+      const first = normalizePersonName(firstName);
+      const last = normalizePersonName(lastName);
+      if (!isPersonName(first) || !isPersonName(last)) {
+        setError("Enter a first and last name (letters only, no numbers).");
+        return;
+      }
     }
     if (mode === "signup" && !email.includes("@")) {
       setError("Enter a valid email address.");
@@ -93,13 +111,24 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
       );
 
       if (mode === "login") {
+        clearSignupName();
         await signInWithEmailAndPassword(auth, credentialEmail, password);
       } else {
         sessionStorage.setItem(
           LEGAL_STORAGE_KEY,
           JSON.stringify({ tosVersion: TOS_VERSION, acceptedAt: Date.now() }),
         );
-        await createUserWithEmailAndPassword(auth, credentialEmail, password);
+        const first = normalizePersonName(firstName);
+        const last = normalizePersonName(lastName);
+        writeSignupName({ firstName: first, lastName: last });
+        const created = await createUserWithEmailAndPassword(
+          auth,
+          credentialEmail,
+          password,
+        );
+        await updateProfile(created.user, {
+          displayName: fullDisplayName(first, last),
+        });
       }
       router.push("/dashboard");
     } catch (authError) {
@@ -250,6 +279,43 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
               )}
 
               <form className="mt-7 space-y-4" onSubmit={submit}>
+                {!isLogin && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-1.5 block text-sm font-medium text-ink">
+                        First name
+                      </span>
+                      <input
+                        name="firstName"
+                        type="text"
+                        autoComplete="given-name"
+                        required={firebaseConfigured}
+                        maxLength={40}
+                        value={firstName}
+                        onChange={(event) => setFirstName(event.target.value)}
+                        placeholder="First"
+                        className="field w-full rounded-2xl px-4 py-3 text-[15px] text-ink placeholder:text-ink-soft/50"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-sm font-medium text-ink">
+                        Last name
+                      </span>
+                      <input
+                        name="lastName"
+                        type="text"
+                        autoComplete="family-name"
+                        required={firebaseConfigured}
+                        maxLength={40}
+                        value={lastName}
+                        onChange={(event) => setLastName(event.target.value)}
+                        placeholder="Last"
+                        className="field w-full rounded-2xl px-4 py-3 text-[15px] text-ink placeholder:text-ink-soft/50"
+                      />
+                    </label>
+                  </div>
+                )}
+
                 <label className="block">
                   <span className="mb-1.5 block text-sm font-medium text-ink">
                     {isLogin ? "Email or username" : "Email address"}

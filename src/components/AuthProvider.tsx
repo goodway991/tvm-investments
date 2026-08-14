@@ -30,6 +30,11 @@ import {
   getClientFirestore,
 } from "@/lib/firebase/client";
 import { LEGAL_STORAGE_KEY, TOS_VERSION } from "@/lib/legal";
+import {
+  clearSignupName,
+  fullDisplayName,
+  readSignupName,
+} from "@/lib/person-name";
 import { WATCHLIST_ALLOWED_SYMBOLS } from "@/lib/watchlist-symbols";
 
 const ADMIN_EMAIL =
@@ -40,7 +45,10 @@ export interface AccountProfile {
   uid: string;
   email: string;
   displayName: string;
+  firstName: string;
+  lastName: string;
   createdAt: Date | null;
+  tourCompletedAt: Date | null;
 }
 
 export interface AccountEntitlement {
@@ -79,8 +87,10 @@ interface AuthContextValue {
   loading: boolean;
   error: string;
   giftPending: boolean;
+  tourPending: boolean;
   logout: () => Promise<void>;
   acknowledgeGift: () => Promise<void>;
+  completeTour: () => Promise<void>;
   updateWatchlist: (symbols: string[]) => Promise<void>;
   updatePortfolio: (cash: number, totalValue: number) => Promise<void>;
   savePosition: (position: Omit<PortfolioPosition, "currentPrice"> & { currentPrice?: number }) => Promise<void>;
@@ -133,6 +143,26 @@ function writeGiftSeen(uid: string, grantId: string) {
   }
 }
 
+function tourSeenKey(uid: string) {
+  return `tvm-tour-seen:${uid}`;
+}
+
+function readTourSeen(uid: string) {
+  try {
+    return window.localStorage.getItem(tourSeenKey(uid)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeTourSeen(uid: string) {
+  try {
+    window.localStorage.setItem(tourSeenKey(uid), "1");
+  } catch {
+    /* private mode */
+  }
+}
+
 function grantIdFrom(data: DocumentData) {
   const gifted = asDate(data.giftedAt);
   if (gifted) return String(gifted.getTime());
@@ -144,7 +174,10 @@ function profileFrom(data: DocumentData): AccountProfile {
     uid: String(data.uid),
     email: String(data.email),
     displayName: String(data.displayName),
+    firstName: String(data.firstName || ""),
+    lastName: String(data.lastName || ""),
     createdAt: asDate(data.createdAt),
+    tourCompletedAt: asDate(data.tourCompletedAt),
   };
 }
 
@@ -166,10 +199,28 @@ async function ensureAccountDocuments(user: User) {
       /* private browsing */
     }
 
+    const pendingName = readSignupName();
+    clearSignupName();
+    const named =
+      !isAdmin && pendingName
+        ? {
+            firstName: pendingName.firstName,
+            lastName: pendingName.lastName,
+            displayName: fullDisplayName(
+              pendingName.firstName,
+              pendingName.lastName,
+            ),
+          }
+        : {
+            displayName: isAdmin
+              ? "ADMIN"
+              : user.displayName || user.email.split("@")[0],
+          };
+
     await setDoc(profileRef, {
       uid: user.uid,
       email: user.email,
-      displayName: isAdmin ? "ADMIN" : user.displayName || user.email.split("@")[0],
+      ...named,
       createdAt: now,
       updatedAt: now,
       tosVersion: TOS_VERSION,
@@ -219,6 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState("");
   const [giftPending, setGiftPending] = useState(false);
   const [giftGrantId, setGiftGrantId] = useState("comp");
+  const [tourPending, setTourPending] = useState(false);
 
   useEffect(() => {
     const auth = getClientAuth();
@@ -249,6 +301,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setPositions([]);
         setGiftPending(false);
         setGiftGrantId("comp");
+        setTourPending(false);
         setLoading(false);
         return;
       }
@@ -260,7 +313,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         documentUnsubscribers = [
           onSnapshot(doc(db, "users", nextUser.uid), (snapshot) => {
-            if (snapshot.exists()) setProfile(profileFrom(snapshot.data()));
+            if (!snapshot.exists()) return;
+            const data = snapshot.data();
+            setProfile(profileFrom(data));
+            const roleIsAdmin =
+              nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+            setTourPending(
+              !roleIsAdmin &&
+                !asDate(data.tourCompletedAt) &&
+                !readTourSeen(nextUser.uid),
+            );
           }),
           onSnapshot(doc(db, "entitlements", nextUser.uid), (snapshot) => {
             if (!snapshot.exists()) return;
@@ -358,6 +420,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error(ackError);
     }
   }, [giftGrantId, user]);
+
+  const completeTour = useCallback(async () => {
+    const db = getClientFirestore();
+    if (!user) return;
+    writeTourSeen(user.uid);
+    setTourPending(false);
+    if (!db) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        tourCompletedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (tourError) {
+      console.error(tourError);
+    }
+  }, [user]);
 
   const updateWatchlist = useCallback(
     async (symbols: string[]) => {
@@ -484,8 +562,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       giftPending,
+      tourPending,
       logout,
       acknowledgeGift,
+      completeTour,
       updateWatchlist,
       updatePortfolio,
       savePosition,
@@ -495,9 +575,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       entitlement,
       error,
       giftPending,
+      tourPending,
       loading,
       logout,
       acknowledgeGift,
+      completeTour,
       portfolio,
       positions,
       profile,

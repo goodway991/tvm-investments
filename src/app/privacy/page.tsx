@@ -62,8 +62,9 @@ export default function PrivacyPage() {
       <h3>3.1 Information you provide</h3>
       <ul>
         <li>
-          <strong>Account identifiers:</strong> email address, display name, and
-          a unique user ID issued by our authentication provider.
+          <strong>Account identifiers:</strong> email address, first name, last
+          name, display name, and a unique user ID issued by our authentication
+          provider.
         </li>
         <li>
           <strong>Credentials:</strong> passwords are collected at sign-up or
@@ -99,7 +100,7 @@ export default function PrivacyPage() {
         <li>
           <strong>Session data:</strong> authentication cookies or tokens needed
           to keep you signed in, plus local or session storage used for legal
-          acceptance and interface state.
+          acceptance, the virtual tour, and interface state.
         </li>
       </ul>
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
+import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
@@ -283,6 +284,7 @@ export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
 export function SettingsPanel() {
   const { user, profile, entitlement, watchlist, positions, logout } = useAuth();
   const { openUpgrade } = useUpgrade();
+  const { openTour } = useTour();
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function handleLogout() {
@@ -340,6 +342,21 @@ export function SettingsPanel() {
           className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
         >
           View plan
+        </button>
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-[#f7f8fc] p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="font-semibold text-ink">Virtual Tour</p>
+        <p className="mt-1">
+          Replay the walkthrough of the desk — each feature in a window, with how
+          to use it.
+        </p>
+        <button
+          type="button"
+          onClick={() => openTour()}
+          className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          Virtual Tour
         </button>
       </div>
 

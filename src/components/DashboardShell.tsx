@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArchiveBanner,
   ArchiveModePulse,
@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/components/AuthProvider";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
 import { ArchiveCalendarLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
+import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
 
@@ -100,8 +101,9 @@ function PreviewSidebar({
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { user, entitlement, loading, error } = useAuth();
+  const { user, entitlement, loading, error, tourPending } = useAuth();
   const { openUpgrade } = useUpgrade();
+  const { isOpen: tourOpen, openTour } = useTour();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const archive = searchParams.get("archive");
@@ -109,6 +111,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     "expanded" | "collapsed" | "hidden"
   >("expanded");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (loading || !user || !tourPending || tourOpen) return;
+    const timer = window.setTimeout(() => openTour({ required: true }), 400);
+    return () => window.clearTimeout(timer);
+  }, [loading, openTour, tourOpen, tourPending, user]);
 
   function cycleSidebar() {
     setSidebarMode((current) =>
