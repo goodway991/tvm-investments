@@ -59,12 +59,64 @@ function BogenVisual() {
 function EventsVisual() {
   return (
     <div className="overflow-hidden rounded-[22px] border border-ink/[0.08] bg-white">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/release/market-events-expand.png"
-        alt="Tap a Daily Brief widget to expand it for more detail"
-        className="w-full"
-      />
+      <div className="flex items-center gap-2 border-b border-ink/[0.06] bg-surface px-3 py-2">
+        <span className="h-2 w-2 rounded-full bg-coral/80" />
+        <span className="h-2 w-2 rounded-full bg-amber-400/90" />
+        <span className="h-2 w-2 rounded-full bg-emerald-400/90" />
+        <span className="ml-1 text-[11px] font-semibold text-ink-soft">
+          Daily Brief · Market-moving events
+        </span>
+      </div>
+      <div className="grid gap-3 p-4">
+        <article className="rounded-[22px] border border-ink/[0.08] bg-surface p-4">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-ink-soft">🇺🇸 US</span>
+              <span className="rounded-full border border-green-500/20 bg-green-500/10 px-2 py-0.5 text-[11px] text-gain">
+                bullish
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold text-violet">More</span>
+          </div>
+          <h3 className="text-sm font-medium text-ink">
+            CPI cools, growth names catch a bid
+          </h3>
+          <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-ink-soft">
+            Consumer prices rose less than expected. Bond yields dipped on the print.
+          </p>
+          <p className="mt-2 text-[11px] font-medium text-violet">Tap for more detail</p>
+        </article>
+        <article className="rounded-[22px] border border-violet/25 bg-surface p-4 shadow-[0_12px_24px_-18px_rgba(30,70,160,0.45)]">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-ink-soft">🌍 Global</span>
+              <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">
+                mixed
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold text-violet">Close</span>
+          </div>
+          <h3 className="text-sm font-medium text-ink">
+            Fed holds rates, data-dependent path
+          </h3>
+          <p className="mt-2 text-[11px] leading-relaxed text-ink-soft">
+            Policy stays on hold while inflation progress remains uneven. Equities
+            traded choppy as investors parsed the statement.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet">
+              Reuters
+            </span>
+            <span className="text-[11px] font-medium text-ink-soft">2026-08-14</span>
+            <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet">
+              SPY
+            </span>
+            <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet">
+              QQQ
+            </span>
+          </div>
+        </article>
+      </div>
     </div>
   );
 }
