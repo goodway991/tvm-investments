@@ -254,6 +254,14 @@ html.dark .sheet-well {
   -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
+.sheet-backdrop {
+  background: rgb(var(--ink) / 0.2);
+}
+
+html.dark .sheet-backdrop {
+  background: transparent;
+}
+
 html.dark .field {
   background: rgba(16, 24, 42, 0.55);
   border-color: rgba(255, 255, 255, 0.12);
@@ -937,25 +945,55 @@ button:not(:disabled):hover .archive-flow-node {
   }
 }
 
-.plan-col-current {
-  background: rgba(47, 98, 255, 0.1);
+.plan-widget-current {
   box-shadow:
-    inset 0 0 0 1px rgba(47, 98, 255, 0.35),
-    0 0 18px rgba(47, 98, 255, 0.22);
-  animation: plan-col-glow 2.4s ease-in-out infinite;
+    0 0 0 2px rgba(47, 98, 255, 0.95),
+    0 0 18px rgba(47, 98, 255, 0.55),
+    0 0 34px rgba(47, 98, 255, 0.28);
+  animation:
+    archive-activate 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    plan-widget-glow 1.8s ease-in-out 0.55s infinite;
 }
 
-@keyframes plan-col-glow {
+html.dark .plan-widget-current {
+  box-shadow:
+    0 0 0 2px rgba(96, 165, 250, 0.95),
+    0 0 18px rgba(59, 130, 246, 0.55),
+    0 0 34px rgba(37, 99, 235, 0.32);
+  animation:
+    archive-activate 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    plan-widget-glow-dark 1.8s ease-in-out 0.55s infinite;
+}
+
+@keyframes plan-widget-glow {
   0%,
   100% {
     box-shadow:
-      inset 0 0 0 1px rgba(47, 98, 255, 0.28),
-      0 0 12px rgba(47, 98, 255, 0.16);
+      0 0 0 2px rgba(47, 98, 255, 0.75),
+      0 0 12px rgba(47, 98, 255, 0.4),
+      0 0 24px rgba(47, 98, 255, 0.18);
   }
   50% {
     box-shadow:
-      inset 0 0 0 2px rgba(47, 98, 255, 0.55),
-      0 0 26px rgba(47, 98, 255, 0.32);
+      0 0 0 2px rgba(147, 197, 253, 1),
+      0 0 22px rgba(47, 98, 255, 0.7),
+      0 0 40px rgba(37, 99, 235, 0.35);
+  }
+}
+
+@keyframes plan-widget-glow-dark {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(96, 165, 250, 0.75),
+      0 0 12px rgba(59, 130, 246, 0.4),
+      0 0 24px rgba(37, 99, 235, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(191, 219, 254, 1),
+      0 0 22px rgba(96, 165, 250, 0.7),
+      0 0 40px rgba(59, 130, 246, 0.38);
   }
 }
 

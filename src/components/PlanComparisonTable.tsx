@@ -35,6 +35,56 @@ function PlanMark({ included }: { included: boolean }) {
   );
 }
 
+function PlanWidget({
+  title,
+  current,
+  included,
+}: {
+  title: string;
+  current: boolean;
+  included: (feature: (typeof PLAN_FEATURES)[number]) => boolean;
+}) {
+  const features = [...PLAN_FEATURES].sort(
+    (left, right) => Number(left.free) - Number(right.free),
+  );
+
+  return (
+    <article
+      className={`glass rounded-[22px] p-4 sm:p-5 ${
+        current ? "plan-widget-current" : ""
+      }`}
+    >
+      <header className="mb-4 text-center">
+        <h3
+          className={`font-display text-xl font-bold ${
+            title === "Pro" ? "text-violet" : "text-ink"
+          }`}
+        >
+          {title}
+        </h3>
+        {current ? (
+          <span className="archive-active-label mt-1 block">Current</span>
+        ) : (
+          <span className="mt-1 block h-[13px]" aria-hidden />
+        )}
+      </header>
+      <ul className="space-y-1">
+        {features.map((feature) => (
+          <li
+            key={feature.name}
+            className="flex items-center justify-between gap-3 rounded-xl px-1 py-2"
+          >
+            <p className="text-sm font-medium leading-snug text-ink">
+              {feature.name}
+            </p>
+            <PlanMark included={included(feature)} />
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
 export function PlanComparisonTable({
   currentPlan,
 }: {
@@ -43,65 +93,17 @@ export function PlanComparisonTable({
   const alreadyPro = currentPlan === "pro";
 
   return (
-    <div className="overflow-hidden rounded-[22px] border border-violet/15">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="bg-violet/[0.06]">
-            <th className="px-4 py-4 font-display text-xs font-semibold uppercase tracking-widest text-ink-soft sm:px-5">
-              Features
-            </th>
-            <th
-              className={`px-3 py-4 text-center font-display text-base font-bold text-ink ${
-                alreadyPro ? "" : "plan-col-current"
-              }`}
-            >
-              Free
-              {!alreadyPro ? (
-                <span className="mt-1 block text-[10px] font-semibold uppercase tracking-widest text-violet">
-                  Current
-                </span>
-              ) : null}
-            </th>
-            <th
-              className={`px-3 py-4 text-center font-display text-base font-bold text-violet ${
-                alreadyPro ? "plan-col-current" : "bg-violet/[0.08]"
-              }`}
-            >
-              Pro
-              {alreadyPro ? (
-                <span className="mt-1 block text-[10px] font-semibold uppercase tracking-widest text-violet">
-                  Current
-                </span>
-              ) : null}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...PLAN_FEATURES]
-            .sort((left, right) => Number(left.free) - Number(right.free))
-            .map((feature) => (
-            <tr key={feature.name} className="border-t border-violet/10">
-              <th className="px-4 py-3.5 font-medium text-ink sm:px-5">
-                {feature.name}
-              </th>
-              <td className={`px-3 py-3.5 ${alreadyPro ? "" : "plan-col-current"}`}>
-                <div className="grid place-items-center">
-                  <PlanMark included={feature.free} />
-                </div>
-              </td>
-              <td
-                className={`px-3 py-3.5 ${
-                  alreadyPro ? "plan-col-current" : "bg-violet/[0.04]"
-                }`}
-              >
-                <div className="grid place-items-center">
-                  <PlanMark included={feature.pro} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="grid gap-4 p-2 sm:grid-cols-2 sm:gap-5 sm:p-3">
+      <PlanWidget
+        title="Free"
+        current={!alreadyPro}
+        included={(feature) => feature.free}
+      />
+      <PlanWidget
+        title="Pro"
+        current={alreadyPro}
+        included={(feature) => feature.pro}
+      />
     </div>
   );
 }

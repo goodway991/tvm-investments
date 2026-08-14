@@ -109,12 +109,12 @@ export function OverlaySheet({
         {onClose && closeOnBackdrop ? (
           <button
             type="button"
-            className="fixed inset-0 bg-ink/20"
+            className="sheet-backdrop fixed inset-0"
             aria-label="Close"
             onClick={onClose}
           />
         ) : (
-          <div className="fixed inset-0 bg-ink/20" />
+          <div className="sheet-backdrop fixed inset-0" />
         )}
         <div
           role="dialog"
