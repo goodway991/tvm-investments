@@ -86,7 +86,7 @@ export function FeedbackPanel() {
 
       <div className="mt-5">
         <p className="text-xs text-ink-soft">Rating</p>
-        <div className="mt-1 flex gap-1" onMouseLeave={() => setHoverRating(0)}>
+        <div className="mt-1 flex items-center gap-1" onMouseLeave={() => setHoverRating(0)}>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
@@ -96,11 +96,14 @@ export function FeedbackPanel() {
               className={`grid h-9 w-9 place-items-center rounded-full text-lg ${
                 star <= shown ? "text-violet" : "text-zinc-300"
               }`}
-              aria-label={`${star} star${star === 1 ? "" : "s"}`}
+              aria-label={`${star} of 5 stars`}
             >
               ★
             </button>
           ))}
+          <span className="ml-2 text-sm font-semibold text-ink-soft" aria-live="polite">
+            {shown ? `${shown}/5 stars` : "0/5 stars"}
+          </span>
         </div>
       </div>
 

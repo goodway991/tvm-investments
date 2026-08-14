@@ -8,7 +8,7 @@ export const LEGAL_VENUE =
   "the state or federal courts located in New York County, New York";
 
 export function getLegalContactEmail() {
-  const fromPublic = process.env.NEXT_PUBLIC_TVM_CONTACT_EMAIL?.trim();
-  const fromServer = process.env.TVM_CONTACT_EMAIL?.trim();
-  return fromPublic || fromServer || "";
+  // Public legal pages only. The ops inbox for Settings feedback is separate
+  // (TVM_CONTACT_EMAIL) and must not appear in the product UI.
+  return process.env.NEXT_PUBLIC_TVM_CONTACT_EMAIL?.trim() || "";
 }
