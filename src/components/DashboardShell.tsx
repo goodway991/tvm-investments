@@ -413,17 +413,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <ArchiveModePulse />
           <ArchiveBanner />
           {children}
-          <nav className="mt-10 flex flex-wrap justify-center gap-x-4 gap-y-1 text-center text-[11px] text-ink-soft">
-            <Link href="/privacy" className="hover:text-violet">
-              Privacy
-            </Link>
-            <Link href="/terms" className="hover:text-violet">
-              Terms
-            </Link>
-            <Link href="/disclaimer" className="hover:text-violet">
-              Risk disclaimer
-            </Link>
-          </nav>
         </main>
       </div>
     </div>

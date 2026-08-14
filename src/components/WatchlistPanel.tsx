@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import type { CompanyReport, ScreenedStock, StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import {
@@ -9,6 +9,7 @@ import {
   StockDetailModal,
   screenedToCandidate,
 } from "@/components/StockDetailModal";
+import { TVMIcon } from "@/components/TVMBrand";
 
 type WatchlistStock = Pick<StockCandidate, "symbol" | "name">;
 
@@ -30,6 +31,10 @@ export function WatchlistPanel({
   const { entitlement, watchlist, updateWatchlist } = useAuth();
   const [draft, setDraft] = useState<string[]>(watchlist.symbols);
   const [compact, setCompact] = useState(false);
+  const [query, setQuery] = useState(externalQuery);
+  const [remote, setRemote] = useState<WatchlistStock[]>([]);
+  const [knownNames, setKnownNames] = useState<Record<string, string>>({});
+  const [searching, setSearching] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -39,10 +44,51 @@ export function WatchlistPanel({
     setDraft(watchlist.symbols);
   }, [watchlist.symbols]);
 
+  useEffect(() => {
+    setQuery(externalQuery);
+  }, [externalQuery]);
+
+  useEffect(() => {
+    const needle = query.trim();
+    if (needle.length < 1) {
+      setRemote([]);
+      setSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const response = await fetch(
+          `/api/yahoo/search?q=${encodeURIComponent(needle)}`,
+          { signal: controller.signal },
+        );
+        const data = (await response.json()) as {
+          results?: WatchlistStock[];
+        };
+        setRemote(Array.isArray(data.results) ? data.results : []);
+      } catch {
+        if (!controller.signal.aborted) setRemote([]);
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 220);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
   const candidates = useMemo(() => {
     const unique = new Map(stocks.map((stock) => [stock.symbol, stock]));
+    for (const [symbol, name] of Object.entries(knownNames)) {
+      if (!unique.has(symbol)) unique.set(symbol, { symbol, name });
+    }
+    for (const stock of remote) {
+      if (!unique.has(stock.symbol)) unique.set(stock.symbol, stock);
+    }
     return Array.from(unique.values());
-  }, [stocks]);
+  }, [knownNames, remote, stocks]);
 
   const quotedBySymbol = useMemo(
     () => new Map(quoted.map((stock) => [stock.symbol, stock])),
@@ -63,14 +109,14 @@ export function WatchlistPanel({
   }
 
   const results = useMemo(() => {
-    const query = externalQuery.trim().toLowerCase();
+    const needle = query.trim().toLowerCase();
     return candidates.filter(
       (stock) =>
-        !query ||
-        stock.symbol.toLowerCase().includes(query) ||
-        stock.name.toLowerCase().includes(query),
+        !needle ||
+        stock.symbol.toLowerCase().includes(needle) ||
+        stock.name.toLowerCase().includes(needle),
     );
-  }, [candidates, externalQuery]);
+  }, [candidates, query]);
 
   const cooldownActive =
     entitlement.plan === "free" &&
@@ -86,17 +132,21 @@ export function WatchlistPanel({
   const selectedStock = selectedSymbol ? detailFor(selectedSymbol) : null;
   const selectedReport = reports.find((report) => report.symbol === selectedSymbol);
 
-  function add(symbol: string) {
+  function add(stock: WatchlistStock) {
     setError("");
     setMessage("");
-    if (draft.includes(symbol)) return;
+    if (draft.includes(stock.symbol)) return;
     if (draft.length >= entitlement.watchlistLimit) {
       setError(
         `Your ${entitlement.plan} plan is limited to ${entitlement.watchlistLimit} watched stocks.`,
       );
       return;
     }
-    setDraft((current) => [...current, symbol]);
+    setKnownNames((current) => ({
+      ...current,
+      [stock.symbol]: stock.name || stock.symbol,
+    }));
+    setDraft((current) => [...current, stock.symbol]);
   }
 
   function remove(symbol: string) {
@@ -144,6 +194,37 @@ export function WatchlistPanel({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <form
+            className="flex items-center gap-2"
+            onSubmit={(event: FormEvent<HTMLFormElement>) => {
+              event.preventDefault();
+              if (query.trim()) setCompact(false);
+            }}
+          >
+            <label className="relative">
+              <span className="sr-only">Search stocks</span>
+              <TVMIcon
+                name="search"
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft"
+              />
+              <input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  if (event.target.value.trim()) setCompact(false);
+                }}
+                placeholder="Search stocks…"
+                className="field w-44 rounded-2xl bg-white py-2.5 pl-11 pr-4 text-sm text-ink placeholder:text-ink-soft/60 sm:w-52"
+              />
+            </label>
+            <button
+              type="submit"
+              className="glass-violet rounded-full px-4 py-2.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+            >
+              {searching ? "Searching…" : "Search"}
+            </button>
+          </form>
           <span className="glass rounded-full px-3 py-1.5 text-sm font-semibold text-violet">
             {draft.length}/{entitlement.watchlistLimit}
           </span>
@@ -237,19 +318,22 @@ export function WatchlistPanel({
 
           <div className="mt-5">
             <p className="text-sm font-semibold text-ink">
-              {externalQuery
-                ? `Results for “${externalQuery}”`
+              {query.trim()
+                ? searching
+                  ? `Searching “${query.trim()}”`
+                  : `Results for “${query.trim()}”`
                 : "Available stocks"}
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {results.map((stock) => {
+              {results.length ? (
+                results.map((stock) => {
                 const selected = draft.includes(stock.symbol);
                 return (
                   <button
                     key={stock.symbol}
                     type="button"
                     onClick={() =>
-                      selected ? remove(stock.symbol) : add(stock.symbol)
+                      selected ? remove(stock.symbol) : add(stock)
                     }
                     disabled={cooldownActive}
                     className={`flex items-center justify-between rounded-2xl border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
@@ -271,7 +355,16 @@ export function WatchlistPanel({
                     </span>
                   </button>
                 );
-              })}
+              })
+              ) : (
+                <p className="col-span-full rounded-2xl bg-surface px-4 py-6 text-sm text-ink-soft">
+                  {query.trim()
+                    ? searching
+                      ? "Looking up listed names…"
+                      : `No names match “${query.trim()}”.`
+                    : "No stocks to show."}
+                </p>
+              )}
             </div>
           </div>
         </>
