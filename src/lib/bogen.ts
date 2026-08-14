@@ -159,7 +159,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   "market-events": {
     title: "Market-moving events",
     what: "Four headline slots from this session’s scan — US, global, and mixed tape.",
-    how: "Read each card for the summary and impact tag. Empty slots mean the snapshot did not fill that row.",
+    how: "Tap a card to expand the fuller note, source, and any tickers. Empty slots mean the snapshot did not fill that row.",
   },
   "sector-dives": {
     title: "Sector dives",

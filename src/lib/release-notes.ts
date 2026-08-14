@@ -1,6 +1,6 @@
 export const CURRENT_RELEASE_ID = "beta-2.1";
 
-export type ReleaseFeatureVisualId = "bogen";
+export type ReleaseFeatureVisualId = "bogen" | "events";
 
 export type ReleaseFeature = {
   title: string;
@@ -59,6 +59,11 @@ export const RELEASES: ReleaseNote[] = [
         title: "Bogen mode",
         visual: "bogen",
         body: "Turn it on in Settings. A question mark appears next to sidebar items and widgets. Tap one to read what that feature does and how to use it. Turn it off the same way — the circles disappear.",
+      },
+      {
+        title: "Market-moving events",
+        visual: "events",
+        body: "On Daily Brief, tap a market-moving event card to expand it. You get the fuller note, source, date, and any tickers — not just the one-line teaser.",
       },
     ],
   },

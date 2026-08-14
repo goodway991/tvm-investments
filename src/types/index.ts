@@ -85,6 +85,10 @@ export interface MarketEvent {
   impact: "bullish" | "bearish" | "mixed";
   summary: string;
   date: string;
+  source?: string;
+  url?: string;
+  tickers?: string[];
+  detail?: string;
 }
 
 export interface CompanyReport {

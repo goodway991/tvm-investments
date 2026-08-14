@@ -32,7 +32,10 @@ export async function GET(request: NextRequest) {
       date: snapshot.date,
       dataMode: snapshot.dataMode,
       marketEvents: snapshot.marketEvents.length,
-      sectorDives: snapshot.sectorDives.map((dive) => dive.id),
+      sectorDives: snapshot.sectorDives.map((dive) => ({
+        id: dive.id,
+        filled: !/no .+ names printed/i.test(dive.body),
+      })),
       topPicks: snapshot.topPicks.map((pick) => ({
         symbol: pick.symbol,
         score: pick.compositeScore,

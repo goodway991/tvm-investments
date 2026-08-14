@@ -3,7 +3,7 @@ import type { ChartPoint, ChartRange } from "@/lib/chart-series";
 import type { MarketEvent, NewsHeadline, OHLCVBar, StockCandidate } from "@/types";
 import { YAHOO_SCAN_UNIVERSE, SCAN_UNIVERSE_LIMIT } from "@/lib/watchlist-symbols";
 import { fetchNasdaqScreener, type NasdaqQuote } from "@/lib/providers/nasdaq";
-import { sectorNewsSymbols } from "@/lib/sector-dives";
+import { resolveSector, sectorNewsSymbols } from "@/lib/sector-dives";
 
 export { YAHOO_SCAN_UNIVERSE, WATCHLIST_ALLOWED_SYMBOLS, WATCHLIST_EXTRA_SYMBOLS, SCAN_UNIVERSE_LIMIT, POPULAR_WATCHLIST_SYMBOLS } from "@/lib/watchlist-symbols";
 
@@ -168,45 +168,6 @@ export async function searchYahooSymbols(
   }
 }
 
-function inferSector(sector: string, industry: string): string {
-  const text = `${sector} ${industry}`.toLowerCase();
-  if (text.includes("semiconductor") || text.includes("software") || text.includes("technology")) {
-    return "Technology";
-  }
-  if (text.includes("bank") || text.includes("financial") || text.includes("credit") || text.includes("insurance")) {
-    return "Financial Services";
-  }
-  if (text.includes("health") || text.includes("pharma") || text.includes("biotech") || text.includes("drug")) {
-    return "Healthcare";
-  }
-  if (
-    text.includes("auto") ||
-    text.includes("retail") ||
-    text.includes("consumer") ||
-    text.includes("restaurant") ||
-    text.includes("beverage") ||
-    text.includes("household")
-  ) {
-    return "Consumer Cyclical";
-  }
-  if (text.includes("communication") || text.includes("media") || text.includes("internet") || text.includes("telecom")) {
-    return "Communication Services";
-  }
-  if (text.includes("industrial") || text.includes("aerospace") || text.includes("machinery") || text.includes("defense")) {
-    return "Industrials";
-  }
-  if (
-    text.includes("energy") ||
-    text.includes("oil") ||
-    text.includes("petroleum") ||
-    text.includes("natural gas") ||
-    text.includes("midstream")
-  ) {
-    return "Energy";
-  }
-  return sector || "Other";
-}
-
 function impactFromText(text: string): MarketEvent["impact"] {
   const t = text.toLowerCase();
   const bullish = ["rally", "surge", "beats", "record high", "eases", "cut rates", "cool inflation"];
@@ -336,8 +297,14 @@ function candidateFromQuote(
   return {
     symbol,
     name: quote?.longName || quote?.shortName || nasdaq?.name || symbol,
-    sector: inferSector(String(quote?.sector ?? ""), String(quote?.industry ?? "")),
-    industry: String(quote?.industry || quote?.sector || "Unknown"),
+    sector: resolveSector(
+      symbol,
+      String(quote?.sector || nasdaq?.sector || ""),
+      String(quote?.industry || nasdaq?.industry || ""),
+    ),
+    industry: String(
+      quote?.industry || nasdaq?.industry || quote?.sector || nasdaq?.sector || "Unknown",
+    ),
     price,
     change,
     changePercent,
@@ -423,7 +390,7 @@ export async function fetchYahooCandidate(symbol: string): Promise<StockCandidat
   const profile = summary?.assetProfile;
   const stats = summary?.defaultKeyStatistics;
   const detail = summary?.summaryDetail;
-  const sector = inferSector(profile?.sector ?? "", profile?.industry ?? "");
+  const sector = resolveSector(ticker, profile?.sector ?? "", profile?.industry ?? "");
   const ohlcv = barsFromChart(dailyChart.quotes).slice(-90);
   const yearCloses = monthlyChart ? barsFromChart(monthlyChart.quotes).slice(-12) : [];
   const lastClose = ohlcv.at(-1)?.close ?? 0;
@@ -628,15 +595,29 @@ export async function fetchYahooMarketEvents(): Promise<MarketEvent[]> {
     });
     return (result.news ?? []).slice(0, 6).map((item) => {
       const title = item.title;
-      const tickers = item.relatedTickers?.length
-        ? ` Tickers: ${item.relatedTickers.slice(0, 4).join(", ")}.`
-        : "";
+      const tickers = (item.relatedTickers ?? []).slice(0, 6);
+      const source = publicPublisher(item.publisher);
+      const published = toIso(item.providerPublishTime);
+      const tickerLine = tickers.length ? `Names in the headline: ${tickers.join(", ")}.` : "";
+      const summary = [source, tickerLine].filter(Boolean).join(" ").slice(0, 220);
+      const detail = [
+        title,
+        source ? `Source: ${source}` : "",
+        tickerLine,
+        published ? `Published ${published.slice(0, 10)}.` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
       return {
         title,
-        region: regionFromText(`${title} ${item.publisher ?? ""}`),
+        region: regionFromText(`${title} ${item.publisher ?? ""} ${tickers.join(" ")}`),
         impact: impactFromText(title),
-        summary: `${publicPublisher(item.publisher)}.${tickers}`.slice(0, 280),
-        date: toIso(item.providerPublishTime).slice(0, 10),
+        summary: summary || title,
+        detail,
+        source,
+        url: item.link || undefined,
+        tickers,
+        date: published.slice(0, 10),
       };
     });
   } catch (error) {

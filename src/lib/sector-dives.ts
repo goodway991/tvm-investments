@@ -48,18 +48,228 @@ const FALLBACK_DIVES: SectorDive[] = [
 ];
 
 const SECTOR_ALIASES: Record<string, string[]> = {
-  Technology: ["Technology"],
-  "Financial Services": ["Financial Services", "Financial"],
-  Healthcare: ["Healthcare"],
+  Technology: [
+    "Technology",
+    "Information Technology",
+    "Communication Services",
+    "Telecommunications",
+  ],
+  "Financial Services": ["Financial Services", "Financial", "Finance", "Financials"],
+  Healthcare: ["Healthcare", "Health Care"],
   "Consumer Cyclical": [
     "Consumer Cyclical",
     "Consumer Defensive",
     "Consumer Staples",
     "Consumer Discretionary",
   ],
-  Industrials: ["Industrials"],
+  Industrials: ["Industrials", "Industrial"],
   Energy: ["Energy"],
 };
+
+/** Map Yahoo / NASDAQ sector labels onto the six deep-dive sleeves. */
+export function canonicalSector(sector: string, industry = ""): string {
+  const text = `${sector} ${industry}`.toLowerCase();
+  if (
+    text.includes("semiconductor") ||
+    text.includes("software") ||
+    text.includes("technology") ||
+    text.includes("information tech") ||
+    text.includes("computer") ||
+    text.includes("electronic") ||
+    text.includes("communication") ||
+    text.includes("telecom") ||
+    text.includes("internet") ||
+    text.includes("media")
+  ) {
+    return "Technology";
+  }
+  if (
+    text.includes("bank") ||
+    text.includes("financial") ||
+    text.includes("finance") ||
+    text.includes("credit") ||
+    text.includes("insurance") ||
+    text.includes("capital market")
+  ) {
+    return "Financial Services";
+  }
+  if (
+    text.includes("health") ||
+    text.includes("pharma") ||
+    text.includes("biotech") ||
+    text.includes("drug") ||
+    text.includes("managed care")
+  ) {
+    return "Healthcare";
+  }
+  if (
+    text.includes("auto") ||
+    text.includes("retail") ||
+    text.includes("consumer") ||
+    text.includes("restaurant") ||
+    text.includes("beverage") ||
+    text.includes("household") ||
+    text.includes("apparel")
+  ) {
+    return "Consumer Cyclical";
+  }
+  if (
+    text.includes("industrial") ||
+    text.includes("aerospace") ||
+    text.includes("machinery") ||
+    text.includes("defense") ||
+    text.includes("manufactur")
+  ) {
+    return "Industrials";
+  }
+  if (
+    text.includes("energy") ||
+    text.includes("oil") ||
+    text.includes("petroleum") ||
+    text.includes("natural gas") ||
+    text.includes("midstream")
+  ) {
+    return "Energy";
+  }
+  return sector.trim() || "Other";
+}
+
+function diveLooksEmpty(dive: SectorDive) {
+  const body = dive.body.trim();
+  return (
+    !body ||
+    /no .+ names printed/i.test(body) ||
+    /\*\*Relative strength leaders:\*\*\s*—/.test(body)
+  );
+}
+
+export function resolveSector(symbol: string, sector: string, industry = "") {
+  const mapped = canonicalSector(sector, industry);
+  if (mapped && mapped !== "Other") return mapped;
+  return SYMBOL_SECTOR[symbol] ?? mapped ?? "Other";
+}
+
+function asDiveCandidate(stock: StockCandidate): StockCandidate {
+  return {
+    ...stock,
+    sector: resolveSector(stock.symbol, stock.sector, stock.industry),
+    ohlcv: stock.ohlcv ?? [],
+    headlines: stock.headlines ?? [],
+    signals: stock.signals ?? [],
+  };
+}
+
+const SYMBOL_SECTOR: Record<string, string> = {
+  AAPL: "Technology",
+  MSFT: "Technology",
+  NVDA: "Technology",
+  AVGO: "Technology",
+  AMD: "Technology",
+  INTC: "Technology",
+  CRM: "Technology",
+  ORCL: "Technology",
+  ADBE: "Technology",
+  CSCO: "Technology",
+  ACN: "Technology",
+  IBM: "Technology",
+  QCOM: "Technology",
+  TXN: "Technology",
+  AMAT: "Technology",
+  NOW: "Technology",
+  APH: "Technology",
+  KLAC: "Technology",
+  LRCX: "Technology",
+  SNPS: "Technology",
+  CDNS: "Technology",
+  ADI: "Technology",
+  MU: "Technology",
+  PANW: "Technology",
+  CRWD: "Technology",
+  PLTR: "Technology",
+  GOOGL: "Technology",
+  GOOG: "Technology",
+  META: "Technology",
+  NFLX: "Technology",
+  TSM: "Technology",
+  JPM: "Financial Services",
+  BAC: "Financial Services",
+  WFC: "Financial Services",
+  GS: "Financial Services",
+  MS: "Financial Services",
+  V: "Financial Services",
+  MA: "Financial Services",
+  AXP: "Financial Services",
+  BLK: "Financial Services",
+  C: "Financial Services",
+  SCHW: "Financial Services",
+  SPGI: "Financial Services",
+  "BRK-B": "Financial Services",
+  JNJ: "Healthcare",
+  UNH: "Healthcare",
+  LLY: "Healthcare",
+  PFE: "Healthcare",
+  MRK: "Healthcare",
+  ABBV: "Healthcare",
+  TMO: "Healthcare",
+  ABT: "Healthcare",
+  DHR: "Healthcare",
+  AMGN: "Healthcare",
+  ISRG: "Healthcare",
+  SYK: "Healthcare",
+  BSX: "Healthcare",
+  GILD: "Healthcare",
+  AMZN: "Consumer Cyclical",
+  TSLA: "Consumer Cyclical",
+  HD: "Consumer Cyclical",
+  MCD: "Consumer Cyclical",
+  NKE: "Consumer Cyclical",
+  SBUX: "Consumer Cyclical",
+  LOW: "Consumer Cyclical",
+  TJX: "Consumer Cyclical",
+  BKNG: "Consumer Cyclical",
+  WMT: "Consumer Cyclical",
+  COST: "Consumer Cyclical",
+  PG: "Consumer Cyclical",
+  KO: "Consumer Cyclical",
+  PEP: "Consumer Cyclical",
+  DIS: "Consumer Cyclical",
+  CAT: "Industrials",
+  HON: "Industrials",
+  UNP: "Industrials",
+  UPS: "Industrials",
+  BA: "Industrials",
+  GE: "Industrials",
+  DE: "Industrials",
+  LMT: "Industrials",
+  RTX: "Industrials",
+  MMM: "Industrials",
+  ETN: "Industrials",
+  ADP: "Industrials",
+  XOM: "Energy",
+  CVX: "Energy",
+  COP: "Energy",
+  SLB: "Energy",
+  EOG: "Energy",
+  MPC: "Energy",
+  PSX: "Energy",
+  OXY: "Energy",
+  WMB: "Energy",
+  KMI: "Energy",
+  XLE: "Energy",
+};
+
+export function hydrateSectorDives(
+  dives: SectorDive[] | undefined,
+  stocks: StockCandidate[],
+  sessionDate: string,
+): SectorDive[] {
+  const current =
+    dives && dives.length >= 2 ? dives : fallbackSectorDives();
+  const filled = current.filter((dive) => !diveLooksEmpty(dive)).length;
+  if (filled >= 1) return current;
+  if (stocks.length === 0) return current;
+  return buildSectorDives(stocks.map(asDiveCandidate), sessionDate);
+}
 
 function signed(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -200,7 +410,8 @@ export function buildSectorDives(
   stocks: StockCandidate[],
   sessionDate: string,
 ): SectorDive[] {
-  const buckets = bucketStocks(stocks);
+  const normalized = stocks.map(asDiveCandidate);
+  const buckets = bucketStocks(normalized);
   return FALLBACK_DIVES.map((fallback) =>
     diveFromStocks(fallback, stocksForDive(buckets, fallback), sessionDate),
   );

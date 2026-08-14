@@ -7,6 +7,8 @@ export type NasdaqQuote = {
   change: number;
   changePercent: number;
   marketCap: number | null;
+  sector: string;
+  industry: string;
 };
 
 function parseMoney(raw: string | undefined) {
@@ -15,37 +17,51 @@ function parseMoney(raw: string | undefined) {
   return Number.isFinite(value) ? value : null;
 }
 
-export async function fetchNasdaqScreener(limit = 1500): Promise<NasdaqQuote[]> {
-  const url = `https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=${limit}&offset=0`;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json,text/plain,*/*",
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    },
-    cache: "no-store",
-  });
-  if (!response.ok) {
-    throw new Error(`NASDAQ screener error: ${response.status}`);
-  }
-  const payload = (await response.json()) as {
-    data?: { table?: { rows?: Array<Record<string, string>> } };
+function rowFromNasdaq(row: Record<string, string>): NasdaqQuote | null {
+  const symbol = parseTicker(row.symbol);
+  if (!symbol) return null;
+  const price = parseMoney(row.lastsale);
+  if (!(price && price > 0)) return null;
+  return {
+    symbol,
+    name: (row.name || symbol).replace(/\s+Common Stock$/i, "").trim(),
+    price,
+    change: parseMoney(row.netchange) ?? 0,
+    changePercent: parseMoney(row.pctchange) ?? 0,
+    marketCap: parseMoney(row.marketCap),
+    sector: (row.sector || "").trim(),
+    industry: (row.industry || "").trim(),
   };
-  const rows = payload.data?.table?.rows ?? [];
+}
+
+export async function fetchNasdaqScreener(limit = 1500): Promise<NasdaqQuote[]> {
+  const headers = {
+    Accept: "application/json,text/plain,*/*",
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+  };
+  const urls = [
+    `https://api.nasdaq.com/api/screener/stocks?limit=${limit}&offset=0`,
+    `https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=${limit}&offset=0`,
+  ];
+  let rows: Array<Record<string, string>> = [];
+  for (const url of urls) {
+    const response = await fetch(url, { headers, cache: "no-store" });
+    if (!response.ok) continue;
+    const payload = (await response.json()) as {
+      data?: {
+        table?: { rows?: Array<Record<string, string>> };
+        rows?: Array<Record<string, string>>;
+      };
+    };
+    rows = payload.data?.table?.rows ?? payload.data?.rows ?? [];
+    if (rows.some((row) => row.sector || row.industry)) break;
+    if (rows.length > 0 && url === urls[urls.length - 1]) break;
+  }
   const quotes: NasdaqQuote[] = [];
   for (const row of rows) {
-    const symbol = parseTicker(row.symbol);
-    if (!symbol) continue;
-    const price = parseMoney(row.lastsale);
-    if (!(price && price > 0)) continue;
-    quotes.push({
-      symbol,
-      name: (row.name || symbol).replace(/\s+Common Stock$/i, "").trim(),
-      price,
-      change: parseMoney(row.netchange) ?? 0,
-      changePercent: parseMoney(row.pctchange) ?? 0,
-      marketCap: parseMoney(row.marketCap),
-    });
+    const quote = rowFromNasdaq(row);
+    if (quote) quotes.push(quote);
   }
   return quotes;
 }

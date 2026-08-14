@@ -115,7 +115,9 @@ export async function fetchMarketEvents(): Promise<MarketEvent[]> {
         ? ("US" as const)
         : ("Global" as const),
       impact: "mixed" as const,
-      summary: n.summary?.slice(0, 280) ?? n.headline,
+      summary: n.summary?.slice(0, 220) ?? n.headline,
+      detail: n.summary || n.headline,
+      source: "Market wire",
       date: new Date(n.datetime * 1000).toISOString().slice(0, 10),
     }));
   } catch {

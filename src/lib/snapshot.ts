@@ -2,12 +2,12 @@ import "server-only";
 import { cache } from "react";
 import { after } from "next/server";
 
-import type { DailySnapshot } from "@/types";
+import type { DailySnapshot, StockCandidate } from "@/types";
 import { isDemoMode, runDailyAnalysis, runFallbackSnapshot } from "@/lib/analysis-pipeline";
 import { lastCompletedSessionDate } from "@/lib/archive-window";
 import { getLatestSnapshot, getSnapshotByDate } from "@/lib/firebase/admin";
 import { ARCHIVE_DEMO_DATE, buildArchiveDemoSnapshot } from "@/lib/archive-demo";
-import { fallbackSectorDives } from "@/lib/sector-dives";
+import { hydrateSectorDives } from "@/lib/sector-dives";
 import { hasNewsLlm } from "@/lib/scoring";
 import {
   newerLive,
@@ -55,6 +55,49 @@ async function buildAndSaveLiveSnapshot(): Promise<DailySnapshot> {
   return inflightLiveSnapshot;
 }
 
+function stocksForDiveHydration(
+  snapshot: DailySnapshot,
+  screened: DailySnapshot["screenedStocks"],
+): StockCandidate[] {
+  const bySymbol = new Map<string, StockCandidate>();
+  for (const stock of screened) {
+    bySymbol.set(stock.symbol, {
+      symbol: stock.symbol,
+      name: stock.name,
+      sector: stock.sector,
+      industry: stock.industry,
+      price: stock.price,
+      change: 0,
+      changePercent: stock.changePercent,
+      volume: stock.volume,
+      fundamentals: stock.fundamentals,
+      ohlcv: [],
+      headlines: [],
+      signals: [],
+      compositeScore: stock.compositeScore,
+      maxCompositeScore: 100,
+      shortTermScore: stock.shortTermScore,
+      longTermScore: stock.longTermScore,
+      indexMembership: stock.indexMembership,
+    });
+  }
+  for (const stock of [...(snapshot.topMovers ?? []), ...(snapshot.topPicks ?? [])]) {
+    bySymbol.set(stock.symbol, stock);
+  }
+  return [...bySymbol.values()];
+}
+
+function divesNeedRebuild(snapshot: DailySnapshot) {
+  const dives = snapshot.sectorDives ?? [];
+  if (dives.length < 2) return true;
+  return dives.every(
+    (dive) =>
+      !dive.body.trim() ||
+      /no .+ names printed/i.test(dive.body) ||
+      /\*\*Relative strength leaders:\*\*\s*—/.test(dive.body),
+  );
+}
+
 export function normalizeSnapshot(snapshot: DailySnapshot): DailySnapshot {
   const topMovers = snapshot.topMovers ?? [];
   const topPicks = snapshot.topPicks ?? [];
@@ -63,6 +106,22 @@ export function normalizeSnapshot(snapshot: DailySnapshot): DailySnapshot {
     ...topMovers.map((stock) => stock.symbol),
     ...topPicks.map((stock) => stock.symbol),
   ]).size;
+  const screenedStocks =
+    snapshot.screenedStocks ??
+    topMovers.map((stock) => ({
+      symbol: stock.symbol,
+      name: stock.name,
+      sector: stock.sector,
+      industry: stock.industry,
+      price: stock.price,
+      changePercent: stock.changePercent,
+      volume: stock.volume,
+      compositeScore: stock.compositeScore,
+      shortTermScore: stock.shortTermScore ?? stock.compositeScore,
+      longTermScore: stock.longTermScore ?? stock.compositeScore,
+      fundamentals: stock.fundamentals,
+      indexMembership: stock.indexMembership,
+    }));
 
   return {
     ...snapshot,
@@ -71,22 +130,7 @@ export function normalizeSnapshot(snapshot: DailySnapshot): DailySnapshot {
       dow30: 0,
       combined: combinedSymbols,
     },
-    screenedStocks:
-      snapshot.screenedStocks ??
-      topMovers.map((stock) => ({
-        symbol: stock.symbol,
-        name: stock.name,
-        sector: stock.sector,
-        industry: stock.industry,
-        price: stock.price,
-        changePercent: stock.changePercent,
-        volume: stock.volume,
-        compositeScore: stock.compositeScore,
-        shortTermScore: stock.shortTermScore ?? stock.compositeScore,
-        longTermScore: stock.longTermScore ?? stock.compositeScore,
-        fundamentals: stock.fundamentals,
-        indexMembership: stock.indexMembership,
-      })),
+    screenedStocks,
     topMovers,
     topPicks,
     shortTermPicks: snapshot.shortTermPicks ?? topPicks,
@@ -94,10 +138,11 @@ export function normalizeSnapshot(snapshot: DailySnapshot): DailySnapshot {
     reports,
     shortTermReports: snapshot.shortTermReports ?? reports,
     longTermReports: snapshot.longTermReports ?? reports,
-    sectorDives:
-      snapshot.sectorDives && snapshot.sectorDives.length >= 2
-        ? snapshot.sectorDives
-        : fallbackSectorDives(),
+    sectorDives: hydrateSectorDives(
+      snapshot.sectorDives,
+      stocksForDiveHydration(snapshot, screenedStocks),
+      snapshot.date,
+    ),
   };
 }
 
@@ -123,17 +168,20 @@ export const getDashboardSnapshot = cache(async function getDashboardSnapshot(
       Date.now() - latestMemory.at < SNAPSHOT_MEMORY_TTL_MS &&
       coversCompletedSession(latestMemory.snapshot)
     ) {
+      if (divesNeedRebuild(latestMemory.snapshot)) queueSessionRebuild();
       return normalizeSnapshot(latestMemory.snapshot);
     }
 
     const disk = await readDiskSnapshot();
     if (disk && coversCompletedSession(disk)) {
+      if (divesNeedRebuild(disk)) queueSessionRebuild();
       return normalizeSnapshot(rememberLatest(disk));
     }
 
     const cached = await getLatestSnapshot();
     const live = newerLive(cached, disk);
     if (live && coversCompletedSession(live)) {
+      if (divesNeedRebuild(live)) queueSessionRebuild();
       return normalizeSnapshot(rememberLatest(live));
     }
     if (live && !coversCompletedSession(live)) {

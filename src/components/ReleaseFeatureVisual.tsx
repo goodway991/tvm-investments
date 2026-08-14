@@ -58,7 +58,21 @@ function BogenVisual() {
 
 const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   bogen: BogenVisual,
+  events: EventsVisual,
 };
+
+function EventsVisual() {
+  return (
+    <div className="overflow-hidden rounded-[22px] border border-ink/[0.08] bg-white">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/release/market-events-expand.png"
+        alt="Tap a Daily Brief widget to expand it for more detail"
+        className="w-full"
+      />
+    </div>
+  );
+}
 
 export function ReleaseFeatureVisual({ id }: { id: ReleaseFeatureVisualId }) {
   const Visual = VISUALS[id];

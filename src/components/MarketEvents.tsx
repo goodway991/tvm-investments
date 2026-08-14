@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { MarketEvent } from "@/types";
 import { BogenHeading } from "@/components/BogenProvider";
 
@@ -23,9 +24,97 @@ const EMPTY_EVENT: MarketEvent = {
   date: "",
 };
 
+function EventCard({
+  event,
+  index,
+  open,
+  onToggle,
+}: {
+  event: MarketEvent;
+  index: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const empty = !event.date && event.title === EMPTY_EVENT.title;
+  const detail = (event.detail || event.summary).trim();
+  const teaser = event.summary.trim();
+
+  if (empty) {
+    return (
+      <article className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
+        <h3 className="font-medium text-ink">{event.title}</h3>
+        <p className="mt-2 text-sm text-ink-soft">{event.summary}</p>
+      </article>
+    );
+  }
+
+  return (
+    <article className="glass rounded-[22px] shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="w-full rounded-[22px] p-4 text-left"
+      >
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-ink-soft">{regionLabels[event.region]}</span>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-xs ${impactColors[event.impact]}`}
+            >
+              {event.impact}
+            </span>
+          </div>
+          <span className="text-[11px] font-semibold text-violet">
+            {open ? "Close" : "More"}
+          </span>
+        </div>
+        <h3 className="font-medium text-ink">{event.title}</h3>
+        <p className={`mt-2 text-sm leading-relaxed text-ink-soft ${open ? "" : "line-clamp-2"}`}>
+          {open ? detail : teaser}
+        </p>
+        {open ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {event.source ? (
+              <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet">
+                {event.source}
+              </span>
+            ) : null}
+            {event.date ? (
+              <span className="text-[11px] font-medium text-ink-soft">{event.date}</span>
+            ) : null}
+            {event.tickers?.map((ticker) => (
+              <span
+                key={`${index}-${ticker}`}
+                className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet"
+              >
+                {ticker}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-[11px] font-medium text-violet">Tap for more detail</p>
+        )}
+      </button>
+      {open && event.url ? (
+        <div className="px-4 pb-4">
+          <a
+            href={event.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-semibold text-violet hover:underline"
+          >
+            Open headline
+          </a>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 export function MarketEvents({ events }: { events: MarketEvent[] }) {
-  const headlines = events.filter((event) => event.region !== "Tech");
-  const slots = [0, 1, 2, 3].map((index) => headlines[index] ?? EMPTY_EVENT);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const slots = [0, 1, 2, 3].map((index) => events[index] ?? EMPTY_EVENT);
 
   return (
     <div className="glass flex h-full flex-col rounded-2xl p-6">
@@ -33,25 +122,19 @@ export function MarketEvents({ events }: { events: MarketEvent[] }) {
         <BogenHeading id="market-events">Market-Moving Events</BogenHeading>
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Headlines from this session&apos;s snapshot.
+        Headlines from this session&apos;s snapshot. Tap a card for the fuller note.
       </p>
       <div className="mt-6 grid gap-3">
         {slots.map((event, index) => (
-          <article
+          <EventCard
             key={`${event.title}-${index}`}
-            className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]"
-          >
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-xs text-ink-soft">{regionLabels[event.region]}</span>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-xs ${impactColors[event.impact]}`}
-              >
-                {event.impact}
-              </span>
-            </div>
-            <h3 className="font-medium text-ink">{event.title}</h3>
-            <p className="mt-2 text-sm text-ink-soft">{event.summary}</p>
-          </article>
+            event={event}
+            index={index}
+            open={openIndex === index}
+            onToggle={() =>
+              setOpenIndex((current) => (current === index ? null : index))
+            }
+          />
         ))}
       </div>
     </div>
