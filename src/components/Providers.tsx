@@ -2,6 +2,7 @@
 
 import { AuthProvider } from "@/components/AuthProvider";
 import { GiftedProModal } from "@/components/GiftedProModal";
+import { MaintenanceGate } from "@/components/MaintenanceGate";
 import { TourProvider } from "@/components/TourProvider";
 import { UpgradeProvider } from "@/components/UpgradeProvider";
 
@@ -10,8 +11,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <AuthProvider>
       <UpgradeProvider>
         <TourProvider>
-          {children}
-          <GiftedProModal />
+          <MaintenanceGate>
+            {children}
+            <GiftedProModal />
+          </MaintenanceGate>
         </TourProvider>
       </UpgradeProvider>
     </AuthProvider>

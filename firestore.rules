@@ -39,6 +39,9 @@ service cloud.firestore {
     // horizon_sims/{uid}/positions/{symbol}
     //   uid: string, symbol: string, shares: number
     //   averageCost: number, currentPrice: number, updatedAt: timestamp
+    //
+    // site/maintenance
+    //   enabled: bool — public read, Admin SDK / console write only
     // ===============================================================
 
     function isAuthenticated() {
@@ -560,6 +563,11 @@ service cloud.firestore {
           && request.resource.data.updatedAt == request.time;
         allow delete: if isOwner(uid);
       }
+    }
+
+    match /site/maintenance {
+      allow read: if true;
+      allow write: if false;
     }
 
     match /daily_snapshots/{document=**} {

@@ -21,6 +21,7 @@ import {
   isFirebaseConfigured,
 } from "@/lib/firebase/client";
 import { LEGAL_STORAGE_KEY, TOS_VERSION } from "@/lib/legal";
+import { readMaintenanceEnabled } from "@/lib/maintenance";
 import {
   clearSignupName,
   fullDisplayName,
@@ -130,7 +131,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
           displayName: fullDisplayName(first, last),
         });
       }
-      router.push("/dashboard");
+      router.push((await readMaintenanceEnabled()) ? "/maintenance" : "/dashboard");
     } catch (authError) {
       if (authError instanceof FirebaseError) {
         const messages: Record<string, string> = {
