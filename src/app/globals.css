@@ -466,6 +466,12 @@ html.dark .glass-violet .bg-white {
   background-color: #ffffff;
 }
 
+.on-white,
+html.dark .on-white,
+html.dark .glass-violet .on-white {
+  color: #0a0a0a !important;
+}
+
 .page-enter {
   animation: page-enter 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

@@ -45,8 +45,12 @@ function LockedFeatureCard({
       <MiniPadlock />
       {!compact && (
         <span className="min-w-0">
-          <span className="block text-sm font-semibold leading-tight text-ink">{title}</span>
-          <span className="block text-[11px] leading-tight text-ink-soft">Coming soon</span>
+          <span className="on-white block text-sm font-semibold leading-tight">
+            {title}
+          </span>
+          <span className="on-white block text-[11px] font-medium leading-tight">
+            Coming soon
+          </span>
         </span>
       )}
     </button>
