@@ -1,11 +1,11 @@
 export const CURRENT_RELEASE_ID = "beta-2.1";
 
-export type ReleaseFeatureVisualId = "bogen" | "events" | "ui";
+export type ReleaseFeatureVisualId = "bogen";
 
 export type ReleaseFeature = {
   title: string;
   body: string;
-  visual: ReleaseFeatureVisualId;
+  visual?: ReleaseFeatureVisualId;
 };
 
 export type ReleaseNote = {
@@ -62,15 +62,10 @@ export const RELEASES: ReleaseNote[] = [
       },
       {
         title: "Market-moving events",
-        visual: "events",
         body: "On Daily Brief, tap a market-moving event card to expand it. You get the fuller note, source, date, and any tickers — not just the one-line teaser.",
       },
-      {
-        title: "UI design",
-        visual: "ui",
-        body: "Free vs Pro stays one connected table, with a static blue outline on the plan you are on. Pro account uses a moving border — blue, a white highlight, and a little purple — that travels along the edge.",
-      },
     ],
+    items: ["Updated UI"],
   },
 ];
 

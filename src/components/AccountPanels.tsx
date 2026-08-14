@@ -329,8 +329,14 @@ function VersionCard({
             <div className="mt-3 space-y-4">
               {release.features.map((feature) => (
                 <div key={feature.title}>
-                  <ReleaseFeatureVisual id={feature.visual} />
-                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                  {feature.visual ? (
+                    <ReleaseFeatureVisual id={feature.visual} />
+                  ) : null}
+                  <p
+                    className={`text-sm leading-relaxed text-ink-soft ${
+                      feature.visual ? "mt-2" : ""
+                    }`}
+                  >
                     {feature.body}
                   </p>
                 </div>

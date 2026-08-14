@@ -51,16 +51,23 @@ export function WhatsNewModal() {
         <div className="space-y-5">
           {CURRENT_RELEASE.features.map((feature) => (
             <div key={feature.title}>
-              <ReleaseFeatureVisual id={feature.visual} />
-              <p className="mt-3 text-sm leading-relaxed text-ink">
+              {feature.visual ? (
+                <ReleaseFeatureVisual id={feature.visual} />
+              ) : null}
+              <p
+                className={`text-sm leading-relaxed text-ink ${
+                  feature.visual ? "mt-3" : ""
+                }`}
+              >
                 {feature.body}
               </p>
             </div>
           ))}
         </div>
-      ) : (
-        <ul className="space-y-3">
-          {(CURRENT_RELEASE.items ?? []).map((item) => (
+      ) : null}
+      {CURRENT_RELEASE.items?.length ? (
+        <ul className={`space-y-3 ${CURRENT_RELEASE.features?.length ? "mt-5" : ""}`}>
+          {CURRENT_RELEASE.items.map((item) => (
             <li
               key={item}
               className="glass rounded-2xl px-4 py-3 text-sm leading-relaxed text-ink"
@@ -69,7 +76,7 @@ export function WhatsNewModal() {
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
     </OverlaySheet>
   );
 }
