@@ -4,6 +4,7 @@ import { BacktestTrackRecord } from "@/components/BacktestTrackRecord";
 import { PaywallLock } from "@/components/PaywallLock";
 import { TopPicks } from "@/components/TopPicks";
 import { useAuth } from "@/components/AuthProvider";
+import { BogenHeading } from "@/components/BogenProvider";
 import type { DailySnapshot } from "@/types";
 
 export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
@@ -43,7 +44,9 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
       ) : (
         <section>
           <h2 className="font-display text-2xl font-bold text-ink">
-            Separate short-term and long-term lists
+            <BogenHeading id="reports-horizon">
+              Separate short-term and long-term lists
+            </BogenHeading>
           </h2>
           <p className="mt-1 text-sm text-ink-soft">
             Pro splits the screen into two ranked lists with scores and outlook notes.

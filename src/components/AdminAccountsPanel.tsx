@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { resolveAccountName } from "@/lib/person-name";
+import { BogenHeading } from "@/components/BogenProvider";
 
 type PlanSource = "comp" | "paid" | "none";
 
@@ -107,7 +108,7 @@ export function AdminAccountsPanel() {
         Admin
       </p>
       <h2 className="mt-2 font-display text-2xl font-bold text-ink">
-        Complimentary Pro
+        <BogenHeading id="admin-gifting">Complimentary Pro</BogenHeading>
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
         Every signed-up account is listed here. Give friends Pro without charging

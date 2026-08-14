@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { CompanyReport, StockCandidate, StrategyId } from "@/types";
 import { STRATEGY_NAMES } from "@/types";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
+import { BogenHeading } from "@/components/BogenProvider";
 
 interface TopPicksProps {
   picks: StockCandidate[];
@@ -90,7 +91,9 @@ export function TopPicks({
 }: TopPicksProps) {
   return (
     <div>
-      <h2 className="font-display text-2xl font-bold text-ink">{title}</h2>
+      <h2 className="font-display text-2xl font-bold text-ink">
+        <BogenHeading id={compact ? "reports-horizon" : "reports"}>{title}</BogenHeading>
+      </h2>
       <p className="mt-1 text-sm text-ink-soft">{subtitle}</p>
 
       <div className="mt-6 grid gap-5">

@@ -9,6 +9,7 @@ import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import type { ChartPoint, ChartRange } from "@/lib/chart-series";
 import type { HorizonStats } from "@/lib/horizon-forecast";
 import { compactCompanyName } from "@/components/StockDetailModal";
+import { BogenHeading } from "@/components/BogenProvider";
 import type { DailySnapshot, OHLCVBar, StockCandidate } from "@/types";
 
 const rangeCopy: Record<ChartRange, string> = {
@@ -217,7 +218,7 @@ export function MarketPulse({
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="font-display text-lg font-semibold text-ink">
-              {WATCHLIST_PULSE_TITLE}
+              <BogenHeading id="watchlist-pulse">{WATCHLIST_PULSE_TITLE}</BogenHeading>
             </h2>
             {current ? (
               <button

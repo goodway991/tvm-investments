@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ScreenedStock } from "@/types";
+import { BogenHeading } from "@/components/BogenProvider";
 
 interface FilterPanelProps {
   initialStocks: ScreenedStock[];
@@ -90,7 +91,9 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
 
   return (
     <div className="glass rounded-2xl p-6">
-      <h2 className="font-display text-2xl text-ink mb-1">Stock Filter</h2>
+      <h2 className="font-display text-2xl text-ink mb-1">
+        <BogenHeading id="screener">Stock Filter</BogenHeading>
+      </h2>
       <p className="text-ink-soft text-sm mb-6">
         Filter today&apos;s scored scan of about 1,500 liquid US names by P/E,
         Beta, Volume, EPS, and Market Cap.

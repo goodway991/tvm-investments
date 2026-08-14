@@ -1,4 +1,4 @@
-export const CURRENT_TOUR_ID = "tour-2";
+export const CURRENT_TOUR_ID = "tour-3";
 
 export type TourSceneId =
   | "welcome"
@@ -11,6 +11,7 @@ export type TourSceneId =
   | "reports"
   | "menu"
   | "settings"
+  | "bogen"
   | "repeat";
 
 export interface TourSlide {
@@ -68,7 +69,12 @@ export const TOUR_SLIDES: TourSlide[] = [
   {
     id: "settings",
     name: "Settings",
-    how: "Tap your name at the bottom of the sidebar for Settings — plan, feedback, and this tour again.",
+    how: "Tap your name at the bottom of the sidebar for Settings — plan, appearance, Bogen mode, and this tour again.",
+  },
+  {
+    id: "bogen",
+    name: "Bogen mode",
+    how: "Turn Bogen mode on in Settings. A question mark appears next to each feature. Tap one to read what it does and how to use it. Turn it off the same way.",
   },
   {
     id: "repeat",

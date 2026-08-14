@@ -44,6 +44,13 @@ import {
 import { parseTicker } from "@/lib/ticker";
 import { CURRENT_RELEASE_ID } from "@/lib/release-notes";
 import { CURRENT_TOUR_ID } from "@/lib/virtual-tour";
+import {
+  isNewBadgeActive,
+  missingNewSeenStamps,
+  parseNewSeen,
+  type NewFeatureId,
+  type NewSeenMap,
+} from "@/lib/new-badges";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
@@ -58,6 +65,7 @@ export interface AccountProfile {
   createdAt: Date | null;
   tourCompletedAt: Date | null;
   seenRelease: string;
+  newSeen: NewSeenMap;
 }
 
 export interface AccountEntitlement {
@@ -102,6 +110,7 @@ interface AuthContextValue {
   acknowledgeGift: () => Promise<void>;
   completeTour: () => Promise<void>;
   acknowledgeRelease: () => Promise<void>;
+  isFeatureNew: (feature: NewFeatureId) => boolean;
   updateDisplayName: (firstName: string, lastName: string) => Promise<void>;
   updateWatchlist: (symbols: string[]) => Promise<void>;
   updatePortfolio: (cash: number, totalValue: number) => Promise<void>;
@@ -197,6 +206,26 @@ function writeReleaseSeen(uid: string, releaseId: string) {
   }
 }
 
+function newSeenKey(uid: string) {
+  return `tvm-new-seen:${uid}`;
+}
+
+function readNewSeen(uid: string): NewSeenMap {
+  try {
+    return parseNewSeen(JSON.parse(window.localStorage.getItem(newSeenKey(uid)) || "{}"));
+  } catch {
+    return {};
+  }
+}
+
+function writeNewSeen(uid: string, seen: NewSeenMap) {
+  try {
+    window.localStorage.setItem(newSeenKey(uid), JSON.stringify(seen));
+  } catch {
+    /* private mode */
+  }
+}
+
 function grantIdFrom(data: DocumentData) {
   const gifted = asDate(data.giftedAt);
   if (gifted) return String(gifted.getTime());
@@ -213,6 +242,7 @@ function profileFrom(data: DocumentData): AccountProfile {
     createdAt: asDate(data.createdAt),
     tourCompletedAt: asDate(data.tourCompletedAt),
     seenRelease: typeof data.seenRelease === "string" ? data.seenRelease : "",
+    newSeen: parseNewSeen(data.newSeen),
   };
 }
 
@@ -233,6 +263,7 @@ function profileFromAuth(user: User): AccountProfile {
     createdAt: null,
     tourCompletedAt: null,
     seenRelease: "",
+    newSeen: {},
   };
 }
 
@@ -335,6 +366,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [giftGrantId, setGiftGrantId] = useState("comp");
   const [tourPending, setTourPending] = useState(false);
   const [releasePending, setReleasePending] = useState(false);
+  const newSeenStampKey = useRef("");
 
   useEffect(() => {
     const auth = getClientAuth();
@@ -525,6 +557,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     watchlist.symbols.length,
   ]);
 
+  useEffect(() => {
+    if (loading || !user || !profile) return;
+    const local = readNewSeen(user.uid);
+    const combined = { ...local, ...profile.newSeen };
+    const next = { ...combined, ...missingNewSeenStamps(combined) };
+    writeNewSeen(user.uid, next);
+    const cloudNeeds = Object.keys(next).filter(
+      (id) => next[id as NewFeatureId] && !profile.newSeen[id as NewFeatureId],
+    ) as NewFeatureId[];
+    if (JSON.stringify(next) !== JSON.stringify(profile.newSeen)) {
+      setProfile((current) => (current ? { ...current, newSeen: next } : current));
+    }
+    if (cloudNeeds.length === 0) return;
+    const stampKey = `${user.uid}:${cloudNeeds.sort().join(",")}`;
+    if (newSeenStampKey.current === stampKey) return;
+    newSeenStampKey.current = stampKey;
+    const db = getClientFirestore();
+    if (!db) return;
+    const payload: Record<string, string | ReturnType<typeof serverTimestamp>> = {
+      updatedAt: serverTimestamp(),
+    };
+    for (const id of cloudNeeds) {
+      payload[`newSeen.${id}`] = next[id] as string;
+    }
+    void updateDoc(doc(db, "users", user.uid), payload).catch((stampError) => {
+      console.error(stampError);
+    });
+  }, [loading, profile, user]);
+
   const logout = useCallback(async () => {
     const auth = getClientAuth();
     if (auth) await signOut(auth);
@@ -581,6 +642,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error(releaseError);
     }
   }, [user]);
+
+  const isFeatureNew = useCallback(
+    (feature: NewFeatureId) => {
+      const local = user ? readNewSeen(user.uid)[feature] : undefined;
+      return isNewBadgeActive(profile?.newSeen[feature] ?? local);
+    },
+    [profile?.newSeen, user],
+  );
 
   const updateDisplayName = useCallback(
     async (firstName: string, lastName: string) => {
@@ -749,6 +818,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       acknowledgeGift,
       completeTour,
       acknowledgeRelease,
+      isFeatureNew,
       updateDisplayName,
       updateWatchlist,
       updatePortfolio,
@@ -766,6 +836,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       acknowledgeGift,
       completeTour,
       acknowledgeRelease,
+      isFeatureNew,
       updateDisplayName,
       portfolio,
       positions,

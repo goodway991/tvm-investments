@@ -7,6 +7,7 @@ import { MiniChart } from "@/components/MiniChart";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import { TVMIcon } from "@/components/TVMBrand";
+import { BogenHeading } from "@/components/BogenProvider";
 import { sparklineValues, type ChartRange } from "@/lib/chart-series";
 
 function signedPercent(value: number) {
@@ -83,7 +84,7 @@ export function StockDetailModal({
               id={`stock-dialog-${stock.symbol}`}
               className="mt-1 font-display text-3xl font-bold text-ink"
             >
-              {stock.symbol}
+              <BogenHeading id="stock-sheet">{stock.symbol}</BogenHeading>
             </h2>
             <p className="truncate text-sm text-ink-soft">{stock.name}</p>
           </div>

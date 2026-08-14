@@ -1,6 +1,7 @@
 "use client";
 
 import { OverlaySheet } from "@/components/OverlaySheet";
+import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
 import { useAuth } from "@/components/AuthProvider";
 import { useTour } from "@/components/TourProvider";
 import { CURRENT_RELEASE } from "@/lib/release-notes";
@@ -46,16 +47,29 @@ export function WhatsNewModal() {
         </div>
       }
     >
-      <ul className="space-y-3">
-        {CURRENT_RELEASE.items.map((item) => (
-          <li
-            key={item}
-            className="glass rounded-2xl px-4 py-3 text-sm leading-relaxed text-ink"
-          >
-            {item}
-          </li>
-        ))}
-      </ul>
+      {CURRENT_RELEASE.features?.length ? (
+        <div className="space-y-5">
+          {CURRENT_RELEASE.features.map((feature) => (
+            <div key={feature.title}>
+              <ReleaseFeatureVisual id={feature.visual} />
+              <p className="mt-3 text-sm leading-relaxed text-ink">
+                {feature.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {(CURRENT_RELEASE.items ?? []).map((item) => (
+            <li
+              key={item}
+              className="glass rounded-2xl px-4 py-3 text-sm leading-relaxed text-ink"
+            >
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
     </OverlaySheet>
   );
 }

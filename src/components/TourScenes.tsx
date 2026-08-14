@@ -282,10 +282,63 @@ function SettingsScene() {
       <div className="flex h-full flex-col justify-center gap-3 p-5">
         <div className="tour-pop rounded-2xl bg-white/85 p-4">
           <p className="text-sm font-semibold text-ink">Your name · bottom of the sidebar</p>
-          <p className="mt-1 text-xs text-ink-soft">Plan, feedback, and this tour live here.</p>
+          <p className="mt-1 text-xs text-ink-soft">
+            Plan, appearance, Bogen mode, and this tour live here.
+          </p>
+        </div>
+        <div className="tour-pop flex items-center justify-center gap-2" style={{ animationDelay: "0.12s" }}>
+          <span className="text-xs font-semibold text-ink">Bogen mode</span>
+          <span className="tour-pulse glass-violet rounded-full px-3 py-1 text-[11px] font-semibold text-white">
+            On
+          </span>
+          <span className="rounded-full border border-ink/10 px-3 py-1 text-[11px] font-semibold text-ink-soft">
+            Off
+          </span>
         </div>
         <div className="tour-pulse glass-violet rounded-full px-4 py-2 text-center text-sm font-semibold text-white">
           Virtual Tour
+        </div>
+      </div>
+    </WindowFrame>
+  );
+}
+
+function BogenScene() {
+  return (
+    <WindowFrame title="Bogen mode">
+      <div className="relative flex h-full flex-col gap-2.5 p-4">
+        <div className="tour-pop flex items-center justify-between rounded-2xl bg-white/85 px-3 py-2">
+          <span className="text-xs font-semibold text-ink">Settings</span>
+          <span className="flex items-center gap-1.5">
+            <span className="new-badge">New</span>
+            <span className="glass-violet rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white">
+              On
+            </span>
+          </span>
+        </div>
+        <div className="tour-bogen-stage relative flex-1 rounded-2xl bg-white/80 p-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
+                Dashboard
+              </p>
+              <p className="font-display text-sm font-bold text-ink">Top pick</p>
+            </div>
+            <span className="bogen-tip tour-bogen-mark" aria-hidden>
+              ?
+            </span>
+          </div>
+          <div className="tour-bogen-card mt-3 rounded-2xl bg-white p-3 shadow-[0_12px_24px_-16px_rgba(30,70,160,0.5)]">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
+              What it is
+            </p>
+            <p className="mt-1 text-xs font-semibold text-ink">The highest composite name today.</p>
+            <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-violet">
+              How to use it
+            </p>
+            <p className="mt-1 text-xs text-ink-soft">Tap the card to open that stock’s sheet.</p>
+          </div>
+          <TourPointer />
         </div>
       </div>
     </WindowFrame>
@@ -319,6 +372,7 @@ const SCENES: Record<TourSceneId, () => JSX.Element> = {
   reports: ReportsScene,
   menu: MenuScene,
   settings: SettingsScene,
+  bogen: BogenScene,
   repeat: RepeatScene,
 };
 

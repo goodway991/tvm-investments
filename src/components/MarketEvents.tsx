@@ -1,4 +1,7 @@
+"use client";
+
 import type { MarketEvent } from "@/types";
+import { BogenHeading } from "@/components/BogenProvider";
 
 const impactColors = {
   bullish: "text-gain bg-green-500/10 border-green-500/20",
@@ -26,7 +29,9 @@ export function MarketEvents({ events }: { events: MarketEvent[] }) {
 
   return (
     <div className="glass flex h-full flex-col rounded-2xl p-6">
-      <h2 className="font-display text-2xl text-ink">Market-Moving Events</h2>
+      <h2 className="font-display text-2xl text-ink">
+        <BogenHeading id="market-events">Market-Moving Events</BogenHeading>
+      </h2>
       <p className="mt-1 text-sm text-ink-soft">
         Headlines from this session&apos;s snapshot.
       </p>

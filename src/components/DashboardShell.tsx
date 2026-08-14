@@ -16,14 +16,38 @@ import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
+import { BogenTip } from "@/components/BogenProvider";
+import type { BogenId } from "@/lib/bogen";
+
+function bogenWrap(
+  id: BogenId,
+  compact: boolean,
+  child: React.ReactNode,
+  options?: { onDark?: boolean; itemKey?: string },
+) {
+  return (
+    <div key={options?.itemKey} className="relative">
+      {child}
+      <BogenTip
+        id={id}
+        tone={options?.onDark ? "onDark" : "ink"}
+        className={
+          compact
+            ? "absolute -right-0.5 -top-0.5 z-[2]"
+            : "absolute right-2 top-1/2 z-[2] -translate-y-1/2"
+        }
+      />
+    </div>
+  );
+}
 
 export const dashboardNav = [
-  { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const },
-  { label: "Daily Brief", href: "/dashboard/brief", icon: "brief" as const },
-  { label: "Screener", href: "/dashboard/screener", icon: "screener" as const },
-  { label: "Reports", href: "/dashboard/reports", icon: "reports" as const },
-  { label: "Watchlist", href: "/dashboard/watchlist", icon: "watchlist" as const },
-  { label: "Portfolio", href: "/dashboard/portfolio", icon: "dashboard" as const },
+  { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
+  { label: "Daily Brief", href: "/dashboard/brief", icon: "brief" as const, bogen: "nav-brief" as const },
+  { label: "Screener", href: "/dashboard/screener", icon: "screener" as const, bogen: "nav-screener" as const },
+  { label: "Reports", href: "/dashboard/reports", icon: "reports" as const, bogen: "nav-reports" as const },
+  { label: "Watchlist", href: "/dashboard/watchlist", icon: "watchlist" as const, bogen: "nav-watchlist" as const },
+  { label: "Portfolio", href: "/dashboard/portfolio", icon: "dashboard" as const, bogen: "nav-portfolio" as const },
 ];
 
 function navIsActive(pathname: string, href: string) {
@@ -61,7 +85,7 @@ function ProfileNavLink({
       onClick={onNavigate}
       title={compact ? name : undefined}
       className={`flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-        compact ? "justify-center px-2" : "gap-3.5 px-4"
+        compact ? "justify-center px-2" : "gap-3.5 px-4 pr-9"
       } ${
         active
           ? "glass-violet text-white"
@@ -85,7 +109,7 @@ function ProfileNavLink({
 function widgetBox(compact: boolean) {
   return compact
     ? "grid h-[52px] w-full place-items-center px-2"
-    : "flex min-h-[52px] w-full items-center gap-3 px-3 py-2.5 text-left";
+    : "flex min-h-[52px] w-full items-center gap-3 px-3 py-2.5 pr-9 text-left";
 }
 
 function UpgradeNavCard({
@@ -160,13 +184,16 @@ function PreviewSidebar({
 
   return (
     <div className="mt-4 flex flex-col gap-2">
-      {showArchive ? (
+      {bogenWrap(
+        "nav-archive",
+        compact,
+        showArchive ? (
         <Link
           href={withArchiveQuery("/dashboard/archive", archive)}
           onClick={onNavigate}
           title={compact ? "Archive Calendar" : undefined}
           className={`flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-            compact ? "justify-center px-2" : "gap-3.5 px-4"
+            compact ? "justify-center px-2" : "gap-3.5 px-4 pr-9"
           } ${
             archiveLive
               ? "archive-widget-live bg-sky-50 text-ink"
@@ -187,14 +214,19 @@ function PreviewSidebar({
         </Link>
       ) : (
         <ArchiveCalendarLock compact={compact} />
+      ),
+      { onDark: archiveRoute && !archiveLive },
       )}
-      {showHorizon ? (
+      {bogenWrap(
+        "nav-horizon",
+        compact,
+        showHorizon ? (
         <Link
           href={withArchiveQuery("/dashboard/horizon", archive)}
           onClick={onNavigate}
           title={compact ? "Horizon Suite" : undefined}
           className={`flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-            compact ? "justify-center px-2" : "gap-3.5 px-4"
+            compact ? "justify-center px-2" : "gap-3.5 px-4 pr-9"
           } ${
             horizonActive
               ? "glass-violet text-white"
@@ -206,6 +238,8 @@ function PreviewSidebar({
         </Link>
       ) : (
         <TestingSuiteLock compact={compact} />
+      ),
+      { onDark: horizonActive },
       )}
     </div>
   );
@@ -301,7 +335,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               : "w-0 overflow-hidden border-0 px-0 py-7 opacity-0"
         }`}
       >
-        <button
+        {bogenWrap(
+          "nav-logo",
+          sidebarMode !== "expanded",
+          <button
           type="button"
           onClick={cycleSidebar}
           title={
@@ -319,20 +356,22 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           }`}
         >
           <TVMBrand showWordmark={sidebarMode === "expanded"} />
-        </button>
+        </button>,
+        )}
 
         <nav className="mt-10 flex flex-col gap-1.5" aria-label="Dashboard navigation">
           {dashboardNav.map((item) => {
             const active = navIsActive(pathname, item.href);
-            return (
+            const compact = sidebarMode !== "expanded";
+            return bogenWrap(
+              item.bogen,
+              compact,
               <Link
                 key={item.href}
                 href={withArchiveQuery(item.href, archive)}
-                title={sidebarMode === "collapsed" ? item.label : undefined}
+                title={compact ? item.label : undefined}
                 className={`flex items-center rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-                  sidebarMode === "expanded"
-                    ? "gap-3.5 px-4"
-                    : "justify-center px-2"
+                  compact ? "justify-center px-2" : "gap-3.5 px-4 pr-9"
                 } ${
                   active
                     ? "glass-violet text-white"
@@ -340,8 +379,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <TVMIcon name={item.icon} />
-                {sidebarMode === "expanded" && item.label}
-              </Link>
+                {!compact && item.label}
+              </Link>,
+              { onDark: active, itemKey: item.href },
             );
           })}
         </nav>
@@ -350,17 +390,27 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <div className="mt-auto space-y-2 pt-4">
           <MaintenanceNavCard compact={sidebarMode !== "expanded"} />
-          <UpgradeNavCard
-            compact={sidebarMode !== "expanded"}
-            plan={entitlement.plan}
-            onUpgrade={openUpgrade}
-          />
-          <ProfileNavLink
-            compact={sidebarMode !== "expanded"}
-            name={accountLabel(profile, user)}
-            active={navIsActive(pathname, "/dashboard/settings")}
-            href={withArchiveQuery("/dashboard/settings", archive)}
-          />
+          {bogenWrap(
+            "nav-upgrade",
+            sidebarMode !== "expanded",
+            <UpgradeNavCard
+              compact={sidebarMode !== "expanded"}
+              plan={entitlement.plan}
+              onUpgrade={openUpgrade}
+            />,
+            { onDark: true },
+          )}
+          {bogenWrap(
+            "nav-account",
+            sidebarMode !== "expanded",
+            <ProfileNavLink
+              compact={sidebarMode !== "expanded"}
+              name={accountLabel(profile, user)}
+              active={navIsActive(pathname, "/dashboard/settings")}
+              href={withArchiveQuery("/dashboard/settings", archive)}
+            />,
+            { onDark: navIsActive(pathname, "/dashboard/settings") },
+          )}
         </div>
       </aside>
 
@@ -402,12 +452,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <nav className="mt-8 flex flex-col gap-1.5">
                 {dashboardNav.map((item) => {
                   const active = navIsActive(pathname, item.href);
-                  return (
+                  return bogenWrap(
+                    item.bogen,
+                    false,
                     <Link
                       key={item.href}
                       href={withArchiveQuery(item.href, archive)}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium duration-300 ${
+                      className={`flex items-center gap-3.5 rounded-2xl px-4 py-3 pr-9 text-[15px] font-medium duration-300 ${
                         active
                           ? "glass-violet text-white"
                           : "text-ink-soft hover:bg-violet/[0.05] hover:text-ink"
@@ -415,26 +467,37 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     >
                       <TVMIcon name={item.icon} />
                       {item.label}
-                    </Link>
+                    </Link>,
+                    { onDark: active, itemKey: item.href },
                   );
                 })}
               </nav>
               <PreviewSidebar onNavigate={() => setMobileMenuOpen(false)} />
               <div className="mt-auto space-y-2 pt-4">
                 <MaintenanceNavCard />
-                <UpgradeNavCard
-                  plan={entitlement.plan}
-                  onUpgrade={() => {
-                    setMobileMenuOpen(false);
-                    openUpgrade();
-                  }}
-                />
-                <ProfileNavLink
-                  name={accountLabel(profile, user)}
-                  active={navIsActive(pathname, "/dashboard/settings")}
-                  href={withArchiveQuery("/dashboard/settings", archive)}
-                  onNavigate={() => setMobileMenuOpen(false)}
-                />
+                {bogenWrap(
+                  "nav-upgrade",
+                  false,
+                  <UpgradeNavCard
+                    plan={entitlement.plan}
+                    onUpgrade={() => {
+                      setMobileMenuOpen(false);
+                      openUpgrade();
+                    }}
+                  />,
+                  { onDark: true },
+                )}
+                {bogenWrap(
+                  "nav-account",
+                  false,
+                  <ProfileNavLink
+                    name={accountLabel(profile, user)}
+                    active={navIsActive(pathname, "/dashboard/settings")}
+                    href={withArchiveQuery("/dashboard/settings", archive)}
+                    onNavigate={() => setMobileMenuOpen(false)}
+                  />,
+                  { onDark: navIsActive(pathname, "/dashboard/settings") },
+                )}
               </div>
             </aside>
           </div>

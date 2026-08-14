@@ -7,6 +7,7 @@ import { MaintenanceGate } from "@/components/MaintenanceGate";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { TourProvider } from "@/components/TourProvider";
 import { UpgradeProvider } from "@/components/UpgradeProvider";
+import { BogenProvider } from "@/components/BogenProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -14,11 +15,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AuthProvider>
         <UpgradeProvider>
           <TourProvider>
-            <MaintenanceGate>
-              {children}
-              <GiftedProModal />
-              <WhatsNewModal />
-            </MaintenanceGate>
+            <BogenProvider>
+              <MaintenanceGate>
+                {children}
+                <GiftedProModal />
+                <WhatsNewModal />
+              </MaintenanceGate>
+            </BogenProvider>
           </TourProvider>
         </UpgradeProvider>
       </AuthProvider>

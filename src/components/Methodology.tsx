@@ -1,11 +1,16 @@
+"use client";
+
 import { STRATEGY_DETAILS, STRATEGY_NAMES, type StrategyId } from "@/types";
+import { BogenHeading } from "@/components/BogenProvider";
 
 export function Methodology() {
   const strategies = Object.entries(STRATEGY_NAMES) as Array<[StrategyId, string]>;
 
   return (
     <div className="glass rounded-2xl p-6">
-      <h2 className="font-display text-2xl text-ink mb-1">8-Strategy Methodology</h2>
+      <h2 className="font-display text-2xl text-ink mb-1">
+        <BogenHeading id="methodology">8-Strategy Methodology</BogenHeading>
+      </h2>
       <p className="text-ink-soft text-sm mb-6">
         Signals combine into a weighted composite score — not independent checkboxes.
         A name hitting several setups at once ranks above a name hitting only one.

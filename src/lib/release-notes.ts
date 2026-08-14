@@ -1,4 +1,12 @@
-export const CURRENT_RELEASE_ID = "beta-2";
+export const CURRENT_RELEASE_ID = "beta-2.1";
+
+export type ReleaseFeatureVisualId = "bogen";
+
+export type ReleaseFeature = {
+  title: string;
+  body: string;
+  visual: ReleaseFeatureVisualId;
+};
 
 export type ReleaseNote = {
   id: string;
@@ -6,7 +14,8 @@ export type ReleaseNote = {
   title: string;
   date: string;
   summary: string;
-  items: string[];
+  items?: string[];
+  features?: ReleaseFeature[];
 };
 
 export const RELEASES: ReleaseNote[] = [
@@ -38,7 +47,23 @@ export const RELEASES: ReleaseNote[] = [
       "Blue throughout — navy in light, white in dark",
     ],
   },
+  {
+    id: "beta-2.1",
+    version: "Beta v2.1",
+    title: "Bogen mode",
+    date: "August 15th, 2026",
+    summary:
+      "A question mark next to each feature, with a short how-to when you tap it. Turn it on or off in Settings.",
+    features: [
+      {
+        title: "Bogen mode",
+        visual: "bogen",
+        body: "Turn it on in Settings. A question mark appears next to sidebar items and widgets. Tap one to read what that feature does and how to use it. Turn it off the same way — the circles disappear.",
+      },
+    ],
+  },
 ];
 
 export const CURRENT_RELEASE =
-  RELEASES.find((release) => release.id === CURRENT_RELEASE_ID) ?? RELEASES[RELEASES.length - 1];
+  RELEASES.find((release) => release.id === CURRENT_RELEASE_ID) ??
+  RELEASES[RELEASES.length - 1];

@@ -10,6 +10,7 @@ import {
   screenedToCandidate,
 } from "@/components/StockDetailModal";
 import { TVMIcon } from "@/components/TVMBrand";
+import { BogenHeading } from "@/components/BogenProvider";
 
 type WatchlistStock = Pick<StockCandidate, "symbol" | "name">;
 
@@ -185,7 +186,7 @@ export function WatchlistPanel({
             {entitlement.plan} plan
           </p>
           <h2 className="mt-1 font-display text-2xl font-bold text-ink">
-            Watchlist
+            <BogenHeading id="watchlist">Watchlist</BogenHeading>
           </h2>
           <p className="mt-1 text-sm text-ink-soft">
             Choose up to {entitlement.watchlistLimit} stocks.

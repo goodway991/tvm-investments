@@ -4,6 +4,7 @@ import { ArchiveCalendar } from "@/components/ArchiveCalendar";
 import { ArchiveCalendarLock } from "@/components/TestingSuiteLock";
 import { useAuth } from "@/components/AuthProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
+import { BogenHeading } from "@/components/BogenProvider";
 
 export function ArchiveCalendarGate() {
   const { entitlement } = useAuth();
@@ -15,7 +16,7 @@ export function ArchiveCalendarGate() {
             Coming soon
           </p>
           <h1 className="mt-1 font-display text-3xl font-bold text-ink sm:text-4xl">
-            Archive Calendar
+            <BogenHeading id="archive">Archive Calendar</BogenHeading>
           </h1>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
             Archive Calendar is still being built.
@@ -35,7 +36,7 @@ export function ArchiveCalendarGate() {
           Research rewind
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold text-ink sm:text-4xl">
-          Archive Calendar
+          <BogenHeading id="archive">Archive Calendar</BogenHeading>
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-ink-soft">
           Pick a stored research day. Movers, screener, reports, and the brief

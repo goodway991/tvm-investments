@@ -16,6 +16,7 @@ import {
   uniqueStocks,
 } from "@/lib/chart-series";
 import { resolveAccountName } from "@/lib/person-name";
+import { BogenHeading, BogenTip } from "@/components/BogenProvider";
 
 function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -85,24 +86,28 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       value: topPick ? signedPercent(topPick.changePercent) : "—",
       chart: topPick ? sparklineValues(topPick.ohlcv, 8) : [],
       gradient: true,
+      bogen: "top-pick" as const,
       onOpen: topPick ? () => setSelectedSymbol(topPick.symbol) : undefined,
     },
     {
       label: "Names screened",
       value: snapshot.scanUniverse.combined.toLocaleString(),
       badge: "universe",
+      bogen: "names-screened" as const,
       href: "/dashboard/screener",
     },
     {
       label: "Daily movers",
       value: snapshot.topMovers.length.toLocaleString(),
       badge: "ranked",
+      bogen: "daily-movers-card" as const,
       href: "/dashboard/movers",
     },
     {
       label: "Composite avg",
       value: `${averageScore.toFixed(0)} / 100`,
       gradient: true,
+      bogen: "composite" as const,
       href: "#flagged-picks",
     },
   ];
@@ -140,6 +145,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
           >
             Search
           </button>
+          <BogenTip id="ticker-search" />
         </form>
       </div>
 
@@ -185,28 +191,42 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
 
           if (card.href) {
             return (
-              <Link key={card.label} href={card.href} className={className}>
-                {body}
-              </Link>
+              <div key={card.label} className="relative">
+                <Link href={card.href} className={`${className} block`}>
+                  {body}
+                </Link>
+                <BogenTip
+                  id={card.bogen}
+                  tone={card.gradient ? "onDark" : "ink"}
+                  className="absolute right-3 top-3"
+                />
+              </div>
             );
           }
 
           if (card.onOpen) {
             return (
-              <button
-                key={card.label}
-                type="button"
-                onClick={card.onOpen}
-                className={className}
-              >
-                {body}
-              </button>
+              <div key={card.label} className="relative">
+                <button type="button" onClick={card.onOpen} className={`${className} w-full`}>
+                  {body}
+                </button>
+                <BogenTip
+                  id={card.bogen}
+                  tone={card.gradient ? "onDark" : "ink"}
+                  className="absolute right-3 top-3"
+                />
+              </div>
             );
           }
 
           return (
-            <article key={card.label} className={className}>
+            <article key={card.label} className={`relative ${className}`}>
               {body}
+              <BogenTip
+                id={card.bogen}
+                tone={card.gradient ? "onDark" : "ink"}
+                className="absolute right-3 top-3"
+              />
             </article>
           );
         })}
@@ -220,7 +240,9 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         />
 
         <article className="glass-strong flex flex-col rounded-[24px] p-6">
-          <h2 className="font-display text-lg font-semibold text-ink">Today&apos;s movers</h2>
+          <h2 className="font-display text-lg font-semibold text-ink">
+            <BogenHeading id="todays-movers">Today&apos;s movers</BogenHeading>
+          </h2>
           <div className="mt-4 flex-1 space-y-3.5">
             {search.trim() && filteredMovers.length === 0 ? (
               <p className="glass rounded-2xl p-4 text-sm text-ink-soft">
@@ -291,7 +313,12 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.5fr]">
         <article className="glass-strong rounded-[24px] p-6">
-          <div className="glass-violet rounded-2xl p-5 text-white">
+          <div className="glass-violet relative rounded-2xl p-5 text-white">
+            <BogenTip
+              id="overview-calculator"
+              tone="onDark"
+              className="absolute right-3 top-3"
+            />
             <div className="flex items-center justify-between">
               <label htmlFor="overview-investment" className="text-xs text-white/80">
                 Your investment
@@ -343,7 +370,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         <article id="flagged-picks" className="glass-strong scroll-mt-8 rounded-[24px] p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold text-ink">
-              Today&apos;s flagged picks
+              <BogenHeading id="flagged-picks">Today&apos;s flagged picks</BogenHeading>
             </h2>
             <span className="text-right text-xs text-ink-soft">
               Ranked by composite score

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BogenHeading } from "@/components/BogenProvider";
 
 interface CalculatorResult {
   symbol: string;
@@ -68,7 +69,9 @@ export function InvestmentCalculator({ defaultSymbol }: InvestmentCalculatorProp
 
   return (
     <div className="glass rounded-2xl p-6">
-      <h2 className="font-display text-2xl text-ink mb-1">Hypothetical scenario calculator</h2>
+      <h2 className="font-display text-2xl text-ink mb-1">
+        <BogenHeading id="calculator">Hypothetical scenario calculator</BogenHeading>
+      </h2>
       <p className="text-ink-soft text-sm mb-6">
         Illustrative math only — not a recommendation to buy or sell. You can lose
         money. Uses live market quotes when available.

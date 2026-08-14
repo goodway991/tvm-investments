@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMIcon } from "@/components/TVMBrand";
+import { BogenTip } from "@/components/BogenProvider";
 import { getClientFirestore } from "@/lib/firebase/client";
 import {
   formatWarningText,
@@ -114,7 +115,7 @@ export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
         className={`maintenance-nav-card w-full rounded-2xl ${
           compact
             ? "grid h-[52px] place-items-center px-2"
-            : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 text-left"
+            : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 pr-9 text-left"
         }`}
         title={open ? "Hide maintenance details" : "Show maintenance details"}
       >
@@ -140,6 +141,15 @@ export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
           </span>
         )}
       </button>
+      <BogenTip
+        id="nav-maintenance"
+        tone="onDark"
+        className={
+          compact
+            ? "absolute -right-0.5 -top-0.5 z-[2]"
+            : "absolute right-2 top-1/2 z-[2] -translate-y-1/2"
+        }
+      />
       {open ? (
         <div
           className={`maintenance-nav-card z-40 rounded-2xl px-3 py-3 text-[12px] font-medium leading-relaxed ${

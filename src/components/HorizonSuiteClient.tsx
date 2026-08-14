@@ -16,6 +16,7 @@ import { HorizonForecastChart } from "@/components/HorizonForecastChart";
 import type { ChartPoint } from "@/lib/chart-series";
 import { formatPrice } from "@/lib/chart-series";
 import { getClientFirestore } from "@/lib/firebase/client";
+import { BogenHeading } from "@/components/BogenProvider";
 import {
   HORIZON_STARTING_CASH,
   buildPortfolioSeries,
@@ -407,7 +408,9 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
             Paper desk
           </p>
-          <h1 className="mt-1 font-display text-3xl font-bold text-ink">Horizon Suite</h1>
+          <h1 className="mt-1 font-display text-3xl font-bold text-ink">
+            <BogenHeading id="horizon">Horizon Suite</BogenHeading>
+          </h1>
         </div>
         <button
           type="button"

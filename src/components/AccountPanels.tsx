@@ -10,6 +10,9 @@ import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
 import { resolveAccountName } from "@/lib/person-name";
+import { BogenHeading, useBogen } from "@/components/BogenProvider";
+import { NewBadge } from "@/components/NewBadge";
+import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -136,7 +139,7 @@ export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
             Account portfolio
           </p>
           <h2 className="mt-1 font-display text-2xl font-bold text-ink">
-            Portfolio
+            <BogenHeading id="portfolio">Portfolio</BogenHeading>
           </h2>
           <p className="mt-1 text-sm text-ink-soft">
             New accounts start at zero. Add only positions you want to track.
@@ -322,11 +325,25 @@ function VersionCard({
       {open ? (
         <div className="border-t border-ink/[0.06] px-4 py-3">
           <p className="text-sm text-ink">{release.summary}</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
-            {release.items.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          {release.features?.length ? (
+            <div className="mt-3 space-y-4">
+              {release.features.map((feature) => (
+                <div key={feature.title}>
+                  <ReleaseFeatureVisual id={feature.visual} />
+                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                    {feature.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {release.items?.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+              {release.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -346,6 +363,7 @@ export function SettingsPanel() {
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
   const { appearance, setAppearance } = useTheme();
+  const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const [loggingOut, setLoggingOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -384,7 +402,7 @@ export function SettingsPanel() {
   return (
     <div className="glass-strong rounded-[24px] p-6">
       <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-        Account
+        <BogenHeading id="settings">Account</BogenHeading>
       </p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-5">
         <div className="min-w-0 flex-1">
@@ -526,6 +544,41 @@ export function SettingsPanel() {
       </div>
 
       <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="flex items-center gap-2 font-semibold text-ink">
+          Bogen mode
+          <NewBadge feature="bogen" />
+        </p>
+        <p className="mt-1">
+          Show a question mark next to each feature. Tap one to read what it
+          does and how to use it.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setBogenEnabled(true)}
+            className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
+              bogenEnabled
+                ? "glass-violet text-white"
+                : "border border-ink/10 text-ink-soft hover:text-ink"
+            }`}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            onClick={() => setBogenEnabled(false)}
+            className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
+              !bogenEnabled
+                ? "glass-violet text-white"
+                : "border border-ink/10 text-ink-soft hover:text-ink"
+            }`}
+          >
+            Off
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Version history</p>
         <p className="mt-1">
           TVM Investments is in Beta. Open a version to read what landed.
@@ -542,7 +595,9 @@ export function SettingsPanel() {
       </div>
 
       <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-        <p className="font-semibold text-ink">Virtual Tour</p>
+        <p className="font-semibold text-ink">
+          <BogenHeading id="virtual-tour">Virtual Tour</BogenHeading>
+        </p>
         <p className="mt-1">
           Replay the walkthrough — each feature in motion, including the logo
           menu.

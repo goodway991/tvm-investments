@@ -5,6 +5,7 @@ import { PaywallLock } from "@/components/PaywallLock";
 import { useAuth } from "@/components/AuthProvider";
 import { sessionMove } from "@/lib/chart-series";
 import { FREE_MOVER_LIMIT, PRO_MOVER_LIMIT } from "@/lib/plans";
+import { BogenHeading } from "@/components/BogenProvider";
 
 interface MoversTableProps {
   movers: MarketMover[];
@@ -65,7 +66,9 @@ export function MoversTable({ movers }: MoversTableProps) {
   return (
     <div className="glass rounded-2xl p-6">
       <h2 className="font-display text-2xl text-ink mb-1">
-        Top {isPro ? Math.min(ranked.length, PRO_MOVER_LIMIT) : FREE_MOVER_LIMIT} Price Movers
+        <BogenHeading id="movers">
+          Top {isPro ? Math.min(ranked.length, PRO_MOVER_LIMIT) : FREE_MOVER_LIMIT} Price Movers
+        </BogenHeading>
       </h2>
       <p className="text-ink-soft text-sm mb-6">
         Largest moves versus the previous close across the daily scan of about

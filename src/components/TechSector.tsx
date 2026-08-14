@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { SectorDive } from "@/types";
 import { PaywallLock } from "@/components/PaywallLock";
+import { BogenHeading } from "@/components/BogenProvider";
 import { FREE_SECTOR_DIVE_LIMIT } from "@/lib/plans";
 
 type StockStat = {
@@ -296,7 +297,9 @@ export function TechSector({
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
             {current.sector}
           </p>
-          <h2 className="mt-1 font-display text-2xl font-bold text-ink">{current.title}</h2>
+          <h2 className="mt-1 font-display text-2xl font-bold text-ink">
+            <BogenHeading id="sector-dives">{current.title}</BogenHeading>
+          </h2>
           <p className="mt-1 text-sm text-ink-soft">{scrubCopy(current.subtitle)}</p>
         </div>
         <div className="flex shrink-0 flex-col items-center">

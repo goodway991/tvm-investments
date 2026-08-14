@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { BogenHeading } from "@/components/BogenProvider";
 
 export function FeedbackPanel() {
   const { user } = useAuth();
@@ -55,7 +56,7 @@ export function FeedbackPanel() {
         Feedback
       </p>
       <h2 className="mt-2 font-display text-2xl font-bold text-ink">
-        Report a bug or request a feature
+        <BogenHeading id="feedback">Report a bug or request a feature</BogenHeading>
       </h2>
       <p className="mt-2 text-sm text-ink-soft">
         Sent from {user?.email ?? "your account"}. Rate the issue or idea up to 5
