@@ -38,6 +38,7 @@ export function OverlaySheet({
   closeOnBackdrop = true,
   headerClassName,
   footerClassName,
+  panelClassName = "glass-strong relative z-10 mx-auto flex max-h-[calc(100svh-2rem)] w-full max-w-[920px] flex-col overflow-hidden rounded-[28px]",
 }: {
   labelledBy: string;
   onClose?: () => void;
@@ -49,6 +50,7 @@ export function OverlaySheet({
   closeOnBackdrop?: boolean;
   headerClassName?: string;
   footerClassName?: string;
+  panelClassName?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -101,7 +103,7 @@ export function OverlaySheet({
       </div>
     ) : (
       <div
-        className={`fixed inset-0 ${zIndexClass} overflow-y-auto overscroll-contain p-4 sm:p-6`}
+        className={`fixed inset-0 ${zIndexClass} flex items-center justify-center overflow-hidden overscroll-contain p-4 sm:p-6`}
         style={{ inset: 0, width: "100%", height: "100svh", maxHeight: "100svh" }}
       >
         {onClose && closeOnBackdrop ? (
@@ -118,14 +120,14 @@ export function OverlaySheet({
           role="dialog"
           aria-modal="true"
           aria-labelledby={labelledBy}
-          className="glass-strong relative z-10 mx-auto w-full max-w-[920px] rounded-[28px]"
+          className={panelClassName}
         >
-          <div className={headerClassName ?? "px-5 pt-5 sm:px-8 sm:pt-7"}>{header}</div>
-          <div ref={scrollRef} className="px-5 py-5 sm:px-8">
+          <div className={headerClassName ?? "shrink-0 px-5 pt-5 sm:px-8 sm:pt-7"}>{header}</div>
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8">
             {children}
           </div>
           {footer ? (
-            <div className={footerClassName ?? "px-5 pb-5 sm:px-8 sm:pb-7"}>{footer}</div>
+            <div className={footerClassName ?? "shrink-0 px-5 pb-5 sm:px-8 sm:pb-7"}>{footer}</div>
           ) : null}
         </div>
       </div>

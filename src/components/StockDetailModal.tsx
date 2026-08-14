@@ -74,8 +74,12 @@ export function StockDetailModal({
     <OverlaySheet
       labelledBy={`stock-dialog-${stock.symbol}`}
       onClose={onClose}
+      variant="card"
+      panelClassName="glass-strong relative z-10 mx-auto flex max-h-[calc(100svh-2rem)] w-full max-w-[920px] flex-col overflow-hidden rounded-[32px]"
+      headerClassName="shrink-0 px-5 pt-6 sm:px-8 sm:pt-8"
+      footerClassName="shrink-0 px-5 pb-5 sm:px-8 sm:pb-7"
       header={
-        <div className="mx-auto flex w-full max-w-3xl items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-violet">
               {stock.sector} · {stock.industry}
@@ -91,7 +95,7 @@ export function StockDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-[0_8px_20px_-12px_rgba(30,70,160,0.45)] hover:bg-violet/10 hover:text-violet"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-violet/10 hover:text-violet"
           >
             <TVMIcon name="close" size={16} />
             Close
@@ -99,7 +103,7 @@ export function StockDetailModal({
         </div>
       }
       footer={
-        <div className="mx-auto flex w-full max-w-3xl justify-end">
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -153,50 +157,52 @@ export function StockDetailModal({
           </div>
         </div>
 
-        <div className="glass mt-5 rounded-[22px] p-4">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-medium text-ink-soft">
-              {range} chart
-            </p>
-            <select
-              value={range}
-              onChange={(event) => setRange(event.target.value as ChartRange)}
-              className="rounded-full border border-ink/[0.08] bg-white px-3 py-1 text-xs text-ink"
-            >
-              <option value="day">Day</option>
-              <option value="month">Month</option>
-              <option value="year">Year</option>
-            </select>
-          </div>
-          <YahooPriceChart
-            symbol={stock.symbol}
-            ohlcv={stock.ohlcv}
-            yearCloses={stock.yearCloses}
-            range={range}
-            sessionDate={sessionDate}
-            height={180}
-          />
-        </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-4">
-          {[
-            ["P/E", stock.fundamentals.peRatio?.toFixed(1) ?? "—"],
-            ["Beta", stock.fundamentals.beta?.toFixed(2) ?? "—"],
-            ["EPS", stock.fundamentals.eps != null ? `$${stock.fundamentals.eps.toFixed(2)}` : "—"],
-            [
-              "Volume",
-              stock.volume
-                ? `${(stock.volume / 1_000_000).toFixed(1)}M`
-                : "—",
-            ],
-          ].map(([label, value]) => (
-            <div key={label} className="glass rounded-2xl p-4">
-              <p className="text-xs text-ink-soft">{label}</p>
-              <p className="mt-1 font-display text-base font-semibold text-ink">
-                {value}
+        <div className="sheet-well mt-5 rounded-[28px] p-4 sm:p-5">
+          <div className="glass rounded-[22px] p-4">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs font-medium text-ink-soft">
+                {range} chart
               </p>
+              <select
+                value={range}
+                onChange={(event) => setRange(event.target.value as ChartRange)}
+                className="field rounded-full px-3 py-1 text-xs text-ink"
+              >
+                <option value="day">Day</option>
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+              </select>
             </div>
-          ))}
+            <YahooPriceChart
+              symbol={stock.symbol}
+              ohlcv={stock.ohlcv}
+              yearCloses={stock.yearCloses}
+              range={range}
+              sessionDate={sessionDate}
+              height={180}
+            />
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            {[
+              ["P/E", stock.fundamentals.peRatio?.toFixed(1) ?? "—"],
+              ["Beta", stock.fundamentals.beta?.toFixed(2) ?? "—"],
+              ["EPS", stock.fundamentals.eps != null ? `$${stock.fundamentals.eps.toFixed(2)}` : "—"],
+              [
+                "Volume",
+                stock.volume
+                  ? `${(stock.volume / 1_000_000).toFixed(1)}M`
+                  : "—",
+              ],
+            ].map(([label, value]) => (
+              <div key={label} className="glass rounded-2xl p-4">
+                <p className="text-xs text-ink-soft">{label}</p>
+                <p className="mt-1 font-display text-base font-semibold text-ink">
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {activeSignals.length > 0 && (
