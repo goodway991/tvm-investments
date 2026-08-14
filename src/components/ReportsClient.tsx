@@ -42,7 +42,7 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
         </>
       ) : (
         <section>
-          <h2 className="font-display text-2xl text-ink">
+          <h2 className="font-display text-2xl font-bold text-ink">
             Separate short-term and long-term lists
           </h2>
           <p className="mt-1 text-sm text-ink-soft">
@@ -60,7 +60,7 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
         <BacktestTrackRecord />
       ) : (
         <section>
-          <h2 className="font-display text-2xl text-ink">Full backtest track record</h2>
+          <h2 className="font-display text-2xl font-bold text-ink">Full backtest track record</h2>
           <p className="mt-1 text-sm text-ink-soft">
             Pro shows logged pick returns versus the S&amp;P 500 across this desk.
           </p>
@@ -104,19 +104,20 @@ function PreviewPick({
   note: string;
 }) {
   return (
-    <article className="rounded-2xl border border-ink/[0.06] bg-white/70 p-4">
-      <p className="text-xs font-medium text-violet">Pick #{rank}</p>
-      <div className="mt-1 flex items-start justify-between gap-3">
+    <article className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(52,41,120,0.4)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet">
+        Pick {rank}
+      </p>
+      <div className="mt-2 flex items-start justify-between gap-3">
         <div>
-          <p className="font-display text-lg text-ink">
-            {name} <span className="text-ink-soft">({symbol})</span>
-          </p>
-          <p className="mt-1 text-sm text-ink-soft">{note}</p>
+          <p className="font-display text-xl font-bold text-ink">{name}</p>
+          <p className="mt-0.5 font-display text-sm font-bold text-violet">{symbol}</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">{note}</p>
         </div>
-        <div className="shrink-0 text-right text-xs text-ink-soft">
-          <p>ST {st}</p>
-          <p>LT {lt}</p>
-          <p className="font-semibold text-ink">{change}</p>
+        <div className="glass shrink-0 rounded-2xl px-3 py-2 text-right">
+          <p className="font-display text-xs font-bold text-ink">ST {st}</p>
+          <p className="font-display text-xs font-bold text-ink">LT {lt}</p>
+          <p className="mt-1 font-display text-sm font-bold text-violet">{change}</p>
         </div>
       </div>
     </article>
@@ -126,8 +127,8 @@ function PreviewPick({
 function HorizonListsPreview() {
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-      <div className="glass rounded-2xl p-5">
-        <h3 className="font-display text-xl text-ink">Best short-term setups</h3>
+      <div className="glass-strong rounded-[24px] p-5">
+        <h3 className="font-display text-xl font-bold text-ink">Best short-term setups</h3>
         <p className="mt-1 text-sm text-ink-soft">
           Ranked by dips, oversold RSI, volume, and support.
         </p>
@@ -161,8 +162,8 @@ function HorizonListsPreview() {
           />
         </div>
       </div>
-      <div className="glass rounded-2xl p-5">
-        <h3 className="font-display text-xl text-ink">Best long-term setups</h3>
+      <div className="glass-strong rounded-[24px] p-5">
+        <h3 className="font-display text-xl font-bold text-ink">Best long-term setups</h3>
         <p className="mt-1 text-sm text-ink-soft">
           Ranked by relative strength, catalysts, and fundamentals.
         </p>
