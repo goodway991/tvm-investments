@@ -85,7 +85,7 @@ html {
 }
 
 .maintenance-nav-card {
-  background: rgba(245, 158, 11, 0.18);
+  background: rgba(245, 158, 11, 0.12);
   border: 1.5px solid #c2410c;
   color: #9a3412;
   backdrop-filter: blur(18px) saturate(150%);
@@ -94,8 +94,8 @@ html {
 }
 
 html.dark .maintenance-nav-card {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: #ea580c;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: #c2410c;
   color: #ffedd5;
 }
 

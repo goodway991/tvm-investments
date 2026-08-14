@@ -38,6 +38,8 @@ import {
   isPersonName,
   normalizePersonName,
   readSignupName,
+  resolveAccountName,
+  splitPersonName,
 } from "@/lib/person-name";
 import { parseTicker } from "@/lib/ticker";
 import { CURRENT_RELEASE_ID } from "@/lib/release-notes";
@@ -211,6 +213,26 @@ function profileFrom(data: DocumentData): AccountProfile {
   };
 }
 
+function profileFromAuth(user: User): AccountProfile {
+  const pending = readSignupName();
+  const split = pending || splitPersonName(user.displayName);
+  const displayName = resolveAccountName({
+    profileName: split ? fullDisplayName(split.firstName, split.lastName) : "",
+    authName: user.displayName,
+    email: user.email,
+  });
+  return {
+    uid: user.uid,
+    email: user.email || "",
+    displayName,
+    firstName: split?.firstName || "",
+    lastName: split?.lastName || "",
+    createdAt: null,
+    tourCompletedAt: null,
+    seenRelease: "",
+  };
+}
+
 async function ensureAccountDocuments(user: User) {
   const db = getClientFirestore();
   if (!db || !user.email) return;
@@ -231,21 +253,29 @@ async function ensureAccountDocuments(user: User) {
 
     const pendingName = readSignupName();
     clearSignupName();
+    const split =
+      pendingName ||
+      splitPersonName(user.displayName) ||
+      splitPersonName(
+        resolveAccountName({
+          authName: user.displayName,
+          email: user.email,
+        }),
+      );
     const named =
-      !isAdmin && pendingName
-        ? {
-            firstName: pendingName.firstName,
-            lastName: pendingName.lastName,
-            displayName: fullDisplayName(
-              pendingName.firstName,
-              pendingName.lastName,
-            ),
-          }
-        : {
-            displayName: isAdmin
-              ? "ADMIN"
-              : user.displayName || user.email.split("@")[0],
-          };
+      isAdmin
+        ? { displayName: "ADMIN" }
+        : split
+          ? {
+              firstName: split.firstName,
+              lastName: split.lastName,
+              displayName: fullDisplayName(split.firstName, split.lastName),
+            }
+          : {
+              firstName: "TVM",
+              lastName: "Member",
+              displayName: "TVM Member",
+            };
 
     await setDoc(profileRef, {
       uid: user.uid,
@@ -339,27 +369,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setLoading(true);
+      setProfile(profileFromAuth(nextUser));
+      if (nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        setEntitlement({
+          role: "admin",
+          plan: "pro",
+          watchlistLimit: 100,
+          cooldownDays: 0,
+        });
+      }
       try {
         await ensureAccountDocuments(nextUser);
         if (cancelled) return;
 
         documentUnsubscribers = [
-          onSnapshot(doc(db, "users", nextUser.uid), (snapshot) => {
-            if (!snapshot.exists()) return;
-            const data = snapshot.data();
-            setProfile(profileFrom(data));
-            const roleIsAdmin =
-              nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-            const tourIsPending =
-              !roleIsAdmin &&
-              !asDate(data.tourCompletedAt) &&
-              !readTourSeen(nextUser.uid);
-            setTourPending(tourIsPending);
-            const seen =
-              (typeof data.seenRelease === "string" && data.seenRelease) ||
-              readReleaseSeen(nextUser.uid);
-            setReleasePending(!tourIsPending && seen !== CURRENT_RELEASE_ID);
-          }),
+          onSnapshot(
+            doc(db, "users", nextUser.uid),
+            (snapshot) => {
+              if (!snapshot.exists()) return;
+              const data = snapshot.data();
+              const nextProfile = profileFrom(data);
+              setProfile({
+                ...nextProfile,
+                displayName: resolveAccountName({
+                  profileName: nextProfile.displayName,
+                  authName: nextUser.displayName,
+                  email: nextUser.email,
+                }),
+              });
+              const roleIsAdmin =
+                nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+              const tourIsPending =
+                !roleIsAdmin &&
+                !asDate(data.tourCompletedAt) &&
+                !readTourSeen(nextUser.uid);
+              setTourPending(tourIsPending);
+              const seen =
+                (typeof data.seenRelease === "string" && data.seenRelease) ||
+                readReleaseSeen(nextUser.uid);
+              setReleasePending(!tourIsPending && seen !== CURRENT_RELEASE_ID);
+            },
+            () => {
+              setProfile(profileFromAuth(nextUser));
+            },
+          ),
           onSnapshot(doc(db, "entitlements", nextUser.uid), (snapshot) => {
             if (!snapshot.exists()) return;
             const data = snapshot.data();
@@ -523,20 +576,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateDisplayName = useCallback(
     async (firstName: string, lastName: string) => {
       const db = getClientFirestore();
-      if (!db || !user) throw new Error("Sign in to update your name.");
+      if (!user) throw new Error("Sign in to update your name.");
       const first = normalizePersonName(firstName);
       const last = normalizePersonName(lastName);
       if (!isPersonName(first) || !isPersonName(last)) {
         throw new Error("Enter a first and last name (letters only, no numbers).");
       }
       const displayName = fullDisplayName(first, last);
-      await updateDoc(doc(db, "users", user.uid), {
-        firstName: first,
-        lastName: last,
-        displayName,
-        updatedAt: serverTimestamp(),
-      });
       await updateProfile(user, { displayName });
+      setProfile((current) =>
+        current
+          ? { ...current, firstName: first, lastName: last, displayName }
+          : current,
+      );
+      if (db) {
+        try {
+          await updateDoc(doc(db, "users", user.uid), {
+            firstName: first,
+            lastName: last,
+            displayName,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (saveError) {
+          console.error(saveError);
+        }
+      }
     },
     [user],
   );

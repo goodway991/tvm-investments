@@ -78,33 +78,84 @@ function writeDismissed(fingerprint: string) {
 }
 
 export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
-  const { warning, start, end } = useMaintenance();
+  const { warning, text, start, end } = useMaintenance();
+  const [open, setOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: MouseEvent) {
+      if (!cardRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   if (!warning) return null;
   const detail = end
     ? `Until ${end}`
     : start
       ? `From ${start}`
       : "Scheduled downtime";
+
   return (
-    <div
-      className={`maintenance-nav-card rounded-2xl ${
-        compact
-          ? "grid h-[52px] w-full place-items-center px-2"
-          : "flex min-h-[52px] w-full items-center gap-3 px-3 py-2.5 text-left"
-      }`}
-      title={detail}
-    >
-      <TVMIcon name="warning" size={18} />
-      {!compact && (
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold leading-tight">
-            Maintenance
+    <div ref={cardRef} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className={`maintenance-nav-card w-full rounded-2xl ${
+          compact
+            ? "grid h-[52px] place-items-center px-2"
+            : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 text-left"
+        }`}
+        title={open ? "Hide maintenance details" : "Show maintenance details"}
+      >
+        <TVMIcon name="warning" size={18} />
+        {!compact && (
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold leading-tight">
+              Maintenance
+            </span>
+            <span className="block truncate text-[11px] font-medium leading-tight opacity-85">
+              {open ? "Hide details" : detail}
+            </span>
           </span>
-          <span className="block truncate text-[11px] font-medium leading-tight opacity-85">
-            {detail}
+        )}
+        {!compact && (
+          <span
+            className={`text-[11px] font-semibold transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+            aria-hidden
+          >
+            ▾
           </span>
-        </span>
-      )}
+        )}
+      </button>
+      {open ? (
+        <div
+          className={`maintenance-nav-card z-40 rounded-2xl px-3 py-3 text-[12px] font-medium leading-relaxed ${
+            compact
+              ? "absolute left-full top-0 ml-2 w-56"
+              : "mt-2"
+          }`}
+        >
+          {text}
+          {start || end ? (
+            <p className="mt-2 text-[11px] opacity-80">
+              {detail}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

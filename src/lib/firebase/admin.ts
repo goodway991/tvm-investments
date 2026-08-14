@@ -176,16 +176,193 @@ export async function saveUserInvestment(data: {
   return true;
 }
 
-export async function verifyIdToken(idToken: string) {
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
+
+export function isAdminEmail(email?: string | null) {
+  return (email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
+}
+
+export function isQuotaError(error: unknown) {
+  const text = error instanceof Error ? error.message : String(error);
+  return /quota|resource.?exhausted|RESOURCE_EXHAUSTED/i.test(text);
+}
+
+async function getAdminAuth() {
   await getAdminDb();
   const { getApps } = await import("firebase-admin/app");
   const { getAuth } = await import("firebase-admin/auth");
   const app = getApps()[0];
-  if (!app) return null;
+  return app ? getAuth(app) : null;
+}
+
+export async function verifyIdToken(idToken: string) {
+  const auth = await getAdminAuth();
+  if (!auth) return null;
   try {
-    return await getAuth(app).verifyIdToken(idToken);
+    return await auth.verifyIdToken(idToken);
   } catch {
     return null;
+  }
+}
+
+export type AdminAccountRow = {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: "client" | "admin";
+  plan: "free" | "pro";
+  source: "comp" | "paid" | "none";
+  disabled: boolean;
+};
+
+export async function listAdminAccounts(): Promise<{
+  rows: AdminAccountRow[];
+  plansLoaded: boolean;
+}> {
+  const auth = await getAdminAuth();
+  if (!auth) throw new Error("Admin access is not configured.");
+
+  const authUsers: Array<{
+    uid: string;
+    email: string;
+    displayName: string;
+    disabled: boolean;
+  }> = [];
+  let pageToken: string | undefined;
+  do {
+    const page = await auth.listUsers(1000, pageToken);
+    for (const record of page.users) {
+      authUsers.push({
+        uid: record.uid,
+        email: record.email || "",
+        displayName: record.displayName || "",
+        disabled: Boolean(record.disabled),
+      });
+    }
+    pageToken = page.pageToken;
+  } while (pageToken);
+
+  const entitlements = new Map<
+    string,
+    { role: "client" | "admin"; plan: "free" | "pro"; source: "comp" | "paid" | "none" }
+  >();
+  let plansLoaded = false;
+  const db = await getAdminDb();
+  if (db) {
+    try {
+      const snap = await db.collection("entitlements").get();
+      for (const item of snap.docs) {
+        const data = item.data();
+        const source =
+          data.source === "stripe" || data.source === "paid"
+            ? "paid"
+            : data.source === "comp"
+              ? "comp"
+              : "none";
+        entitlements.set(item.id, {
+          role: data.role === "admin" ? "admin" : "client",
+          plan: data.plan === "pro" ? "pro" : "free",
+          source,
+        });
+      }
+      plansLoaded = true;
+    } catch (error) {
+      if (!isQuotaError(error)) throw error;
+    }
+  }
+
+  const rows = authUsers
+    .map((record) => {
+      const next = entitlements.get(record.uid);
+      const admin = isAdminEmail(record.email) || next?.role === "admin";
+      return {
+        uid: record.uid,
+        email: record.email,
+        displayName: record.displayName,
+        role: admin ? "admin" : "client",
+        plan: admin ? "pro" : next?.plan ?? "free",
+        source: admin ? "none" : next?.source ?? "none",
+        disabled: record.disabled,
+      } satisfies AdminAccountRow;
+    })
+    .sort((a, b) => a.email.localeCompare(b.email));
+
+  return { rows, plansLoaded };
+}
+
+export async function setComplimentaryPro(uid: string, grant: boolean) {
+  const auth = await getAdminAuth();
+  const db = await getAdminDb();
+  if (!auth || !db) throw new Error("Admin access is not configured.");
+
+  const record = await auth.getUser(uid);
+  if (isAdminEmail(record.email)) {
+    throw new Error("The admin account stays on Pro.");
+  }
+
+  const ref = db.collection("entitlements").doc(uid);
+  const current = await ref.get();
+  const data = current.data() || {};
+  if (data.source === "stripe" || data.source === "paid") {
+    throw new Error("Paid Pro stays as billed. Leave that account alone.");
+  }
+  if (data.role === "admin") {
+    throw new Error("The admin account stays on Pro.");
+  }
+
+  const { FieldValue } = await import("firebase-admin/firestore");
+  const now = new Date();
+  if (grant) {
+    await ref.set(
+      {
+        uid,
+        role: "client",
+        plan: "pro",
+        watchlistLimit: 100,
+        cooldownDays: 0,
+        createdAt: data.createdAt || now,
+        updatedAt: now,
+        source: "comp",
+        giftedAt: now,
+        giftAckedAt: FieldValue.delete(),
+      },
+      { merge: true },
+    );
+    return;
+  }
+
+  if (!current.exists) return;
+
+  await ref.set(
+    {
+      uid,
+      role: "client",
+      plan: "free",
+      watchlistLimit: 10,
+      cooldownDays: 7,
+      createdAt: data.createdAt || now,
+      updatedAt: now,
+      source: FieldValue.delete(),
+      giftedAt: FieldValue.delete(),
+      giftAckedAt: FieldValue.delete(),
+    },
+    { merge: true },
+  );
+
+  const watchRef = db.collection("watchlists").doc(uid);
+  const watchSnap = await watchRef.get();
+  if (watchSnap.exists) {
+    await watchRef.set(
+      {
+        uid,
+        symbols: [],
+        changedAt: now,
+        nextChangeAt: now,
+        updatedAt: now,
+      },
+      { merge: true },
+    );
   }
 }
 

@@ -15,6 +15,7 @@ import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
+import { resolveAccountName } from "@/lib/person-name";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const },
@@ -32,12 +33,13 @@ function navIsActive(pathname: string, href: string) {
 
 function accountLabel(
   profile: { displayName?: string } | null,
-  email?: string | null,
+  user: { displayName?: string | null; email?: string | null } | null,
 ) {
-  const name = profile?.displayName?.trim();
-  if (name) return name;
-  const fromEmail = email?.split("@")[0]?.trim();
-  return fromEmail || "Account";
+  return resolveAccountName({
+    profileName: profile?.displayName,
+    authName: user?.displayName,
+    email: user?.email,
+  });
 }
 
 function ProfileNavLink({
@@ -158,7 +160,6 @@ function PreviewSidebar({
 
   return (
     <div className="mt-4 flex flex-col gap-2">
-      <MaintenanceNavCard compact={compact} />
       {showArchive ? (
         <Link
           href={withArchiveQuery("/dashboard/archive", archive)}
@@ -206,6 +207,7 @@ function PreviewSidebar({
       ) : (
         <TestingSuiteLock compact={compact} />
       )}
+      <MaintenanceNavCard compact={compact} />
     </div>
   );
 }
@@ -342,7 +344,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <PreviewSidebar compact={sidebarMode !== "expanded"} />
 
-        <div className="mt-auto space-y-2">
+        <div className="mt-4 space-y-2">
           <UpgradeNavCard
             compact={sidebarMode !== "expanded"}
             plan={entitlement.plan}
@@ -350,7 +352,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           />
           <ProfileNavLink
             compact={sidebarMode !== "expanded"}
-            name={accountLabel(profile, user.email)}
+            name={accountLabel(profile, user)}
             active={navIsActive(pathname, "/dashboard/settings")}
             href={withArchiveQuery("/dashboard/settings", archive)}
           />
@@ -414,7 +416,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 })}
               </nav>
               <PreviewSidebar onNavigate={() => setMobileMenuOpen(false)} />
-              <div className="mt-auto space-y-2">
+              <div className="mt-4 space-y-2">
                 <UpgradeNavCard
                   plan={entitlement.plan}
                   onUpgrade={() => {
@@ -423,7 +425,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   }}
                 />
                 <ProfileNavLink
-                  name={accountLabel(profile, user.email)}
+                  name={accountLabel(profile, user)}
                   active={navIsActive(pathname, "/dashboard/settings")}
                   href={withArchiveQuery("/dashboard/settings", archive)}
                   onNavigate={() => setMobileMenuOpen(false)}

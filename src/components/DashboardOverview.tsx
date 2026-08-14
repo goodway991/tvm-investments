@@ -15,13 +15,14 @@ import {
   sparklineValues,
   uniqueStocks,
 } from "@/lib/chart-series";
+import { resolveAccountName } from "@/lib/person-name";
 
 function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
 export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [investment, setInvestment] = useState(0);
@@ -111,7 +112,11 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       <div className="flex flex-wrap items-center gap-4">
         <div className="mr-auto">
           <h1 className="font-display text-3xl font-bold text-ink">
-            Welcome, {profile?.displayName || "TVM investor"}
+            Welcome, {resolveAccountName({
+              profileName: profile?.displayName,
+              authName: user?.displayName,
+              email: user?.email,
+            })}
           </h1>
         </div>
         <form className="flex items-center gap-2" onSubmit={submitTickerSearch}>

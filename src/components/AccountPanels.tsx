@@ -9,6 +9,7 @@ import { useTheme, type Appearance } from "@/components/ThemeProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
+import { resolveAccountName } from "@/lib/person-name";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -444,7 +445,11 @@ export function SettingsPanel() {
           ) : (
             <div className="flex items-center gap-2">
               <h2 className="font-display text-2xl font-bold text-ink">
-                {profile?.displayName || "TVM user"}
+                {resolveAccountName({
+                  profileName: profile?.displayName,
+                  authName: user?.displayName,
+                  email: user?.email,
+                })}
               </h2>
               <button
                 type="button"
