@@ -293,6 +293,27 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    // Empty the list after Pro is removed, or when a free account is already
+    // over the 10-name cap. nextChangeAt == now so they can add a free list.
+    function validWatchlistReset(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "symbols", "changedAt", "nextChangeAt",
+          "createdAt", "updatedAt"
+        ])
+        && data.keys().hasAll([
+          "uid", "symbols", "changedAt", "nextChangeAt",
+          "createdAt", "updatedAt"
+        ])
+        && data.uid is string
+        && data.uid == uid
+        && data.symbols is list
+        && data.symbols.size() == 0
+        && data.changedAt == request.time
+        && data.nextChangeAt == request.time
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
     function validFreeCooldown(data) {
       return data.nextChangeAt >= request.time + duration.value(167, "h")
         && data.nextChangeAt <= request.time + duration.value(169, "h");
@@ -450,7 +471,7 @@ service cloud.firestore {
     }
 
     match /watchlists/{uid} {
-      allow read: if isOwner(uid);
+      allow read: if isOwner(uid) || isBootstrapAdmin();
       allow create: if isOwner(uid)
         && validWatchlist(request.resource.data, uid)
         && request.resource.data.createdAt == request.time
@@ -460,23 +481,39 @@ service cloud.firestore {
           (isPro(uid) && validProCooldown(request.resource.data))
           || (!isPro(uid) && validFreeCooldown(request.resource.data))
         );
-      allow update: if isOwner(uid)
-        && validWatchlist(request.resource.data, uid)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.changedAt == request.time
-        && request.resource.data.updatedAt == request.time
-        && (
-          (
-            isPro(uid)
-            && validProCooldown(request.resource.data)
+      allow update: if (
+          isOwner(uid)
+          && validWatchlist(request.resource.data, uid)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.changedAt == request.time
+          && request.resource.data.updatedAt == request.time
+          && (
+            (
+              isPro(uid)
+              && validProCooldown(request.resource.data)
+            )
+            ||
+            (
+              !isPro(uid)
+              && request.time >= resource.data.nextChangeAt
+              && validFreeCooldown(request.resource.data)
+            )
           )
-          ||
-          (
-            !isPro(uid)
-            && request.time >= resource.data.nextChangeAt
-            && validFreeCooldown(request.resource.data)
-          )
+        )
+        || (
+          isBootstrapAdmin()
+          && validWatchlistReset(request.resource.data, uid)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
+        )
+        || (
+          isOwner(uid)
+          && !isPro(uid)
+          && resource.data.symbols.size() > entitlement(uid).watchlistLimit
+          && validWatchlistReset(request.resource.data, uid)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
         );
       allow delete: if false;
     }

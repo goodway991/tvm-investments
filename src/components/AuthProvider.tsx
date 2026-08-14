@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -403,6 +404,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribeAuth();
     };
   }, []);
+
+  const watchlistResetting = useRef(false);
+  useEffect(() => {
+    if (loading || !user) return;
+    if (entitlement.plan !== "free" || entitlement.role === "admin") return;
+    if (!watchlist.exists) return;
+    if (watchlist.symbols.length <= entitlement.watchlistLimit) return;
+    if (watchlistResetting.current) return;
+    const db = getClientFirestore();
+    if (!db) return;
+    watchlistResetting.current = true;
+    void updateDoc(doc(db, "watchlists", user.uid), {
+      symbols: [],
+      changedAt: serverTimestamp(),
+      nextChangeAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }).finally(() => {
+      watchlistResetting.current = false;
+    });
+  }, [
+    entitlement.plan,
+    entitlement.role,
+    entitlement.watchlistLimit,
+    loading,
+    user,
+    watchlist.exists,
+    watchlist.symbols.length,
+  ]);
 
   const logout = useCallback(async () => {
     const auth = getClientAuth();

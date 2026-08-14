@@ -116,6 +116,19 @@ export function AdminAccountsPanel() {
         giftedAt: grant ? serverTimestamp() : deleteField(),
         giftAckedAt: deleteField(),
       });
+      if (!grant) {
+        const watchRef = doc(db, "watchlists", row.uid);
+        const watchSnap = await getDoc(watchRef);
+        if (watchSnap.exists()) {
+          await updateDoc(watchRef, {
+            uid: row.uid,
+            symbols: [],
+            changedAt: serverTimestamp(),
+            nextChangeAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
+      }
       await load();
     } catch (saveError) {
       setError(
