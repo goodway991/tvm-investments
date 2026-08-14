@@ -41,9 +41,10 @@ service cloud.firestore {
     //   averageCost: number, currentPrice: number, updatedAt: timestamp
     //
     // site/maintenance
-    //   enabled: bool — lock the desk (Admin SDK / console write only)
-    //   warning: bool — orange top-of-site banner
-    //   start, end: strings shown in the banner (edit these for dates/times)
+    //   start, end: strings like "Friday, August 14 at 9:15 PM ET"
+    //     — the site schedules the orange banner and the lock from these times
+    //   enabled: optional early lock before start (still unlocks at end)
+    //   warning: used only if start/end cannot be parsed
     //   message: banner copy; use {start} and {end} as placeholders
     //   public read, Admin SDK / console write only
     // ===============================================================

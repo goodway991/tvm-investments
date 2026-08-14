@@ -12,6 +12,7 @@ import {
   MAINTENANCE_COLLECTION,
   MAINTENANCE_DOC_ID,
   parseSiteMaintenance,
+  resolveMaintenanceState,
   type SiteMaintenance,
 } from "@/lib/maintenance";
 
@@ -25,6 +26,8 @@ const IDLE: SiteMaintenance = {
   start: "",
   end: "",
   message: "",
+  startMs: null,
+  endMs: null,
 };
 
 function warningFingerprint(site: SiteMaintenance) {
@@ -52,6 +55,7 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [site, setSite] = useState<SiteMaintenance>(IDLE);
+  const [now, setNow] = useState(() => Date.now());
   const [dismissed, setDismissed] = useState("");
   const [mounted, setMounted] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
@@ -81,19 +85,38 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const upcoming = [site.startMs, site.endMs].filter(
+      (value): value is number => value != null && value > Date.now(),
+    );
+    const next = upcoming.length ? Math.min(...upcoming) : null;
+    const delay =
+      next != null
+        ? Math.max(50, Math.min(next - Date.now() + 75, 30_000))
+        : 30_000;
+    const id = window.setTimeout(tick, delay);
+    return () => window.clearTimeout(id);
+  }, [now, site.startMs, site.endMs]);
+
+  const resolved = useMemo(
+    () => resolveMaintenanceState(site, now),
+    [now, site],
+  );
+
+  useEffect(() => {
     if (loading) return;
-    const onDesk = pathname.startsWith("/dashboard");
-    if (site.enabled && user && !isAdmin && onDesk) {
+    const onApp = pathname.startsWith("/dashboard");
+    if (resolved.lock && user && !isAdmin && onApp) {
       router.replace("/maintenance");
       return;
     }
-    if (user && pathname === "/maintenance" && (isAdmin || !site.enabled)) {
+    if (user && pathname === "/maintenance" && (isAdmin || !resolved.lock)) {
       router.replace("/dashboard");
     }
-  }, [isAdmin, loading, pathname, router, site.enabled, user]);
+  }, [isAdmin, loading, pathname, resolved.lock, router, user]);
 
   const fingerprint = useMemo(() => warningFingerprint(site), [site]);
-  const warningOn = site.warning || site.enabled;
+  const warningOn = resolved.warning;
   const showWarning = mounted && warningOn && dismissed !== fingerprint;
   const warningText = formatWarningText(site);
 
