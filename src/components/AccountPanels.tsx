@@ -332,21 +332,28 @@ function VersionCard({
                   {feature.visual ? (
                     <ReleaseFeatureVisual id={feature.visual} />
                   ) : null}
-                  <p
-                    className={`text-sm leading-relaxed text-ink-soft ${
+                  <h3
+                    className={`font-display text-base font-bold text-ink ${
                       feature.visual ? "mt-2" : ""
                     }`}
                   >
-                    {feature.body}
-                  </p>
+                    {feature.title}
+                  </h3>
+                  {feature.body ? (
+                    <p className="mt-1 font-display text-sm font-semibold leading-relaxed text-ink">
+                      {feature.body}
+                    </p>
+                  ) : null}
                 </div>
               ))}
             </div>
           ) : null}
           {release.items?.length ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+            <ul className="mt-2 space-y-1 text-sm">
               {release.items.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item} className="font-display font-bold text-ink">
+                  {item}
+                </li>
               ))}
             </ul>
           ) : null}
