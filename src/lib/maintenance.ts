@@ -15,6 +15,10 @@ export type SiteMaintenance = {
   message: string;
 };
 
+function asFlag(value: unknown) {
+  return value === true || value === "true" || value === 1;
+}
+
 export function parseSiteMaintenance(
   data: Record<string, unknown> | undefined,
 ): SiteMaintenance {
@@ -23,8 +27,8 @@ export function parseSiteMaintenance(
       ? data.message.trim()
       : DEFAULT_WARNING_MESSAGE;
   return {
-    enabled: data?.enabled === true,
-    warning: data?.warning === true,
+    enabled: asFlag(data?.enabled),
+    warning: asFlag(data?.warning) || asFlag(data?.warningEnabled),
     start: typeof data?.start === "string" ? data.start.trim() : "",
     end: typeof data?.end === "string" ? data.end.trim() : "",
     message,
