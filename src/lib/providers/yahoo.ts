@@ -141,14 +141,24 @@ export async function searchYahooSymbols(
         .toUpperCase();
       if (!symbol || seen.has(symbol)) continue;
       seen.add(symbol);
+      const quoteNames = quote as {
+        longname?: unknown;
+        shortname?: unknown;
+        longName?: unknown;
+        shortName?: unknown;
+      };
+      const nameCandidate = [
+        quoteNames.longname,
+        quoteNames.shortname,
+        quoteNames.longName,
+        quoteNames.shortName,
+      ].find(
+        (value): value is string =>
+          typeof value === "string" && value.trim().length > 0,
+      );
       matches.push({
         symbol,
-        name:
-          quote.longname ||
-          quote.shortname ||
-          (quote as { longName?: string; shortName?: string }).longName ||
-          (quote as { longName?: string; shortName?: string }).shortName ||
-          symbol,
+        name: nameCandidate ?? symbol,
       });
     }
     return matches.slice(0, limit);
