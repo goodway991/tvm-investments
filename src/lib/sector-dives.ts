@@ -136,7 +136,15 @@ function diveFromStocks(
     return {
       ...fallback,
       subtitle: `${label} · no names in this sleeve.`,
-      body: `No ${fallback.sector.toLowerCase()} names printed in the ${label} scan. The next weekday snapshot will fill this sleeve if those tickers are in the universe.`,
+      body: `No ${fallback.sector.toLowerCase()} names printed in the ${label} scan.
+
+**Relative strength leaders:** —
+
+**Oversold watchlist:** —
+
+**Catalyst calendar:** Highest composite scores: —. Latest headlines — —.
+
+**Session note:** The next weekday snapshot will fill this sleeve if those tickers are in the universe.`,
     };
   }
 

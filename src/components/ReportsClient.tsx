@@ -105,7 +105,7 @@ function PreviewPick({
 }) {
   return (
     <article className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(52,41,120,0.4)]">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet">
+      <p className="glass inline-flex rounded-2xl px-3 py-1.5 font-display text-sm font-bold text-violet shadow-[0_12px_24px_-18px_rgba(52,41,120,0.35)]">
         Pick {rank}
       </p>
       <div className="mt-2 flex items-start justify-between gap-3">

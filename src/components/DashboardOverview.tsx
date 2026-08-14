@@ -217,40 +217,61 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         <article className="glass-strong flex flex-col rounded-[24px] p-6">
           <h2 className="font-display text-lg font-semibold text-ink">Today&apos;s movers</h2>
           <div className="mt-4 flex-1 space-y-3.5">
-            {filteredMovers.length > 0 ? (
-              filteredMovers.map((stock) => {
-                const move = sessionMove(stock);
-                return (
-                <button
-                  key={stock.symbol}
-                  type="button"
-                  onClick={() => setSelectedSymbol(stock.symbol)}
-                  className="glass flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-all hover:-translate-y-0.5 hover:bg-white/50"
-                >
-                  <MoveMark up={move.up} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-ink">{stock.symbol}</p>
-                    <p className="truncate text-xs text-ink-soft">{compactCompanyName(stock.name)}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-[11px] text-ink-soft">
-                      Prev ${move.previous.toFixed(2)}
-                    </p>
-                    <p
-                      className={`font-display text-sm font-bold ${
-                        move.up ? "text-emerald-600" : "text-coral"
-                      }`}
-                    >
-                      ${move.current.toFixed(2)}
-                    </p>
-                  </div>
-                </button>
-                );
-              })
-            ) : (
+            {search.trim() && filteredMovers.length === 0 ? (
               <p className="glass rounded-2xl p-4 text-sm text-ink-soft">
                 No tracked ticker matches “{search}”.
               </p>
+            ) : (
+              [0, 1, 2, 3, 4].map((index) => {
+                const stock = filteredMovers[index];
+                if (!stock) {
+                  return (
+                    <div
+                      key={`empty-mover-${index}`}
+                      className="glass flex w-full items-center gap-3 rounded-2xl p-2.5"
+                    >
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-violet/10 text-violet">
+                        —
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-ink">—</p>
+                        <p className="truncate text-xs text-ink-soft">No mover this slot</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-[11px] text-ink-soft">Prev —</p>
+                        <p className="font-display text-sm font-bold text-ink">—</p>
+                      </div>
+                    </div>
+                  );
+                }
+                const move = sessionMove(stock);
+                return (
+                  <button
+                    key={stock.symbol}
+                    type="button"
+                    onClick={() => setSelectedSymbol(stock.symbol)}
+                    className="glass flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-all hover:-translate-y-0.5 hover:bg-white/50"
+                  >
+                    <MoveMark up={move.up} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-ink">{stock.symbol}</p>
+                      <p className="truncate text-xs text-ink-soft">{compactCompanyName(stock.name)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[11px] text-ink-soft">
+                        Prev ${move.previous.toFixed(2)}
+                      </p>
+                      <p
+                        className={`font-display text-sm font-bold ${
+                          move.up ? "text-emerald-600" : "text-coral"
+                        }`}
+                      >
+                        ${move.current.toFixed(2)}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
           <Link
@@ -324,14 +345,38 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
             </span>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {snapshot.topPicks.slice(0, 3).map((stock, index) => (
-              <FlaggedPickButton
-                key={stock.symbol}
-                stock={stock}
-                index={index}
-                onOpen={() => setSelectedSymbol(stock.symbol)}
-              />
-            ))}
+            {[0, 1, 2].map((index) => {
+              const stock = snapshot.topPicks[index];
+              if (!stock) {
+                return (
+                  <div key={`empty-pick-${index}`} className="glass w-full rounded-2xl p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-display font-bold text-ink">—</p>
+                        <p className="text-[11px] text-ink-soft">No pick this session</p>
+                      </div>
+                      <span className="font-display text-sm font-bold text-violet">—</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-ink-soft">ST — · LT —</p>
+                    <div className="my-2 h-[54px] rounded-lg bg-white/50" />
+                    <div className="flex items-center justify-between">
+                      <span className="font-display text-sm font-bold text-ink">—</span>
+                      <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-xs font-semibold text-violet">
+                        Pick {index + 1}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <FlaggedPickButton
+                  key={stock.symbol}
+                  stock={stock}
+                  index={index}
+                  onOpen={() => setSelectedSymbol(stock.symbol)}
+                />
+              );
+            })}
           </div>
         </article>
       </div>

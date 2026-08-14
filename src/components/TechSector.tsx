@@ -63,26 +63,111 @@ function parseHeadlines(text: string) {
     .filter(Boolean);
 }
 
-function parseDiveBody(body: string): DiveBlock[] {
-  return scrubCopy(body)
-    .split(/\n\n+/)
-    .map((paragraph) => {
-      let title: string | undefined;
-      let content = paragraph.replace(/\*\*/g, "").trim();
-      if (paragraph.startsWith("**") && paragraph.includes(":**")) {
-        const [rawTitle, ...rest] = paragraph.split(":**");
-        title = rawTitle.replace(/\*\*/g, "").trim();
-        content = rest.join(":**").trim();
-      }
-      return {
-        title,
-        body: content,
-        stats: parseStockStats(content),
-        scores: parseScores(content),
-        headlines: parseHeadlines(content),
-      } satisfies DiveBlock;
-    })
-    .filter((block) => block.body);
+function sectionText(body: string, title: string) {
+  const match = body.match(
+    new RegExp(`\\*\\*${title}:\\*\\*\\s*([\\s\\S]*?)(?=\\n\\n\\*\\*|$)`, "i"),
+  );
+  return match?.[1]?.trim() ?? "";
+}
+
+function leadText(body: string) {
+  const cut = body.search(/\n\n\*\*/);
+  const lead = scrubCopy((cut === -1 ? body : body.slice(0, cut)).trim());
+  if (!lead || lead.startsWith("**")) return "No names in this sleeve this session.";
+  return lead;
+}
+
+function padStats(stats: StockStat[]): StockStat[] {
+  const next = stats.slice(0, 3);
+  while (next.length < 3) {
+    next.push({ symbol: "—", price: "—", change: "—" });
+  }
+  return next;
+}
+
+function padChips(scores: ScoreChip[]): ScoreChip[] {
+  const next = scores.slice(0, 3);
+  while (next.length < 3) {
+    next.push({ symbol: "—", score: "—" });
+  }
+  return next;
+}
+
+function padLines(lines: string[], empty: string) {
+  const next = lines.filter(Boolean).slice(0, 3);
+  while (next.length < 3) next.push(empty);
+  return next;
+}
+
+function leftoverCopy(block: DiveBlock) {
+  return scrubCopy(
+    block.body
+      .replace(new RegExp(STOCK_PATTERN, "g"), "")
+      .replace(new RegExp(SCORE_PATTERN, "g"), "")
+      .replace(/Highest composite scores:\s*/i, "")
+      .replace(/Latest headlines\s*[—–-]\s*.*$/i, "")
+      .replace(/[;,]?\s*$/, ""),
+  ).replace(/^—$/, "");
+}
+
+function layoutDive(body: string): DiveBlock[] {
+  const leaders = sectionText(body, "Relative strength leaders");
+  const oversold = sectionText(body, "Oversold watchlist");
+  const catalyst = sectionText(body, "Catalyst calendar");
+  const note = scrubCopy(sectionText(body, "Session note"));
+
+  return [
+    {
+      title: "Session snapshot",
+      body: leadText(body),
+      stats: [],
+      scores: [],
+      headlines: [],
+    },
+    {
+      title: "Relative strength leaders",
+      body: leftoverCopy({
+        body: leaders,
+        stats: parseStockStats(leaders),
+        scores: [],
+        headlines: [],
+      }),
+      stats: padStats(parseStockStats(leaders)),
+      scores: [],
+      headlines: [],
+    },
+    {
+      title: "Oversold watchlist",
+      body: leftoverCopy({
+        body: oversold,
+        stats: parseStockStats(oversold),
+        scores: [],
+        headlines: [],
+      }),
+      stats: padStats(parseStockStats(oversold)),
+      scores: [],
+      headlines: [],
+    },
+    {
+      title: "Catalyst calendar",
+      body: leftoverCopy({
+        body: catalyst,
+        stats: [],
+        scores: parseScores(catalyst),
+        headlines: parseHeadlines(catalyst),
+      }),
+      stats: [],
+      scores: padChips(parseScores(catalyst)),
+      headlines: padLines(parseHeadlines(catalyst), "No headline this slot."),
+    },
+    {
+      title: "Session note",
+      body: note || "No extra session note for this sleeve.",
+      stats: [],
+      scores: [],
+      headlines: [],
+    },
+  ];
 }
 
 function changeTone(change: string) {
@@ -92,60 +177,44 @@ function changeTone(change: string) {
 }
 
 function DiveWidget({ block }: { block: DiveBlock }) {
-  const hasStats = block.stats.length > 0;
-  const hasScores = block.scores.length > 0;
-  const leftover =
-    hasStats || hasScores
-      ? block.body
-          .replace(new RegExp(STOCK_PATTERN, "g"), "")
-          .replace(new RegExp(SCORE_PATTERN, "g"), "")
-          .replace(/Highest composite scores:\s*/i, "")
-          .replace(/Latest headlines\s*[—–-]\s*.*$/i, "")
-          .replace(/[;,]?\s*$/, "")
-          .replace(/\s{2,}/g, " ")
-          .trim()
-      : block.body;
+  const leftover = leftoverCopy(block);
 
   return (
     <article className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(52,41,120,0.4)]">
-      {block.title ? (
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet">
-          {block.title}
-        </p>
-      ) : null}
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet">
+        {block.title}
+      </p>
 
-      {hasStats ? (
-        <div className={`grid gap-2 ${block.title ? "mt-3" : ""}`}>
-          {block.stats.map((stat) => (
+      {block.stats.length > 0 ? (
+        <div className="mt-3 grid gap-2">
+          {block.stats.map((stat, index) => (
             <div
-              key={`${stat.symbol}-${stat.price}`}
+              key={`${stat.symbol}-${index}`}
               className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl bg-white/75 px-3 py-2.5"
             >
               <span className="font-display text-sm font-bold text-ink">{stat.symbol}</span>
-              <span className="font-display text-sm font-semibold text-ink">${stat.price}</span>
+              <span className="font-display text-sm font-semibold text-ink">
+                {stat.price === "—" ? "—" : `$${stat.price}`}
+              </span>
               <span className={`text-sm font-semibold ${changeTone(stat.change)}`}>
                 {stat.change}
               </span>
-              {stat.rsi ? (
-                <span className="rounded-full bg-violet/10 px-2 py-0.5 text-[11px] font-semibold text-violet">
-                  RSI {stat.rsi}
-                </span>
-              ) : null}
-              {stat.volumeX ? (
-                <span className="text-[11px] font-semibold text-ink-soft">
-                  {stat.volumeX}x vol
-                </span>
-              ) : null}
+              <span className="rounded-full bg-violet/10 px-2 py-0.5 text-[11px] font-semibold text-violet">
+                RSI {stat.rsi ?? "—"}
+              </span>
+              <span className="text-[11px] font-semibold text-ink-soft">
+                {stat.volumeX ? `${stat.volumeX}x vol` : "— vol"}
+              </span>
             </div>
           ))}
         </div>
       ) : null}
 
-      {hasScores ? (
-        <div className={`flex flex-wrap gap-2 ${block.title || hasStats ? "mt-3" : ""}`}>
-          {block.scores.map((chip) => (
+      {block.scores.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {block.scores.map((chip, index) => (
             <span
-              key={`${chip.symbol}-${chip.score}`}
+              key={`${chip.symbol}-${index}`}
               className="rounded-full bg-violet/10 px-3 py-1 font-display text-sm font-bold text-violet"
             >
               {chip.symbol}
@@ -157,9 +226,9 @@ function DiveWidget({ block }: { block: DiveBlock }) {
 
       {block.headlines.length > 0 ? (
         <ul className="mt-3 space-y-2">
-          {block.headlines.map((headline) => (
+          {block.headlines.map((headline, index) => (
             <li
-              key={headline}
+              key={`${headline}-${index}`}
               className="rounded-xl bg-white/70 px-3 py-2 text-sm leading-relaxed text-ink"
             >
               {headline}
@@ -168,34 +237,26 @@ function DiveWidget({ block }: { block: DiveBlock }) {
         </ul>
       ) : null}
 
-      {!hasStats && !hasScores && leftover ? (
+      {leftover ? (
         <p
           className={`whitespace-pre-line text-sm leading-relaxed text-ink ${
-            block.title ? "mt-2" : "font-display text-[15px] font-semibold"
+            block.stats.length > 0 || block.scores.length > 0 || block.headlines.length > 0
+              ? "mt-3 text-ink-soft"
+              : "mt-2"
           }`}
         >
           {leftover}
         </p>
-      ) : leftover && leftover.length > 12 ? (
-        <p className="mt-3 text-sm leading-relaxed text-ink-soft">{leftover}</p>
       ) : null}
     </article>
   );
 }
 
 function DiveBody({ body }: { body: string }) {
-  const blocks = parseDiveBody(body);
-  if (blocks.length === 0) {
-    return (
-      <article className="glass rounded-[22px] p-4 text-sm text-ink-soft">
-        No notes for this sleeve yet.
-      </article>
-    );
-  }
   return (
     <div className="grid gap-3">
-      {blocks.map((block, index) => (
-        <DiveWidget key={`${block.title ?? "lead"}-${index}`} block={block} />
+      {layoutDive(body).map((block) => (
+        <DiveWidget key={block.title} block={block} />
       ))}
     </div>
   );
