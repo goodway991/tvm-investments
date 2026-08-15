@@ -41,7 +41,7 @@ export default function RootLayout({
       <body className={`${dmSans.variable} ${sora.variable} font-sans antialiased`}>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("tvm-appearance");var d=t!=="light"&&(t!=="system"||window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`,
+            __html: `(function(){try{var f=localStorage.getItem("tvm-appearance-forced-dark");if(f!=="1"){localStorage.setItem("tvm-appearance-forced-dark","1");localStorage.setItem("tvm-appearance","dark");}var t=localStorage.getItem("tvm-appearance");var d=t!=="light"&&(t!=="system"||window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`,
           }}
         />
         <Providers>{children}</Providers>

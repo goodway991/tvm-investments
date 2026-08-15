@@ -13,6 +13,7 @@ import { useSiteEra } from "@/components/SiteEraProvider";
 export type Appearance = "light" | "dark" | "system";
 
 const STORAGE_KEY = "tvm-appearance";
+const FORCE_DARK_KEY = "tvm-appearance-forced-dark";
 
 type ThemeContextValue = {
   appearance: Appearance;
@@ -24,6 +25,11 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function readStoredAppearance(): Appearance {
   if (typeof window === "undefined") return "dark";
+  if (window.localStorage.getItem(FORCE_DARK_KEY) !== "1") {
+    window.localStorage.setItem(FORCE_DARK_KEY, "1");
+    window.localStorage.setItem(STORAGE_KEY, "dark");
+    return "dark";
+  }
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (stored === "dark" || stored === "light" || stored === "system") return stored;
   return "dark";
