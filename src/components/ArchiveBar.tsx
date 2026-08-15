@@ -20,9 +20,9 @@ export function ArchiveBanner() {
       <div className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-200/80 bg-sky-50 px-4 py-3 text-sm text-ink">
           <p>
-            Viewing the <span className="font-semibold">{archive}</span> research
-            archive. Charts, news, and pick widgets are from that day. Watchlist and
-            portfolio stay live.
+            Viewing the <span className="font-semibold">{archive}</span> rewind.
+            The whole product — layout, features, and that session&apos;s research —
+            is as it was on that day. Watchlist and portfolio stay yours.
           </p>
           <button
             type="button"

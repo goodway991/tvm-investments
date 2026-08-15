@@ -5,12 +5,14 @@ import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
 import { useAuth } from "@/components/AuthProvider";
 import { useTour } from "@/components/TourProvider";
 import { CURRENT_RELEASE } from "@/lib/release-notes";
+import { useSiteEra } from "@/components/SiteEraProvider";
 
 export function WhatsNewModal() {
   const { releasePending, acknowledgeRelease } = useAuth();
   const { isOpen: tourOpen } = useTour();
+  const { rewind } = useSiteEra();
 
-  if (!releasePending || tourOpen) return null;
+  if (!releasePending || tourOpen || rewind) return null;
 
   return (
     <OverlaySheet

@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { BOGEN_TIPS, type BogenId } from "@/lib/bogen";
+import { useSiteEra } from "@/components/SiteEraProvider";
 
 const STORAGE_KEY = "tvm-bogen-mode";
 
@@ -25,7 +26,8 @@ type BogenContextValue = {
 const BogenContext = createContext<BogenContextValue | null>(null);
 
 export function BogenProvider({ children }: { children: ReactNode }) {
-  const [enabled, setEnabledState] = useState(false);
+  const { era } = useSiteEra();
+  const [enabledState, setEnabledState] = useState(false);
   const [activeId, setActiveId] = useState<BogenId | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -55,6 +57,12 @@ export function BogenProvider({ children }: { children: ReactNode }) {
   const closeTip = useCallback(() => {
     setActiveId(null);
   }, []);
+
+  const enabled = era.features.bogen && enabledState;
+
+  useEffect(() => {
+    if (!era.features.bogen) setActiveId(null);
+  }, [era.features.bogen]);
 
   const value = useMemo(
     () => ({ enabled, setEnabled, openTip, closeTip, activeId }),

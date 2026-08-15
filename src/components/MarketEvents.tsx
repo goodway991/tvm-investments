@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { MarketEvent } from "@/types";
 import { BogenHeading } from "@/components/BogenProvider";
+import { useSiteEra } from "@/components/SiteEraProvider";
 
 const impactColors = {
   bullish: "text-gain bg-green-500/10 border-green-500/20",
@@ -36,11 +37,13 @@ function EventCard({
   index,
   open,
   onToggle,
+  expandable,
 }: {
   event: MarketEvent;
   index: number;
   open: boolean;
   onToggle: () => void;
+  expandable: boolean;
 }) {
   const empty = !event.date && event.title === EMPTY_EVENT.title;
   const teaser = stripPublishedDate(event.summary);
@@ -61,6 +64,20 @@ function EventCard({
     );
   }
 
+  if (!expandable) {
+    return (
+      <article className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-ink-soft">{regionLabels[event.region]}</span>
+          <span className={`rounded-full border px-2 py-0.5 text-xs ${impactColors[event.impact]}`}>
+            {event.impact}
+          </span>
+        </div>
+        <h3 className="font-medium text-ink">{event.title}</h3>
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-soft">{teaser}</p>
+      </article>
+    );
+  }
   return (
     <article className="glass rounded-[22px] shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
       <button
@@ -127,8 +144,10 @@ function EventCard({
 }
 
 export function MarketEvents({ events }: { events: MarketEvent[] }) {
+  const { era } = useSiteEra();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const slots = [0, 1, 2, 3].map((index) => events[index] ?? EMPTY_EVENT);
+  const expandable = era.features.eventExpand;
 
   return (
     <div className="glass flex h-full flex-col rounded-2xl p-6">
@@ -136,7 +155,8 @@ export function MarketEvents({ events }: { events: MarketEvent[] }) {
         <BogenHeading id="market-events">Market-Moving Events</BogenHeading>
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Headlines from this session&apos;s snapshot. Tap a card to read more, tap again to fold it back.
+        Headlines from this session&apos;s snapshot
+        {expandable ? ". Tap a card to read more, tap again to fold it back." : "."}
       </p>
       <div className="mt-6 grid gap-3">
         {slots.map((event, index) => (
@@ -145,6 +165,7 @@ export function MarketEvents({ events }: { events: MarketEvent[] }) {
             event={event}
             index={index}
             open={openIndex === index}
+            expandable={expandable}
             onToggle={() =>
               setOpenIndex((current) => (current === index ? null : index))
             }

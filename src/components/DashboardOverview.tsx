@@ -18,6 +18,7 @@ import {
 import { computeAccountScore } from "@/lib/account-score";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
+import { useSiteEra } from "@/components/SiteEraProvider";
 
 function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -25,6 +26,7 @@ function signedPercent(value: number) {
 
 export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
   const { profile, user, entitlement, watchlist, positions } = useAuth();
+  const { era } = useSiteEra();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [investment, setInvestment] = useState(0);
@@ -35,6 +37,12 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
     [snapshot.topMovers, snapshot.topPicks],
   );
   const topPick = snapshot.topPicks[0] ?? snapshot.topMovers[0];
+  const averageScore =
+    snapshot.topPicks.length > 0
+      ? snapshot.topPicks.reduce((total, stock) => total + stock.compositeScore, 0) /
+        snapshot.topPicks.length
+      : 0;
+  const glowName = entitlement.plan === "pro" && era.features.proProfileStack;
   const accountScore = useMemo(
     () =>
       computeAccountScore({
@@ -108,14 +116,22 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       bogen: "daily-movers-card" as const,
       href: "/dashboard/movers",
     },
-    {
-      label: "Account score",
-      value: accountScore.score == null ? "—" : `${accountScore.score.toFixed(0)} / 100`,
-      badge: accountScore.counted ? `${accountScore.counted} names` : "your book",
-      gradient: true,
-      bogen: "composite" as const,
-      href: "/dashboard/watchlist",
-    },
+    era.features.accountScore
+      ? {
+          label: "Account score",
+          value: accountScore.score == null ? "—" : `${accountScore.score.toFixed(0)} / 100`,
+          badge: accountScore.counted ? `${accountScore.counted} names` : "your book",
+          gradient: true,
+          bogen: "composite" as const,
+          href: "/dashboard/watchlist",
+        }
+      : {
+          label: "Composite avg",
+          value: `${averageScore.toFixed(0)} / 100`,
+          gradient: true,
+          bogen: "composite" as const,
+          href: "#flagged-picks",
+        },
   ];
 
   return (
@@ -124,7 +140,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         <div className="mr-auto">
           <h1 className="font-display text-3xl font-bold text-ink">
             Welcome,{" "}
-            {entitlement.plan === "pro" ? (
+            {glowName ? (
               <span className="pro-name-glow">
                 {resolveAccountName({
                   profileName: profile?.displayName,

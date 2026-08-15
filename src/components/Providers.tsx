@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { AuthProvider } from "@/components/AuthProvider";
 import { GiftedProModal } from "@/components/GiftedProModal";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
@@ -9,24 +10,29 @@ import { TourProvider } from "@/components/TourProvider";
 import { UpgradeProvider } from "@/components/UpgradeProvider";
 import { BogenProvider } from "@/components/BogenProvider";
 import { MotionPauseRoot } from "@/components/LoopMotion";
+import { SiteEraProvider } from "@/components/SiteEraProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <UpgradeProvider>
-          <TourProvider>
-            <BogenProvider>
-              <MaintenanceGate>
-                <MotionPauseRoot />
-                {children}
-                <GiftedProModal />
-                <WhatsNewModal />
-              </MaintenanceGate>
-            </BogenProvider>
-          </TourProvider>
-        </UpgradeProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <Suspense>
+      <SiteEraProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <UpgradeProvider>
+              <TourProvider>
+                <BogenProvider>
+                  <MaintenanceGate>
+                    <MotionPauseRoot />
+                    {children}
+                    <GiftedProModal />
+                    <WhatsNewModal />
+                  </MaintenanceGate>
+                </BogenProvider>
+              </TourProvider>
+            </UpgradeProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </SiteEraProvider>
+    </Suspense>
   );
 }

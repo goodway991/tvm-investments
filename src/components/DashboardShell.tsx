@@ -17,6 +17,7 @@ import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
+import { useSiteEra } from "@/components/SiteEraProvider";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
@@ -115,46 +116,46 @@ function UpgradeNavCard({
   compact = false,
   plan,
   onUpgrade,
+  vintage = false,
 }: {
   compact?: boolean;
   plan: "free" | "pro";
   onUpgrade: () => void;
+  vintage?: boolean;
 }) {
-  const body =
-    plan === "pro" ? (
-      compact ? (
-        <span className="pro-name-glow pointer-events-none relative z-[1] text-[11px] uppercase">
-          Pro
-        </span>
-      ) : (
-        <span className="pointer-events-none relative z-[1] min-w-0">
-          <span className="pro-name-glow block text-sm leading-tight">Pro account</span>
-          <span className="pro-name-glow mt-0.5 block text-[11px] leading-tight">Unlocked</span>
-        </span>
-      )
-    ) : compact ? (
-      <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">Pro</span>
+  const proChip = plan === "pro";
+  const body = proChip ? (
+    compact ? (
+      <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
+        Pro
+      </span>
     ) : (
       <span className="pointer-events-none relative z-[1] min-w-0">
-        <span className="block text-sm font-semibold leading-tight">
-          Upgrade to Pro
-        </span>
+        <span className="block text-sm font-semibold leading-tight">Pro account</span>
         <span className="block text-[11px] font-medium leading-tight text-white/80">
-          Unlock more
+          Unlocked
         </span>
       </span>
-    );
+    )
+  ) : compact ? (
+    <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">Pro</span>
+  ) : (
+    <span className="pointer-events-none relative z-[1] min-w-0">
+      <span className="block text-sm font-semibold leading-tight">Upgrade to Pro</span>
+      <span className="block text-[11px] font-medium leading-tight text-white/80">
+        Unlock more
+      </span>
+    </span>
+  );
 
   return (
     <BogenHit
       id="nav-upgrade"
       compact={compact}
-      onDark={plan !== "pro"}
-      className={`rounded-2xl ${widgetBox(compact)} ${
-        plan === "pro" ? "bg-transparent" : "glass-violet text-white"
-      }`}
+      onDark
+      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
     >
-      {plan === "pro" ? (
+      {proChip || vintage ? (
         <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
       ) : (
         <button
@@ -178,11 +179,13 @@ function PreviewSidebar({
   onNavigate?: () => void;
 }) {
   const { entitlement } = useAuth();
+  const { era } = useSiteEra();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const archive = searchParams.get("archive");
   const showArchive = canUsePreviewFeature(entitlement.role, "archiveCalendar");
-  const showHorizon = canUsePreviewFeature(entitlement.role, "horizonSuite");
+  const showHorizon =
+    era.id === "live" && canUsePreviewFeature(entitlement.role, "horizonSuite");
   const archiveRoute = navIsActive(pathname, "/dashboard/archive");
   const horizonActive = navIsActive(pathname, "/dashboard/horizon");
   const archiveLive = Boolean(archive);
@@ -278,21 +281,24 @@ function PreviewSidebar({
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, profile, entitlement, loading, error, tourPending } = useAuth();
+  const { era } = useSiteEra();
   const { openUpgrade } = useUpgrade();
   const { isOpen: tourOpen, openTour } = useTour();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const archive = searchParams.get("archive");
+  const stackPro = entitlement.plan === "pro" && era.features.proProfileStack;
+  const showPlanChip = entitlement.plan === "free" || !stackPro;
   const [sidebarMode, setSidebarMode] = useState<
     "expanded" | "collapsed" | "hidden"
   >("expanded");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (loading || !user || !tourPending || tourOpen) return;
+    if (loading || !user || !tourPending || tourOpen || archive) return;
     const timer = window.setTimeout(() => openTour({ required: true }), 400);
     return () => window.clearTimeout(timer);
-  }, [loading, openTour, tourOpen, tourPending, user]);
+  }, [archive, loading, openTour, tourOpen, tourPending, user]);
 
   function cycleSidebar() {
     setSidebarMode((current) =>
@@ -432,12 +438,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <PreviewSidebar compact={sidebarMode !== "expanded"} />
 
         <div className="mt-auto space-y-2 pt-4">
-          <MaintenanceNavCard compact={sidebarMode !== "expanded"} />
-          {entitlement.plan === "free" ? (
+          {era.features.maintenanceNav ? (
+            <MaintenanceNavCard compact={sidebarMode !== "expanded"} />
+          ) : null}
+          {showPlanChip ? (
             <UpgradeNavCard
               compact={sidebarMode !== "expanded"}
               plan={entitlement.plan}
               onUpgrade={openUpgrade}
+              vintage={entitlement.plan === "pro"}
             />
           ) : null}
           <ProfileNavLink
@@ -445,7 +454,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             name={accountLabel(profile, user)}
             active={navIsActive(pathname, "/dashboard/settings")}
             href={withArchiveQuery("/dashboard/settings", archive)}
-            pro={entitlement.plan === "pro"}
+            pro={stackPro}
           />
         </div>
       </aside>
@@ -519,14 +528,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </nav>
               <PreviewSidebar onNavigate={() => setMobileMenuOpen(false)} />
               <div className="mt-auto space-y-2 pt-4">
-                <MaintenanceNavCard />
-                {entitlement.plan === "free" ? (
+                {era.features.maintenanceNav ? <MaintenanceNavCard /> : null}
+                {showPlanChip ? (
                   <UpgradeNavCard
                     plan={entitlement.plan}
                     onUpgrade={() => {
                       setMobileMenuOpen(false);
                       openUpgrade();
                     }}
+                    vintage={entitlement.plan === "pro"}
                   />
                 ) : null}
                 <ProfileNavLink
@@ -534,7 +544,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   active={navIsActive(pathname, "/dashboard/settings")}
                   href={withArchiveQuery("/dashboard/settings", archive)}
                   onNavigate={() => setMobileMenuOpen(false)}
-                  pro={entitlement.plan === "pro"}
+                  pro={stackPro}
                 />
               </div>
             </aside>

@@ -22,8 +22,11 @@ export function DailyBrief({ snapshot }: { snapshot: DailySnapshot }) {
           <BogenHeading id="brief">Daily Brief</BogenHeading>
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-        Headlines and sector dives rebuilt from this session&apos;s scan of about
-        1,500 liquid US names — not a leftover from a prior day.
+          Headlines and sector notes from this session
+          {snapshot.scanUniverse.combined
+            ? ` — about ${snapshot.scanUniverse.combined.toLocaleString()} screened names`
+            : ""}
+          .
         </p>
       </div>
       <div className="grid gap-8 lg:grid-cols-2">

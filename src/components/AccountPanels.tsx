@@ -9,8 +9,10 @@ import { useTheme, type Appearance } from "@/components/ThemeProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
+import { RELEASE_ISO, releaseVisibleOn } from "@/lib/site-era";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
+import { useSiteEra } from "@/components/SiteEraProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
 
@@ -377,6 +379,7 @@ export function SettingsPanel() {
   const { openTour } = useTour();
   const { appearance, setAppearance } = useTheme();
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
+  const { era, rewind, archiveDate } = useSiteEra();
   const [loggingOut, setLoggingOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -495,7 +498,13 @@ export function SettingsPanel() {
           <p className="mt-1 text-sm text-ink-soft">{user?.email}</p>
         </div>
         {entitlement.plan === "pro" ? (
-          <span className="pro-name-glow text-sm">Pro</span>
+          era.features.proProfileStack ? (
+            <span className="pro-name-glow text-sm">Pro</span>
+          ) : (
+            <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white">
+              Pro
+            </span>
+          )
         ) : (
           <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white">
             Free
@@ -538,62 +547,66 @@ export function SettingsPanel() {
         </button>
       </div>
 
-      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-        <p className="font-semibold text-ink">Display appearance</p>
-        <p className="mt-1">
-          Switch between light and a glowy blue dark mode. The change stays on
-          this browser.
-        </p>
-        <label className="mt-3 block max-w-xs">
-          <span className="sr-only">Display appearance</span>
-          <select
-            value={appearance}
-            onChange={(event) =>
-              setAppearance(event.target.value as Appearance)
-            }
-            className="field w-full appearance-none rounded-2xl px-4 py-3 text-sm font-semibold text-ink"
-          >
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="system">Match system</option>
-          </select>
-        </label>
-      </div>
-
-      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-        <p className="flex items-center gap-2 font-semibold text-ink">
-          Bogen mode
-          <NewBadge feature="bogen" />
-        </p>
-        <p className="mt-1">
-          Show a question mark next to each feature. Tap one to read what it
-          does and how to use it.
-        </p>
-        <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setBogenEnabled(true)}
-            className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
-              bogenEnabled
-                ? "glass-violet text-white"
-                : "border border-ink/10 text-ink-soft hover:text-ink"
-            }`}
-          >
-            On
-          </button>
-          <button
-            type="button"
-            onClick={() => setBogenEnabled(false)}
-            className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
-              !bogenEnabled
-                ? "glass-violet text-white"
-                : "border border-ink/10 text-ink-soft hover:text-ink"
-            }`}
-          >
-            Off
-          </button>
+      {era.features.darkMode ? (
+        <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+          <p className="font-semibold text-ink">Display appearance</p>
+          <p className="mt-1">
+            Switch between light and a glowy blue dark mode. The change stays on
+            this browser.
+          </p>
+          <label className="mt-3 block max-w-xs">
+            <span className="sr-only">Display appearance</span>
+            <select
+              value={appearance}
+              onChange={(event) =>
+                setAppearance(event.target.value as Appearance)
+              }
+              className="field w-full appearance-none rounded-2xl px-4 py-3 text-sm font-semibold text-ink"
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="system">Match system</option>
+            </select>
+          </label>
         </div>
-      </div>
+      ) : null}
+
+      {era.features.bogen ? (
+        <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+          <p className="flex items-center gap-2 font-semibold text-ink">
+            Bogen mode
+            <NewBadge feature="bogen" />
+          </p>
+          <p className="mt-1">
+            Show a question mark next to each feature. Tap one to read what it
+            does and how to use it.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setBogenEnabled(true)}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
+                bogenEnabled
+                  ? "glass-violet text-white"
+                  : "border border-ink/10 text-ink-soft hover:text-ink"
+              }`}
+            >
+              On
+            </button>
+            <button
+              type="button"
+              onClick={() => setBogenEnabled(false)}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
+                !bogenEnabled
+                  ? "glass-violet text-white"
+                  : "border border-ink/10 text-ink-soft hover:text-ink"
+              }`}
+            >
+              Off
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Version history</p>
@@ -601,13 +614,18 @@ export function SettingsPanel() {
           TVM Investments is in Beta. Open a version to read what landed.
         </p>
         <div className="mt-3 space-y-2">
-          {[...RELEASES].reverse().map((release) => (
-            <VersionCard
-              key={release.id}
-              release={release}
-              current={release.id === CURRENT_RELEASE_ID}
-            />
-          ))}
+          {[...RELEASES]
+            .reverse()
+            .filter((release) =>
+              releaseVisibleOn(RELEASE_ISO[release.id] ?? "9999-99-99", archiveDate),
+            )
+            .map((release) => (
+              <VersionCard
+                key={release.id}
+                release={release}
+                current={!rewind && release.id === CURRENT_RELEASE_ID}
+              />
+            ))}
         </div>
       </div>
 

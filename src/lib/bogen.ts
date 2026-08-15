@@ -79,7 +79,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   "nav-archive": {
     title: "Archive Calendar",
     what: "Rewind the site to a prior weekday session so you can see what the scan showed that day.",
-    how: "When it is unlocked, pick a date. The rest of the dashboard follows that session until you leave archive mode.",
+    how: "When it is unlocked, pick a date. The rest of the site rewinds to that day’s layout, features, and research until you leave archive mode.",
   },
   "nav-horizon": {
     title: "Horizon Suite",
@@ -213,7 +213,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   archive: {
     title: "Archive Calendar",
-    what: "A date picker that rewinds Dashboard, Brief, Screener, and Reports to a prior weekday snapshot.",
+    what: "A rewind of the whole product as it was on a past session — layout, features, and that day’s research.",
     how: "Choose a date. An archive banner stays up until you return to the live session.",
   },
   horizon: {

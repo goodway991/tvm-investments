@@ -98,7 +98,10 @@ function divesNeedRebuild(snapshot: DailySnapshot) {
   );
 }
 
-export function normalizeSnapshot(snapshot: DailySnapshot): DailySnapshot {
+export function normalizeSnapshot(
+  snapshot: DailySnapshot,
+  options: { freeze?: boolean } = {},
+): DailySnapshot {
   const topMovers = snapshot.topMovers ?? [];
   const topPicks = snapshot.topPicks ?? [];
   const reports = snapshot.reports ?? [];
@@ -138,11 +141,13 @@ export function normalizeSnapshot(snapshot: DailySnapshot): DailySnapshot {
     reports,
     shortTermReports: snapshot.shortTermReports ?? reports,
     longTermReports: snapshot.longTermReports ?? reports,
-    sectorDives: hydrateSectorDives(
-      snapshot.sectorDives,
-      stocksForDiveHydration(snapshot, screenedStocks),
-      snapshot.date,
-    ),
+    sectorDives: options.freeze
+      ? snapshot.sectorDives ?? []
+      : hydrateSectorDives(
+          snapshot.sectorDives,
+          stocksForDiveHydration(snapshot, screenedStocks),
+          snapshot.date,
+        ),
   };
 }
 
@@ -158,9 +163,9 @@ export const getDashboardSnapshot = cache(async function getDashboardSnapshot(
   try {
     if (date) {
       const archived = await getSnapshotByDate(date);
-      if (archived) return normalizeSnapshot(archived);
+      if (archived) return normalizeSnapshot(archived, { freeze: true });
       if (date === ARCHIVE_DEMO_DATE) {
-        return normalizeSnapshot(buildArchiveDemoSnapshot());
+        return normalizeSnapshot(buildArchiveDemoSnapshot(), { freeze: true });
       }
     }
     if (
@@ -215,7 +220,7 @@ export const getDashboardSnapshot = cache(async function getDashboardSnapshot(
   }
 
   if (date === ARCHIVE_DEMO_DATE) {
-    return normalizeSnapshot(buildArchiveDemoSnapshot());
+    return normalizeSnapshot(buildArchiveDemoSnapshot(), { freeze: true });
   }
 
   return normalizeSnapshot(await runFallbackSnapshot());

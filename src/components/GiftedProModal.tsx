@@ -5,13 +5,15 @@ import { useAuth } from "@/components/AuthProvider";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { PlanComparisonTable } from "@/components/PlanComparisonTable";
 import { useTour } from "@/components/TourProvider";
+import { useSiteEra } from "@/components/SiteEraProvider";
 
 export function GiftedProModal() {
   const { giftPending, acknowledgeGift } = useAuth();
   const { isOpen: tourOpen } = useTour();
+  const { rewind } = useSiteEra();
   const [busy, setBusy] = useState(false);
 
-  if (!giftPending || tourOpen) return null;
+  if (!giftPending || tourOpen || rewind) return null;
 
   async function continueOn() {
     if (busy) return;
