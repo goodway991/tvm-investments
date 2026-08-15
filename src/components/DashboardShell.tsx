@@ -72,7 +72,7 @@ function ProfileNavLink({
         compact ? "h-14 justify-center px-2" : "min-h-[72px] gap-3.5 px-3.5 py-3.5"
       } ${
         pro
-          ? "bg-transparent"
+          ? "pro-profile-glow bg-transparent"
           : navWindowClass(active)
       }`}
     >

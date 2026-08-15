@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { useChartDrawKey } from "@/lib/use-chart-draw";
+import { useChartDrawKey, useHtmlDark } from "@/lib/use-chart-draw";
 import {
   Area,
   AreaChart,
@@ -19,19 +19,6 @@ import {
   type ChartRange,
 } from "@/lib/chart-series";
 
-function useDarkDesk() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const root = document.documentElement;
-    const sync = () => setDark(root.classList.contains("dark"));
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-  return dark;
-}
-
 export function TimeSeriesChart({
   data,
   height = 180,
@@ -44,7 +31,7 @@ export function TimeSeriesChart({
   rangeLabel?: string;
 }) {
   const gradientId = `pulseFill-${useId().replace(/:/g, "")}`;
-  const dark = useDarkDesk();
+  const dark = useHtmlDark();
   const tick = dark ? "#d2dcf0" : "#51607a";
   const grid = dark ? "rgba(255,255,255,0.12)" : "#ece9f6";
   const axis = dark ? "rgba(255,255,255,0.16)" : "#e4e0f0";
@@ -102,6 +89,8 @@ export function TimeSeriesChart({
               borderRadius: 12,
               boxShadow: "0 14px 34px -20px rgba(30,70,160,.3)",
             }}
+            labelStyle={{ color: dark ? "#f4f7ff" : "#12203c" }}
+            itemStyle={{ color: dark ? "#f4f7ff" : "#12203c" }}
           />
           <Area
             type="monotone"

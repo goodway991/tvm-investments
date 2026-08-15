@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo } from "react";
-import { useChartDrawKey } from "@/lib/use-chart-draw";
+import { useChartDrawKey, useHtmlDark } from "@/lib/use-chart-draw";
 import {
   Area,
   CartesianGrid,
@@ -69,6 +69,13 @@ export function HorizonForecastChart({
   note?: string | null;
 }) {
   const palette = tone === "dark" ? DARK : LIGHT;
+  const htmlDark = useHtmlDark();
+  const tooltipInk =
+    htmlDark || tone === "dark" ? DARK.tooltipColor : LIGHT.tooltipColor;
+  const tooltipBg =
+    htmlDark || tone === "dark" ? DARK.tooltipBg : LIGHT.tooltipBg;
+  const tooltipBorder =
+    htmlDark || tone === "dark" ? DARK.tooltipBorder : LIGHT.tooltipBorder;
   const fillId = `forecastFill-${useId().replace(/:/g, "")}`;
   const drawKey = useChartDrawKey(
     `${history[0]?.label}-${history[history.length - 1]?.label}-${history.length}`,
@@ -171,12 +178,14 @@ export function HorizonForecastChart({
               ]}
               labelFormatter={(label) => String(label)}
               contentStyle={{
-                color: palette.tooltipColor,
-                background: palette.tooltipBg,
-                border: palette.tooltipBorder,
+                color: tooltipInk,
+                background: tooltipBg,
+                border: tooltipBorder,
                 borderRadius: 12,
                 boxShadow: "0 14px 34px -20px rgba(30,70,160,.3)",
               }}
+              labelStyle={{ color: tooltipInk }}
+              itemStyle={{ color: tooltipInk }}
             />
             {stats && (
               <ReferenceLine

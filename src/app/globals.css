@@ -387,6 +387,16 @@ html.dark .recharts-default-tooltip {
   color: #f4f7ff !important;
 }
 
+html.dark .recharts-default-tooltip .recharts-tooltip-label,
+html.dark .recharts-default-tooltip .recharts-tooltip-item,
+html.dark .recharts-default-tooltip .recharts-tooltip-item-name,
+html.dark .recharts-default-tooltip .recharts-tooltip-item-value,
+html.dark .recharts-default-tooltip .recharts-tooltip-item-separator,
+html.dark .recharts-default-tooltip li,
+html.dark .recharts-default-tooltip li * {
+  color: #f4f7ff !important;
+}
+
 html.dark .archive-today-dot {
   background: #f4f7ff;
   box-shadow: 0 0 0 3px rgba(244, 247, 255, 0.18);
@@ -967,12 +977,13 @@ button:not(:disabled):hover .archive-flow-node {
   }
 
   .plan-current-pane.is-free {
-    left: calc(100% - 15.5rem);
-    width: calc(7.75rem + 12px);
+    left: calc(100% - 15.5rem + 8px);
+    width: calc(7.75rem - 16px);
   }
 
   .plan-current-pane.is-pro {
-    width: calc(7.75rem + 12px);
+    right: 8px;
+    width: calc(7.75rem - 16px);
   }
 }
 
@@ -990,13 +1001,13 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 .plan-current-pane.is-free {
-  left: calc(100% - 13.5rem);
-  width: calc(6.75rem + 10px);
+  left: calc(100% - 13.5rem + 8px);
+  width: calc(6.75rem - 16px);
 }
 
 .plan-current-pane.is-pro {
   right: 8px;
-  width: calc(6.75rem + 10px);
+  width: calc(6.75rem - 16px);
 }
 
 html.dark .plan-current-pane {
@@ -1106,6 +1117,23 @@ html.dark .plan-current-pane {
     0 0 34px rgba(37, 99, 235, 0.28);
 }
 
+.pro-profile-glow {
+  background: transparent !important;
+  border: 1px solid rgba(255, 210, 176, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 210, 176, 0.28),
+    0 0 16px rgba(255, 210, 176, 0.42),
+    0 0 28px rgba(228, 212, 255, 0.28);
+}
+
+html.dark .pro-profile-glow {
+  border-color: rgba(255, 210, 176, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(255, 210, 176, 0.32),
+    0 0 18px rgba(255, 210, 176, 0.48),
+    0 0 32px rgba(228, 212, 255, 0.3);
+}
+
 .nav-window-active {
   background: transparent !important;
   border: 1px solid rgba(170, 205, 255, 0.7);
@@ -1113,6 +1141,14 @@ html.dark .plan-current-pane {
     0 0 0 1px rgba(140, 190, 255, 0.22),
     0 0 18px rgba(70, 140, 255, 0.4),
     0 0 32px rgba(47, 98, 255, 0.22);
+}
+
+html.dark .nav-window-active {
+  border-color: rgba(190, 220, 255, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(140, 190, 255, 0.28),
+    0 0 22px rgba(70, 140, 255, 0.48),
+    0 0 36px rgba(47, 98, 255, 0.28);
 }
 
 .bogen-tip {
