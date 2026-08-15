@@ -17,7 +17,6 @@ import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
-import { ProShineFrame } from "@/components/ProShineFrame";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
@@ -63,13 +62,15 @@ function ProfileNavLink({
     <BogenHit
       id="nav-account"
       compact={compact}
-      onDark={active}
+      onDark={active && !pro}
       className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
         compact ? "justify-center px-2" : "gap-3.5 px-4"
       } ${
-        active
+        active && !pro
           ? "glass-violet text-white"
-          : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
+          : pro
+            ? "bg-transparent"
+            : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
       }`}
     >
       <Link
@@ -87,7 +88,7 @@ function ProfileNavLink({
         <TVMIcon name="profile" size={18} />
       </span>
       {!compact && (
-        <span className="pointer-events-none relative z-[1] min-w-0 truncate leading-tight">
+        <span className="pointer-events-none relative z-[1] min-w-0 truncate bg-transparent leading-tight">
           {pro ? <span className="pro-name-glow">{name}</span> : name}
         </span>
       )}
@@ -113,15 +114,13 @@ function UpgradeNavCard({
   const body =
     plan === "pro" ? (
       compact ? (
-        <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">Pro</span>
+        <span className="pro-name-glow pointer-events-none relative z-[1] text-[11px] uppercase">
+          Pro
+        </span>
       ) : (
         <span className="pointer-events-none relative z-[1] min-w-0">
-          <span className="block text-sm font-semibold leading-tight">
-            Pro account
-          </span>
-          <span className="block text-[11px] font-medium leading-tight text-white/80">
-            Unlocked
-          </span>
+          <span className="pro-name-glow block text-sm leading-tight">Pro account</span>
+          <span className="pro-name-glow mt-0.5 block text-[11px] leading-tight">Unlocked</span>
         </span>
       )
     ) : compact ? (
@@ -137,12 +136,14 @@ function UpgradeNavCard({
       </span>
     );
 
-  const card = (
+  return (
     <BogenHit
       id="nav-upgrade"
       compact={compact}
-      onDark
-      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
+      onDark={plan !== "pro"}
+      className={`rounded-2xl ${widgetBox(compact)} ${
+        plan === "pro" ? "bg-transparent" : "glass-violet text-white"
+      }`}
     >
       {plan === "pro" ? (
         <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
@@ -157,14 +158,6 @@ function UpgradeNavCard({
       )}
       {body}
     </BogenHit>
-  );
-
-  return plan === "pro" ? (
-    <ProShineFrame className="w-full" round="card">
-      {card}
-    </ProShineFrame>
-  ) : (
-    card
   );
 }
 
@@ -456,9 +449,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           >
             <TVMBrand />
           </button>
-          <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold uppercase text-white">
-            {entitlement.plan}
-          </span>
+          {entitlement.plan === "pro" ? (
+            <span className="pro-name-glow text-sm uppercase">Pro</span>
+          ) : (
+            <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold uppercase text-white">
+              {entitlement.plan}
+            </span>
+          )}
         </div>
 
         {mobileMenuOpen && (
