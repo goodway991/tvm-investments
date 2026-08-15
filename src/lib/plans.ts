@@ -20,6 +20,7 @@ export const ARCHIVE_KEEP_DAYS = 60;
 export const PREVIEW_UNLOCK = {
   archiveCalendar: false,
   horizonSuite: false,
+  portfolio: false,
 } as const;
 
 export type PreviewFeature = keyof typeof PREVIEW_UNLOCK;
@@ -45,7 +46,7 @@ export const PLAN_FEATURES: Array<{
   { name: "Two sector deep dives", free: true, pro: true },
   { name: "Full sector deep-dive deck", free: false, pro: true },
   { name: "Ticker news on watched names", free: true, pro: true },
-  { name: "Portfolio tracker and scenario calculator", free: true, pro: true },
+  { name: "Portfolio (under construction)", free: true, pro: true },
   { name: "Short-term path prediction", free: false, pro: true },
   { name: "Horizon Suite (coming soon)", free: false, pro: true },
   { name: "Watchlist of 10 symbols", free: true, pro: true },

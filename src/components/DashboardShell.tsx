@@ -10,7 +10,7 @@ import {
 } from "@/components/ArchiveBar";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
-import { ArchiveCalendarLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
+import { ArchiveCalendarLock, PortfolioLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
 import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
@@ -296,6 +296,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const archive = searchParams.get("archive");
   const stackPro = entitlement.plan === "pro" && era.features.proProfileStack;
   const showPlanChip = entitlement.plan === "free" || !stackPro;
+  const showPortfolio = canUsePreviewFeature(entitlement.role, "portfolio");
   const [sidebarMode, setSidebarMode] = useState<
     "expanded" | "collapsed" | "hidden"
   >("expanded");
@@ -411,6 +412,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {dashboardNav.map((item) => {
             const active = navIsActive(pathname, item.href);
             const compact = sidebarMode !== "expanded";
+            if (item.label === "Portfolio" && !showPortfolio) {
+              return (
+                <BogenHit
+                  key={item.href}
+                  id={item.bogen}
+                  compact={compact}
+                  className={compact ? "justify-center" : ""}
+                >
+                  <div className="min-w-0 flex-1">
+                    <PortfolioLock compact={compact} />
+                  </div>
+                </BogenHit>
+              );
+            }
             return (
               <BogenHit
                 key={item.href}
@@ -504,6 +519,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
               <nav className="mt-8 flex flex-col gap-1.5">
                 {dashboardNav.map((item) => {
+                  if (item.label === "Portfolio" && !showPortfolio) {
+                    return (
+                      <BogenHit key={item.href} id={item.bogen}>
+                        <div className="min-w-0 flex-1">
+                          <PortfolioLock />
+                        </div>
+                      </BogenHit>
+                    );
+                  }
                   const active = navIsActive(pathname, item.href);
                   return (
                     <BogenHit

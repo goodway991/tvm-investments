@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { PortfolioPanel } from "@/components/AccountPanels";
-import { InvestmentCalculator } from "@/components/InvestmentCalculator";
+import { PortfolioGate } from "@/components/PortfolioGate";
 import { uniqueStocks } from "@/lib/chart-series";
 import { getDashboardSnapshot } from "@/lib/snapshot";
 
@@ -18,10 +17,5 @@ export default async function PortfolioPage({
   const stocks = uniqueStocks([...snapshot.topMovers, ...snapshot.topPicks]);
   const defaultSymbol = snapshot.topPicks[0]?.symbol ?? stocks[0]?.symbol ?? "AAPL";
 
-  return (
-    <div className="dashboard-research space-y-8">
-      <PortfolioPanel stocks={stocks} />
-      <InvestmentCalculator defaultSymbol={defaultSymbol} />
-    </div>
-  );
+  return <PortfolioGate stocks={stocks} defaultSymbol={defaultSymbol} />;
 }

@@ -24,13 +24,36 @@ function MiniPadlock() {
   );
 }
 
+function MiniConstructionCone({ className = "h-7 w-6" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 32" className={`${className} shrink-0`} aria-hidden>
+      <path d="M4 28h16" stroke="#a1a1aa" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M9.2 28 11.4 8.6h1.2L16.8 28Z"
+        fill="#d4d4d8"
+        stroke="#a1a1aa"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M10.05 21.2h3.9l.45 4H9.6l.45-4Z" fill="#f4b183" />
+      <path d="M10.55 14.4h2.9l.4 3.4h-3.7l.4-3.4Z" fill="#f4b183" />
+      <rect x="10.7" y="6.2" width="2.6" height="2.6" rx="0.6" fill="#a1a1aa" />
+    </svg>
+  );
+}
+
 function LockedFeatureCard({
   compact = false,
   title,
+  status = "Coming soon",
+  mark = "lock",
 }: {
   compact?: boolean;
   title: string;
+  status?: string;
+  mark?: "lock" | "construction";
 }) {
+  const icon = mark === "construction" ? <MiniConstructionCone /> : <MiniPadlock />;
   return (
     <button
       type="button"
@@ -42,14 +65,14 @@ function LockedFeatureCard({
       }`}
       title={`${title} is still being built`}
     >
-      <MiniPadlock />
+      {icon}
       {!compact && (
         <span className="min-w-0">
           <span className="on-white block text-sm font-semibold leading-tight">
             {title}
           </span>
           <span className="on-white block text-[11px] font-medium leading-tight">
-            Coming soon
+            {status}
           </span>
         </span>
       )}
@@ -63,4 +86,19 @@ export function TestingSuiteLock({ compact = false }: { compact?: boolean }) {
 
 export function ArchiveCalendarLock({ compact = false }: { compact?: boolean }) {
   return <LockedFeatureCard compact={compact} title="Archive Calendar" />;
+}
+
+export function PortfolioLock({ compact = false }: { compact?: boolean }) {
+  return (
+    <LockedFeatureCard
+      compact={compact}
+      title="Portfolio"
+      status="Under construction"
+      mark="construction"
+    />
+  );
+}
+
+export function PortfolioConstructionMark({ className }: { className?: string }) {
+  return <MiniConstructionCone className={className ?? "h-16 w-14"} />;
 }
