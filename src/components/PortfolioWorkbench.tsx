@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { StockSearchField, type SearchHit } from "@/components/StockSearchField";
 import { BogenHeading } from "@/components/BogenProvider";
 import { PortfolioAnalysis } from "@/components/PortfolioAnalysis";
+import { NewBadge } from "@/components/NewBadge";
 import { POPULAR_WATCHLIST } from "@/lib/watchlist-symbols";
 
 type DraftRow = {
@@ -218,8 +219,9 @@ export function PortfolioWorkbench({
       <section className="glass-strong rounded-[24px] p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-violet">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-violet">
               Current book
+              <NewBadge feature="portfolio" />
             </p>
             <h2 className="mt-1 font-display text-2xl font-bold text-ink">
               <BogenHeading id="portfolio">Portfolio</BogenHeading>
@@ -400,8 +402,9 @@ export function PortfolioWorkbench({
       <section className="glass-strong rounded-[24px] p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-violet">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-violet">
               Considering
+              <NewBadge feature="portfolio" />
             </p>
             <h3 className="mt-1 font-display text-2xl font-bold text-ink">
               Names you’re considering

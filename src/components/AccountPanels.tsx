@@ -569,17 +569,6 @@ export function SettingsPanel() {
               Dark
             </span>
           </div>
-          {appearance === "system" ? (
-            <p className="mt-2 text-xs">Currently matching this device.</p>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setAppearance("system")}
-              className="mt-3 text-sm font-semibold text-violet"
-            >
-              Match system
-            </button>
-          )}
         </div>
       ) : null}
 

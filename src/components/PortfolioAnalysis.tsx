@@ -111,31 +111,35 @@ export function PortfolioAnalysis({
 
   return (
     <section className="glass-strong rounded-[24px] p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-violet">
-            Book review
-            <NewBadge feature="portfolio" />
-          </p>
-          <h3 className="mt-1 font-display text-2xl font-bold text-ink">
-            Analyze your portfolio
-          </h3>
-          <p className="mt-1 max-w-xl text-sm text-ink-soft">
-            A Pro read of mix, concentration, scan quality, and cash — with
-            next steps under each score.
-          </p>
-        </div>
+      <div>
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-violet">
+          Book review
+          <NewBadge feature="portfolio" />
+        </p>
+        <h3 className="mt-1 font-display text-2xl font-bold text-ink">
+          Analyze your portfolio
+        </h3>
+        <p className="mt-1 max-w-xl text-sm text-ink-soft">
+          A Pro read of mix, concentration, scan quality, and cash — with
+          next steps under each score.
+        </p>
+      </div>
+      <div className="mt-5 flex justify-center">
         <button
           type="button"
           onClick={onAnalyze}
-          className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold ${
-            isPro
-              ? "glass-violet text-white"
-              : "pro-profile-glow bg-transparent"
-          }`}
+          className="pro-profile-glow inline-flex items-center gap-2 rounded-full bg-transparent px-5 py-2.5 text-sm font-semibold"
         >
           {!isPro ? <TVMIcon name="lock" size={16} /> : null}
-          {isPro ? (open ? "Hide review" : "Analyze book") : <ProGlowText>Analyze book</ProGlowText>}
+          {isPro ? (
+            open ? (
+              "Hide review"
+            ) : (
+              <ProGlowText>Analyze book</ProGlowText>
+            )
+          ) : (
+            <ProGlowText>Analyze book</ProGlowText>
+          )}
         </button>
       </div>
 
