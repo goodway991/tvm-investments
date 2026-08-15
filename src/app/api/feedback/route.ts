@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveFeedback, verifyIdToken } from "@/lib/firebase/admin";
+import { saveFeedback } from "@/lib/firebase/admin";
+import { getFeedbackInbox } from "@/lib/feedback-inbox";
+import { verifyUserToken } from "@/lib/verify-user-token";
 
 export const dynamic = "force-dynamic";
-
-// Temporary ops inbox until the domain / Workspace address exists.
-// Override with TVM_CONTACT_EMAIL. Do not expose this on public pages.
-const FALLBACK_FEEDBACK_TO = "varish.desai@gmail.com";
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -16,8 +14,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Sign in to send feedback." }, { status: 401 });
   }
 
-  const decoded = await verifyIdToken(token);
-  if (!decoded) {
+  const user = await verifyUserToken(token);
+  if (!user) {
     return NextResponse.json({ error: "Sign in to send feedback." }, { status: 401 });
   }
 
@@ -45,26 +43,44 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const email = decoded.email || "unknown";
-  const uid = decoded.uid;
-  const saved = await saveFeedback({ uid, email, kind, rating, message });
-  const emailed = await sendFeedbackEmail({ email, kind, rating, message });
+  const to = getFeedbackInbox();
+  if (!to) {
+    console.error("Feedback inbox is not configured.");
+    return NextResponse.json(
+      { error: "Couldn't send that note. Try again in a minute." },
+      { status: 503 },
+    );
+  }
 
-  if (!saved && !emailed) {
-    console.info("Feedback (held until inbox/Firebase is ready)", {
-      uid,
-      email,
+  const emailed = await sendFeedbackEmail({
+    to,
+    email: user.email,
+    kind,
+    rating,
+    message,
+  });
+
+  try {
+    await saveFeedback({
+      uid: user.uid,
+      email: user.email,
       kind,
       rating,
       message,
     });
+  } catch (error) {
+    console.error("Feedback save failed.");
+    console.error(error instanceof Error ? error.name : "unknown");
   }
 
-  return NextResponse.json({ ok: true, saved, emailed });
-}
+  if (!emailed) {
+    return NextResponse.json(
+      { error: "Couldn't send that note. Try again in a minute." },
+      { status: 502 },
+    );
+  }
 
-function feedbackToAddress() {
-  return process.env.TVM_CONTACT_EMAIL?.trim() || FALLBACK_FEEDBACK_TO;
+  return NextResponse.json({ ok: true });
 }
 
 function formatStarMarks(rating: number) {
@@ -80,17 +96,18 @@ function kindLabel(kind: string) {
 }
 
 async function sendFeedbackEmail({
+  to,
   email,
   kind,
   rating,
   message,
 }: {
+  to: string;
   email: string;
   kind: string;
   rating: number;
   message: string;
 }): Promise<boolean> {
-  const to = feedbackToAddress();
   const stars = ratingLine(rating);
   const label = kindLabel(kind);
   const subject = `[TVM ${kind === "bug" ? "bug" : "feature"}] ${rating}/5 stars from ${email}`;
@@ -113,8 +130,8 @@ async function sendFeedbackEmail({
     </div>
   `;
 
-  const viaResend = await sendWithResend({ to, email, subject, text, html });
-  if (viaResend) return true;
+  if (await sendWithResend({ to, email, subject, text, html })) return true;
+  if (await sendWithSmtp({ to, email, subject, text, html })) return true;
   return sendWithFormSubmit({ to, email, subject, text, stars, label, message });
 }
 
@@ -155,12 +172,55 @@ async function sendWithResend({
       }),
     });
     if (!response.ok) {
-      console.error("Feedback email failed (Resend):", await response.text());
+      console.error("Feedback email failed (Resend).");
       return false;
     }
     return true;
-  } catch (error) {
-    console.error("Feedback email failed (Resend):", error);
+  } catch {
+    console.error("Feedback email failed (Resend).");
+    return false;
+  }
+}
+
+async function sendWithSmtp({
+  to,
+  email,
+  subject,
+  text,
+  html,
+}: {
+  to: string;
+  email: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<boolean> {
+  const user = process.env.TVM_SMTP_USER?.trim();
+  const pass = process.env.TVM_SMTP_PASS?.trim();
+  if (!user || !pass) return false;
+
+  const host = process.env.TVM_SMTP_HOST?.trim() || "smtp.gmail.com";
+  const port = Number(process.env.TVM_SMTP_PORT) || 465;
+
+  try {
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    });
+    await transporter.sendMail({
+      from: `TVM Investments <${user}>`,
+      to,
+      replyTo: email !== "unknown" ? email : undefined,
+      subject,
+      text,
+      html,
+    });
+    return true;
+  } catch {
+    console.error("Feedback email failed (SMTP).");
     return false;
   }
 }
@@ -192,21 +252,24 @@ async function sendWithFormSubmit({
       body: JSON.stringify({
         _subject: subject,
         _template: "box",
-        _captcha: "false",
-        email: email !== "unknown" ? email : to,
+        email: email !== "unknown" ? email : "noreply@tvm-investments.vercel.app",
         type: label,
         rating: stars,
         message: text,
         details: message,
       }),
     });
-    if (!response.ok) {
-      console.error("Feedback email failed (backup):", await response.text());
+    const payload = (await response.json().catch(() => null)) as
+      | { success?: boolean | string }
+      | null;
+    const success = payload?.success === true || payload?.success === "true";
+    if (!response.ok || !success) {
+      console.error("Feedback email failed (backup).");
       return false;
     }
     return true;
-  } catch (error) {
-    console.error("Feedback email failed (backup):", error);
+  } catch {
+    console.error("Feedback email failed (backup).");
     return false;
   }
 }
