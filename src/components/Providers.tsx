@@ -9,6 +9,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { TourProvider } from "@/components/TourProvider";
 import { UpgradeProvider } from "@/components/UpgradeProvider";
 import { BogenProvider } from "@/components/BogenProvider";
+import { ExperienceProvider } from "@/components/ExperienceProvider";
+import { CustomizeExperienceModal } from "@/components/CustomizeExperienceModal";
 import { MotionPauseRoot } from "@/components/LoopMotion";
 import { SiteEraProvider } from "@/components/SiteEraProvider";
 
@@ -18,18 +20,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <SiteEraProvider>
         <ThemeProvider>
           <AuthProvider>
-            <UpgradeProvider>
-              <TourProvider>
-                <BogenProvider>
-                  <MaintenanceGate>
-                    <MotionPauseRoot />
-                    {children}
-                    <GiftedProModal />
-                    <WhatsNewModal />
-                  </MaintenanceGate>
-                </BogenProvider>
-              </TourProvider>
-            </UpgradeProvider>
+            <ExperienceProvider>
+              <UpgradeProvider>
+                <TourProvider>
+                  <BogenProvider>
+                    <MaintenanceGate>
+                      <MotionPauseRoot />
+                      {children}
+                      <GiftedProModal />
+                      <CustomizeExperienceModal />
+                      <WhatsNewModal />
+                    </MaintenanceGate>
+                  </BogenProvider>
+                </TourProvider>
+              </UpgradeProvider>
+            </ExperienceProvider>
           </AuthProvider>
         </ThemeProvider>
       </SiteEraProvider>

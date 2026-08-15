@@ -19,6 +19,7 @@ import { computeAccountScore } from "@/lib/account-score";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
 import { ProGlowPhrase } from "@/components/ProGlowText";
+import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 function signedPercent(value: number) {
@@ -27,7 +28,9 @@ function signedPercent(value: number) {
 
 export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
   const { profile, user, entitlement, watchlist, positions } = useAuth();
-  const { era } = useSiteEra();
+  const { era, rewind } = useSiteEra();
+  const { density } = useExperience();
+  const clean = density === "clean" && !rewind;
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [investment, setInvestment] = useState(0);
@@ -135,29 +138,50 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         },
   ];
 
+  const visibleCards = clean
+    ? overviewCards.filter((_, index) => index === 0 || index === overviewCards.length - 1)
+    : overviewCards;
+  const moverSlots = clean ? 3 : 5;
+
   return (
     <section>
       <div className="flex flex-wrap items-center gap-4">
         <div className="mr-auto">
           <h1 className="font-display text-3xl font-bold text-ink">
-            Welcome,{" "}
-            {glowName ? (
-              <ProGlowPhrase>
-                {resolveAccountName({
-                  profileName: profile?.displayName,
-                  authName: user?.displayName,
-                  email: user?.email,
-                })}
-              </ProGlowPhrase>
-            ) : (
-              resolveAccountName({
+            {clean ? "Today at a glance" : (
+              <>
+                Welcome,{" "}
+                {glowName ? (
+                  <ProGlowPhrase>
+                    {resolveAccountName({
+                      profileName: profile?.displayName,
+                      authName: user?.displayName,
+                      email: user?.email,
+                    })}
+                  </ProGlowPhrase>
+                ) : (
+                  resolveAccountName({
+                    profileName: profile?.displayName,
+                    authName: user?.displayName,
+                    email: user?.email,
+                  })
+                )}
+              </>
+            )}
+          </h1>
+          {clean ? (
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
+              Welcome,{" "}
+              {resolveAccountName({
                 profileName: profile?.displayName,
                 authName: user?.displayName,
                 email: user?.email,
-              })
-            )}
-          </h1>
+              })}
+              . Here’s the session in a few lines — tap a name to read more.
+            </p>
+          ) : null}
         </div>
+        {!clean ? (
         <form className="flex items-center gap-2" onSubmit={submitTickerSearch}>
           <label className="relative">
             <span className="sr-only">Search tickers</span>
@@ -181,10 +205,11 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
           </button>
           <BogenTip id="ticker-search" />
         </form>
+        ) : null}
       </div>
 
-      <div className="mt-7 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {overviewCards.map((card, index) => {
+      <div className={`mt-7 grid gap-4 ${clean ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4"}`}>
+        {visibleCards.map((card, index) => {
           const className = `rounded-[22px] p-5 text-left transition-transform ${
             card.gradient ? "glass-violet text-white" : "glass-strong"
           } ${
@@ -283,7 +308,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
                 No tracked ticker matches “{search}”.
               </p>
             ) : (
-              [0, 1, 2, 3, 4].map((index) => {
+              [0, 1, 2, 3, 4].slice(0, moverSlots).map((index) => {
                 const stock = filteredMovers[index];
                 if (!stock) {
                   return (
@@ -345,8 +370,8 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         </article>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.5fr]">
-        <article className="glass-strong rounded-[24px] p-6">
+      {!clean ? (
+        <article className="mt-4 glass-strong rounded-[24px] p-6 lg:max-w-md">
           <div className="glass-violet relative rounded-2xl p-5 text-white">
             <BogenTip
               id="overview-calculator"
@@ -400,7 +425,9 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
             ))}
           </div>
         </article>
+      ) : null}
 
+      <div className={`mt-4 grid gap-4 ${clean ? "" : "lg:grid-cols-1"}`}>
         <article id="flagged-picks" className="glass-strong scroll-mt-8 rounded-[24px] p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold text-ink">

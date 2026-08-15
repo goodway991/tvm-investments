@@ -5,17 +5,20 @@ import { useEffect, useMemo, useState } from "react";
 import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMIcon } from "@/components/TVMBrand";
-import { useTheme, type Appearance } from "@/components/ThemeProvider";
+import { TvmSwitch } from "@/components/TvmSwitch";
+import { useTheme } from "@/components/ThemeProvider";
+import { useExperience } from "@/components/ExperienceProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
+import { showBeta3Labs } from "@/lib/beta-labs";
 import { RELEASE_ISO, releaseVisibleOn } from "@/lib/site-era";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
-import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
+import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -331,26 +334,8 @@ function VersionCard({
             <ProGlowText>{release.summary}</ProGlowText>
           </p>
           {release.features?.length ? (
-            <div className="mt-3 space-y-4">
-              {release.features.map((feature) => (
-                <div key={feature.title}>
-                  {feature.visual ? (
-                    <ReleaseFeatureVisual id={feature.visual} />
-                  ) : null}
-                  <h3
-                    className={`font-display text-base font-bold text-ink ${
-                      feature.visual ? "mt-2" : ""
-                    }`}
-                  >
-                    <ProGlowText>{feature.title}</ProGlowText>
-                  </h3>
-                  {feature.body ? (
-                    <p className="mt-1 font-display text-sm font-semibold leading-relaxed text-ink">
-                      <ProGlowText>{feature.body}</ProGlowText>
-                    </p>
-                  ) : null}
-                </div>
-              ))}
+            <div className="mt-3">
+              <ReleaseFeatureList features={release.features} />
             </div>
           ) : null}
           {release.items?.length ? (
@@ -380,7 +365,8 @@ export function SettingsPanel() {
   } = useAuth();
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
-  const { appearance, setAppearance } = useTheme();
+  const { appearance, resolved, setAppearance } = useTheme();
+  const { density, setDensity, openCustomize } = useExperience();
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const { era, rewind, archiveDate } = useSiteEra();
   const glowName = entitlement.plan === "pro" && era.features.proProfileStack;
@@ -559,26 +545,70 @@ export function SettingsPanel() {
 
       {era.features.darkMode ? (
         <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-          <p className="font-semibold text-ink">Display appearance</p>
+          <p className="flex items-center gap-2 font-semibold text-ink">
+            Display appearance
+            <NewBadge feature="appearance" />
+          </p>
           <p className="mt-1">
             Switch between light and a glowy blue dark mode. The change stays on
             this browser.
           </p>
-          <label className="mt-3 block max-w-xs">
-            <span className="sr-only">Display appearance</span>
-            <select
-              value={appearance}
-              onChange={(event) =>
-                setAppearance(event.target.value as Appearance)
-              }
-              className="field w-full appearance-none rounded-2xl px-4 py-3 text-sm font-semibold text-ink"
-            >
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-              <option value="system">Match system</option>
-            </select>
-          </label>
+          <div className="mt-4 flex items-center gap-3">
+            <span className={`text-sm font-semibold ${resolved === "light" ? "text-ink" : "text-ink-soft"}`}>
+              Light
+            </span>
+            <TvmSwitch
+                checked={resolved === "dark"}
+                onCheckedChange={(dark) => setAppearance(dark ? "dark" : "light")}
+                aria-label="Dark mode"
+              />
+            <span className={`text-sm font-semibold ${resolved === "dark" ? "text-ink" : "text-ink-soft"}`}>
+              Dark
+            </span>
+          </div>
         </div>
+      ) : null}
+
+      {!rewind && showBeta3Labs() ? (
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="flex items-center gap-2 font-semibold text-ink">
+          Dashboard layout
+          <NewBadge feature="density" />
+        </p>
+        <p className="mt-1">
+          Clean keeps today’s pick, your book, and a short mover list. Normal is
+          the full dashboard.
+        </p>
+        <div className="mt-4 flex items-center gap-3">
+          <span className={`text-sm font-semibold ${density === "clean" ? "text-ink" : "text-ink-soft"}`}>
+            Clean
+          </span>
+          <TvmSwitch
+            checked={density === "normal"}
+            onCheckedChange={(normal) => setDensity(normal ? "normal" : "clean")}
+            aria-label="Normal dashboard layout"
+          />
+          <span className={`text-sm font-semibold ${density === "normal" ? "text-ink" : "text-ink-soft"}`}>
+            Normal
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => openCustomize()}
+          className="mt-3 text-sm font-semibold text-violet"
+        >
+          Customize experience
+        </button>
+        {entitlement.role === "admin" ? (
+          <button
+            type="button"
+            onClick={() => openCustomize()}
+            className="glass-violet mt-3 block rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Let’s get you started
+          </button>
+        ) : null}
+      </div>
       ) : null}
 
       {era.features.bogen ? (
@@ -627,6 +657,7 @@ export function SettingsPanel() {
           {[...RELEASES]
             .reverse()
             .filter((release) =>
+              (showBeta3Labs() || release.id !== "beta-3") &&
               releaseVisibleOn(RELEASE_ISO[release.id] ?? "9999-99-99", archiveDate),
             )
             .map((release) => (

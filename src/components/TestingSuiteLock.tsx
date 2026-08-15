@@ -28,17 +28,11 @@ function MiniPadlock() {
 function MiniConstructionCone({ className = "h-7 w-6" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 32" className={`${className} shrink-0`} aria-hidden>
-      <path d="M4 28h16" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
-      <path
-        d="M9.2 28 11.4 8.6h1.2L16.8 28Z"
-        fill="#fff"
-        stroke="#f97316"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M10.05 21.2h3.9l.45 4H9.6l.45-4Z" fill="#f97316" />
-      <path d="M10.55 14.4h2.9l.4 3.4h-3.7l.4-3.4Z" fill="#f97316" />
-      <rect x="10.7" y="6.2" width="2.6" height="2.6" rx="0.6" fill="#fff" stroke="#f97316" strokeWidth="1.2" />
+      <path d="M4 28h16" stroke="#a1a1aa" strokeWidth="2" strokeLinecap="round" />
+      <path d="M9.2 28 11.4 8.6h1.2L16.8 28Z" fill="#d4d4d8" stroke="#a1a1aa" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M10.05 21.2h3.9l.45 4H9.6l.45-4Z" fill="#f4b183" />
+      <path d="M10.55 14.4h2.9l.4 3.4h-3.7l.4-3.4Z" fill="#f4b183" />
+      <rect x="10.7" y="6.2" width="2.6" height="2.6" rx="0.6" fill="#a1a1aa" />
     </svg>
   );
 }
@@ -69,8 +63,10 @@ function LockedFeatureCard({
       {icon}
       {!compact && (
         <span className="min-w-0">
-          <span className="block text-sm font-semibold leading-tight">{title}</span>
-          <span className="block text-[11px] font-medium leading-tight opacity-80">
+          <span className="on-white block text-sm font-semibold leading-tight">
+            {title}
+          </span>
+          <span className="on-white block text-[11px] font-medium leading-tight">
             {status}
           </span>
         </span>

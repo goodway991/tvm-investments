@@ -1,29 +1,28 @@
 "use client";
 
-import type { StockCandidate } from "@/types";
+import type { ScreenedStock, StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
-import { PortfolioPanel } from "@/components/AccountPanels";
-import { InvestmentCalculator } from "@/components/InvestmentCalculator";
+import { PortfolioWorkbench } from "@/components/PortfolioWorkbench";
 import {
   PortfolioConstructionMark,
   PortfolioLock,
 } from "@/components/TestingSuiteLock";
 import { canUsePreviewFeature } from "@/lib/plans";
+import { showBeta3Labs } from "@/lib/beta-labs";
 import { BogenHeading } from "@/components/BogenProvider";
 
 export function PortfolioGate({
   stocks,
-  defaultSymbol,
+  screened = [],
 }: {
   stocks: StockCandidate[];
-  defaultSymbol: string;
+  screened?: ScreenedStock[];
 }) {
   const { entitlement } = useAuth();
-  if (canUsePreviewFeature(entitlement.role, "portfolio")) {
+  if (showBeta3Labs() || canUsePreviewFeature(entitlement.role, "portfolio")) {
     return (
-      <div className="dashboard-research space-y-8">
-        <PortfolioPanel stocks={stocks} />
-        <InvestmentCalculator defaultSymbol={defaultSymbol} />
+      <div className="dashboard-research">
+        <PortfolioWorkbench stocks={stocks} screened={screened} />
       </div>
     );
   }

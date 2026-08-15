@@ -1,12 +1,13 @@
 "use client";
 
 import { OverlaySheet } from "@/components/OverlaySheet";
-import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
+import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
 import { ProGlowText } from "@/components/ProGlowText";
 import { useAuth } from "@/components/AuthProvider";
 import { useMaintenance } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { CURRENT_RELEASE } from "@/lib/release-notes";
+import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 export function WhatsNewModal() {
@@ -14,13 +15,15 @@ export function WhatsNewModal() {
   const { lock: maintenanceLock } = useMaintenance();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
+  const { customizeOpen } = useExperience();
 
   if (
     !releasePending ||
     tourOpen ||
     rewind ||
     maintenanceLock ||
-    giftPending
+    giftPending ||
+    customizeOpen
   ) {
     return null;
   }
@@ -64,27 +67,7 @@ export function WhatsNewModal() {
       }
     >
       {CURRENT_RELEASE.features?.length ? (
-        <div className="space-y-5">
-          {CURRENT_RELEASE.features.map((feature) => (
-            <div key={feature.title}>
-              {feature.visual ? (
-                <ReleaseFeatureVisual id={feature.visual} />
-              ) : null}
-              <h3
-                className={`font-display text-base font-bold text-ink ${
-                  feature.visual ? "mt-3" : ""
-                }`}
-              >
-                <ProGlowText>{feature.title}</ProGlowText>
-              </h3>
-              {feature.body ? (
-                <p className="mt-1 font-display text-sm font-semibold leading-relaxed text-ink">
-                  <ProGlowText>{feature.body}</ProGlowText>
-                </p>
-              ) : null}
-            </div>
-          ))}
-        </div>
+        <ReleaseFeatureList features={CURRENT_RELEASE.features} />
       ) : null}
       {CURRENT_RELEASE.items?.length ? (
         <ul className={`space-y-3 ${CURRENT_RELEASE.features?.length ? "mt-5" : ""}`}>

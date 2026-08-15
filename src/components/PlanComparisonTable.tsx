@@ -1,6 +1,7 @@
 "use client";
 
 import { PLAN_FEATURES } from "@/lib/plans";
+import { showBeta3Labs } from "@/lib/beta-labs";
 import { ProGlowText } from "@/components/ProGlowText";
 
 function PlanMark({ included }: { included: boolean }) {
@@ -42,9 +43,12 @@ export function PlanComparisonTable({
   currentPlan: "free" | "pro";
 }) {
   const alreadyPro = currentPlan === "pro";
-  const features = [...PLAN_FEATURES].sort(
-    (left, right) => Number(left.free) - Number(right.free),
-  );
+  const features = [...PLAN_FEATURES]
+    .filter(
+      (feature) =>
+        showBeta3Labs() || feature.name !== "Portfolio book review",
+    )
+    .sort((left, right) => Number(left.free) - Number(right.free));
 
   return (
     <div className="plan-compare">

@@ -1,8 +1,21 @@
 export const NEW_BADGE_DAYS = 3;
 
-export const NEW_FEATURE_IDS = ["bogen"] as const;
+import { showBeta3Labs } from "@/lib/beta-labs";
+
+export const NEW_FEATURE_IDS = [
+  "bogen",
+  "portfolio",
+  "settings",
+  "density",
+  "appearance",
+] as const;
 
 export type NewFeatureId = (typeof NEW_FEATURE_IDS)[number];
+
+export function publicNewFeatureIds(): NewFeatureId[] {
+  if (showBeta3Labs()) return [...NEW_FEATURE_IDS];
+  return ["bogen", "settings", "appearance"];
+}
 
 export type NewSeenMap = Partial<Record<NewFeatureId, string>>;
 
@@ -52,7 +65,7 @@ export function missingNewSeenStamps(
 ): NewSeenMap {
   const today = todayStamp(now);
   const next: NewSeenMap = {};
-  for (const id of NEW_FEATURE_IDS) {
+  for (const id of publicNewFeatureIds()) {
     if (!seen[id]) next[id] = today;
   }
   return next;

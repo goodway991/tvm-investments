@@ -48,6 +48,7 @@ import {
   isNewBadgeActive,
   missingNewSeenStamps,
   parseNewSeen,
+  publicNewFeatureIds,
   type NewFeatureId,
   type NewSeenMap,
 } from "@/lib/new-badges";
@@ -92,6 +93,7 @@ export interface PortfolioPosition {
   shares: number;
   averageCost: number;
   currentPrice: number;
+  purchasedAt?: string | null;
 }
 
 interface AuthContextValue {
@@ -506,6 +508,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     shares: Number(data.shares) || 0,
                     averageCost: Number(data.averageCost) || 0,
                     currentPrice: Number(data.currentPrice) || 0,
+                    purchasedAt:
+                      typeof data.purchasedAt === "string" && data.purchasedAt
+                        ? data.purchasedAt
+                        : null,
                   };
                 }),
               );
@@ -644,6 +650,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isFeatureNew = useCallback(
     (feature: NewFeatureId) => {
+      if (!publicNewFeatureIds().includes(feature)) return false;
       const local = user ? readNewSeen(user.uid)[feature] : undefined;
       return isNewBadgeActive(profile?.newSeen[feature] ?? local);
     },
@@ -783,6 +790,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         shares: Math.max(0, position.shares),
         averageCost: Math.max(0, position.averageCost),
         currentPrice: Math.max(0, position.currentPrice ?? position.averageCost),
+        purchasedAt: position.purchasedAt || null,
         updatedAt: serverTimestamp(),
       });
     },

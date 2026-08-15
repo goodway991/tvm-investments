@@ -15,7 +15,8 @@ export default async function PortfolioPage({
   const { archive } = await searchParams;
   const snapshot = await getDashboardSnapshot(archive);
   const stocks = uniqueStocks([...snapshot.topMovers, ...snapshot.topPicks]);
-  const defaultSymbol = snapshot.topPicks[0]?.symbol ?? stocks[0]?.symbol ?? "AAPL";
 
-  return <PortfolioGate stocks={stocks} defaultSymbol={defaultSymbol} />;
+  return (
+    <PortfolioGate stocks={stocks} screened={snapshot.screenedStocks} />
+  );
 }
