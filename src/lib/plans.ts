@@ -20,6 +20,7 @@ export const ARCHIVE_KEEP_DAYS = 60;
 export const PREVIEW_UNLOCK = {
   archiveCalendar: false,
   horizonSuite: false,
+  portfolio: false,
 } as const;
 
 export type PreviewFeature = keyof typeof PREVIEW_UNLOCK;

@@ -10,11 +10,12 @@ import {
 } from "@/components/ArchiveBar";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
-import { ArchiveCalendarLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
+import { ArchiveCalendarLock, PortfolioLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
 import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
+import { showBeta3Labs } from "@/lib/beta-labs";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
@@ -434,7 +435,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <TVMBrand showWordmark={sidebarMode === "expanded"} />
           </span>
         </BogenHit>
-        {sidebarMode === "expanded" && !rewind ? (
+        {sidebarMode === "expanded" && !rewind && showBeta3Labs() ? (
           <p className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
             {LOCAL_EXPERIMENT}
           </p>
@@ -447,6 +448,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ).map((item) => {
             const active = navIsActive(pathname, item.href);
             const compact = sidebarMode !== "expanded";
+            const portfolioLocked =
+              item.label === "Portfolio" &&
+              !showBeta3Labs() &&
+              !canUsePreviewFeature(entitlement.role, "portfolio");
+            if (portfolioLocked) {
+              return (
+                <BogenHit
+                  key={item.href}
+                  id={item.bogen}
+                  compact={compact}
+                  className={`rounded-2xl py-3 text-left text-[15px] font-medium ${
+                    compact ? "justify-center px-2" : "gap-3.5 px-4"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <PortfolioLock compact={compact} />
+                  </div>
+                </BogenHit>
+              );
+            }
             return (
               <BogenHit
                 key={item.href}
@@ -558,6 +579,23 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             : dashboardNav
           ).map((item) => {
                   const active = navIsActive(pathname, item.href);
+                  const portfolioLocked =
+                    item.label === "Portfolio" &&
+                    !showBeta3Labs() &&
+                    !canUsePreviewFeature(entitlement.role, "portfolio");
+                  if (portfolioLocked) {
+                    return (
+                      <BogenHit
+                        key={item.href}
+                        id={item.bogen}
+                        className="gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <PortfolioLock />
+                        </div>
+                      </BogenHit>
+                    );
+                  }
                   return (
                     <BogenHit
                       key={item.href}

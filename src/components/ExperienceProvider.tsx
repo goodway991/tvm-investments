@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { useSiteEra } from "@/components/SiteEraProvider";
+import { showBeta3Labs } from "@/lib/beta-labs";
 
 export type Density = "clean" | "normal";
 
@@ -53,7 +54,8 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
   const [densityState, setDensityState] = useState<Density>("normal");
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [customizeSeen, setCustomizeSeen] = useState(true);
-  const density: Density = rewind ? "normal" : densityState;
+  const density: Density =
+    rewind || !showBeta3Labs() ? "normal" : densityState;
 
   useEffect(() => {
     const next = readDensity();
@@ -66,6 +68,7 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
   }, [density]);
 
   const setDensity = useCallback((value: Density) => {
+    if (!showBeta3Labs()) return;
     setDensityState(value);
     try {
       window.localStorage.setItem(DENSITY_KEY, value);

@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/components/AuthProvider";
 import { VirtualTour } from "@/components/VirtualTour";
 import { useExperience } from "@/components/ExperienceProvider";
+import { showBeta3Labs } from "@/lib/beta-labs";
 
 interface TourContextValue {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setOpen(false);
     setRequired(false);
     await completeTour();
-    if (!giftPending) openCustomize();
+    if (!giftPending && showBeta3Labs()) openCustomize();
   }, [completeTour, giftPending, openCustomize]);
 
   const dismiss = useCallback(() => {

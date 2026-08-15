@@ -48,6 +48,7 @@ import {
   isNewBadgeActive,
   missingNewSeenStamps,
   parseNewSeen,
+  publicNewFeatureIds,
   type NewFeatureId,
   type NewSeenMap,
 } from "@/lib/new-badges";
@@ -649,6 +650,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isFeatureNew = useCallback(
     (feature: NewFeatureId) => {
+      if (!publicNewFeatureIds().includes(feature)) return false;
       const local = user ? readNewSeen(user.uid)[feature] : undefined;
       return isNewBadgeActive(profile?.newSeen[feature] ?? local);
     },

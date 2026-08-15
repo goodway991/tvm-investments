@@ -11,6 +11,7 @@ import { useExperience } from "@/components/ExperienceProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
+import { showBeta3Labs } from "@/lib/beta-labs";
 import { RELEASE_ISO, releaseVisibleOn } from "@/lib/site-era";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
@@ -574,7 +575,7 @@ export function SettingsPanel() {
         </div>
       ) : null}
 
-      {!rewind ? (
+      {!rewind && showBeta3Labs() ? (
       <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="flex items-center gap-2 font-semibold text-ink">
           Dashboard layout
@@ -662,6 +663,7 @@ export function SettingsPanel() {
           {[...RELEASES]
             .reverse()
             .filter((release) =>
+              (showBeta3Labs() || release.id !== "beta-3") &&
               releaseVisibleOn(RELEASE_ISO[release.id] ?? "9999-99-99", archiveDate),
             )
             .map((release) => (

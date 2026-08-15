@@ -1,5 +1,7 @@
-export const CURRENT_RELEASE_ID = "beta-3";
-export const RELEASE_ACK_ID = "beta-3-v2";
+import { showBeta3Labs } from "@/lib/beta-labs";
+
+export const CURRENT_RELEASE_ID = showBeta3Labs() ? "beta-3" : "beta-2.1";
+export const RELEASE_ACK_ID = showBeta3Labs() ? "beta-3-v2" : "beta-2.1-score";
 
 export type ReleaseFeatureVisualId =
   | "bogen"

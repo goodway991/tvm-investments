@@ -9,6 +9,7 @@ import { useExperience } from "@/components/ExperienceProvider";
 import { useAuth } from "@/components/AuthProvider";
 import { useTour } from "@/components/TourProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
+import { showBeta3Labs } from "@/lib/beta-labs";
 
 function MiniChrome({
   title,
@@ -109,6 +110,7 @@ export function CustomizeExperienceModal() {
 
   useEffect(() => {
     if (
+      !showBeta3Labs() ||
       !user ||
       loading ||
       tourPending ||
@@ -135,7 +137,9 @@ export function CustomizeExperienceModal() {
 
   if (!customizeOpen || rewind) return null;
 
-  const last = step === 2;
+  const labs = showBeta3Labs();
+  const lastStep = labs ? 2 : 1;
+  const last = step === lastStep;
 
   return (
     <OverlaySheet
@@ -146,7 +150,7 @@ export function CustomizeExperienceModal() {
       header={
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-            Step {step + 1} of 3
+            Step {step + 1} of {labs ? 3 : 2}
           </p>
           <h2
             id="customize-title"
@@ -259,7 +263,7 @@ export function CustomizeExperienceModal() {
         </div>
       ) : null}
 
-      {step === 2 ? (
+      {labs && step === 2 ? (
         <div>
           <h3 className="font-display text-lg font-bold text-ink">How much detail?</h3>
           <p className="mt-1 text-sm leading-relaxed text-ink-soft">
