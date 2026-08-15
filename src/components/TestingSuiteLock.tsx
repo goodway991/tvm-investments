@@ -1,6 +1,6 @@
 function MiniPadlock() {
   return (
-    <svg viewBox="0 0 24 32" className="h-7 w-6 shrink-0 text-zinc-400" aria-hidden>
+    <svg viewBox="0 0 24 32" className="h-7 w-6 shrink-0" aria-hidden>
       <path
         d="M7 14.5V10a5 5 0 0 1 10 0v4.5"
         fill="none"
@@ -14,12 +14,13 @@ function MiniPadlock() {
         width="16"
         height="14"
         rx="2.6"
-        fill="#d4d4d8"
+        fill="currentColor"
+        fillOpacity="0.18"
         stroke="currentColor"
         strokeWidth="2"
       />
-      <circle cx="12" cy="21" r="1.4" fill="#9ca3af" />
-      <path d="M12 22.3v2.6" stroke="#9ca3af" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="21" r="1.4" fill="currentColor" />
+      <path d="M12 22.3v2.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -27,17 +28,17 @@ function MiniPadlock() {
 function MiniConstructionCone({ className = "h-7 w-6" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 32" className={`${className} shrink-0`} aria-hidden>
-      <path d="M4 28h16" stroke="#a1a1aa" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4 28h16" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
       <path
         d="M9.2 28 11.4 8.6h1.2L16.8 28Z"
-        fill="#d4d4d8"
-        stroke="#a1a1aa"
+        fill="#fff"
+        stroke="#f97316"
         strokeWidth="1.6"
         strokeLinejoin="round"
       />
-      <path d="M10.05 21.2h3.9l.45 4H9.6l.45-4Z" fill="#f4b183" />
-      <path d="M10.55 14.4h2.9l.4 3.4h-3.7l.4-3.4Z" fill="#f4b183" />
-      <rect x="10.7" y="6.2" width="2.6" height="2.6" rx="0.6" fill="#a1a1aa" />
+      <path d="M10.05 21.2h3.9l.45 4H9.6l.45-4Z" fill="#f97316" />
+      <path d="M10.55 14.4h2.9l.4 3.4h-3.7l.4-3.4Z" fill="#f97316" />
+      <rect x="10.7" y="6.2" width="2.6" height="2.6" rx="0.6" fill="#fff" stroke="#f97316" strokeWidth="1.2" />
     </svg>
   );
 }
@@ -58,20 +59,18 @@ function LockedFeatureCard({
     <button
       type="button"
       disabled
-      className={`testing-suite-lock rounded-2xl border border-ink/[0.08] bg-[#f3f3f5] text-zinc-400 ${
+      className={`testing-suite-lock rounded-2xl ${
         compact
-          ? "grid h-12 w-full place-items-center px-2"
-          : "flex min-h-[52px] items-center gap-3 px-3 py-2.5 text-left"
+          ? "grid h-[52px] w-full place-items-center px-2"
+          : "flex min-h-[52px] w-full items-center gap-3.5 px-4 py-3 text-left"
       }`}
       title={`${title} is still being built`}
     >
       {icon}
       {!compact && (
         <span className="min-w-0">
-          <span className="on-white block text-sm font-semibold leading-tight">
-            {title}
-          </span>
-          <span className="on-white block text-[11px] font-medium leading-tight">
+          <span className="block text-sm font-semibold leading-tight">{title}</span>
+          <span className="block text-[11px] font-medium leading-tight opacity-80">
             {status}
           </span>
         </span>

@@ -130,7 +130,6 @@ function UpgradeNavCard({
   vintage?: boolean;
 }) {
   const proChip = plan === "pro";
-  const clearUpgrade = !proChip;
   const body = proChip ? (
     compact ? (
       <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
@@ -141,7 +140,7 @@ function UpgradeNavCard({
         <span className="block font-display text-sm font-bold leading-tight">
           <ProGlowPhrase>Pro account</ProGlowPhrase>
         </span>
-        <span className="block text-[11px] font-medium leading-tight text-white/80">
+        <span className="block text-[11px] font-medium leading-tight text-ink-soft">
           Unlocked
         </span>
       </span>
@@ -165,10 +164,7 @@ function UpgradeNavCard({
     <BogenHit
       id="nav-upgrade"
       compact={compact}
-      onDark={!clearUpgrade}
-      className={`rounded-2xl ${widgetBox(compact)} ${
-        clearUpgrade ? "bg-transparent" : "glass-violet text-white"
-      }`}
+      className={`rounded-2xl ${widgetBox(compact)} pro-profile-glow bg-transparent`}
     >
       {proChip || vintage ? (
         <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
@@ -242,9 +238,9 @@ function PreviewSidebar({
         <BogenHit
           id="nav-archive"
           compact={compact}
-          className={compact ? "justify-center" : ""}
+          className={`w-full ${compact ? "justify-center" : ""}`}
         >
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 w-full flex-1">
             <ArchiveCalendarLock compact={compact} />
           </div>
         </BogenHit>
@@ -275,9 +271,9 @@ function PreviewSidebar({
         <BogenHit
           id="nav-horizon"
           compact={compact}
-          className={compact ? "justify-center" : ""}
+          className={`w-full ${compact ? "justify-center" : ""}`}
         >
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 w-full flex-1">
             <TestingSuiteLock compact={compact} />
           </div>
         </BogenHit>
@@ -418,9 +414,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   id={item.bogen}
                   compact={compact}
-                  className={compact ? "justify-center" : ""}
+                  className={`w-full ${compact ? "justify-center" : ""}`}
                 >
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 w-full flex-1">
                     <PortfolioLock compact={compact} />
                   </div>
                 </BogenHit>
@@ -487,13 +483,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <TVMBrand />
           </button>
           {entitlement.plan === "pro" ? (
-            <span className="text-sm uppercase">
+            <span className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold">
               <ProGlowText>Pro</ProGlowText>
             </span>
           ) : (
-            <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold uppercase text-white">
-              {entitlement.plan}
-            </span>
+            <button
+              type="button"
+              onClick={openUpgrade}
+              className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold"
+            >
+              <ProGlowPhrase>Pro</ProGlowPhrase>
+            </button>
           )}
         </div>
 
@@ -521,8 +521,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 {dashboardNav.map((item) => {
                   if (item.label === "Portfolio" && !showPortfolio) {
                     return (
-                      <BogenHit key={item.href} id={item.bogen}>
-                        <div className="min-w-0 flex-1">
+                      <BogenHit key={item.href} id={item.bogen} className="w-full">
+                        <div className="min-w-0 w-full flex-1">
                           <PortfolioLock />
                         </div>
                       </BogenHit>

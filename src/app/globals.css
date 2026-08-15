@@ -99,6 +99,23 @@ html.dark .maintenance-nav-card {
   color: #ffedd5;
 }
 
+.testing-suite-lock {
+  width: 100%;
+  background: rgba(120, 124, 136, 0.12);
+  border: 1.5px solid rgba(120, 124, 136, 0.42);
+  color: #5c5f69;
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+html.dark .testing-suite-lock {
+  background: rgba(170, 176, 190, 0.12);
+  border-color: rgba(190, 196, 210, 0.38);
+  color: rgba(226, 230, 238, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
 body {
   color: rgb(var(--foreground));
   background-color: rgb(var(--background));

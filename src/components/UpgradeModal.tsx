@@ -118,7 +118,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
             </div>
 
             {alreadyPro ? (
-              <p className="glass-violet rounded-full px-6 py-3 text-center text-sm font-semibold text-white">
+              <p className="pro-profile-glow rounded-full bg-transparent px-6 py-3 text-center text-sm font-semibold">
                 Currently on <ProGlowText>Pro</ProGlowText>
               </p>
             ) : user ? (
@@ -126,7 +126,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
                 type="button"
                 onClick={startCheckout}
                 disabled={loading}
-                className="glass-violet rounded-full px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                className="pro-profile-glow rounded-full bg-transparent px-7 py-3.5 text-sm font-semibold transition-transform hover:-translate-y-0.5 disabled:opacity-60"
               >
                 {loading ? "Opening Stripe…" : <ProGlowText>Upgrade to Pro</ProGlowText>}
               </button>
@@ -134,7 +134,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
               <Link
                 href="/login"
                 onClick={onClose}
-                className="glass-violet rounded-full px-7 py-3.5 text-center text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+                className="pro-profile-glow rounded-full bg-transparent px-7 py-3.5 text-center text-sm font-semibold transition-transform hover:-translate-y-0.5"
               >
                 Log in to upgrade
               </Link>

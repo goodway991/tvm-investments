@@ -63,7 +63,7 @@ export function PaywallLock({
         <button
           type="button"
           onClick={() => openUpgrade()}
-          className="glass-violet rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+          className="pro-profile-glow rounded-full bg-transparent px-5 py-2.5 text-sm font-semibold"
         >
           <ProGlowText>{cta}</ProGlowText>
         </button>
