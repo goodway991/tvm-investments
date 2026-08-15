@@ -1,7 +1,12 @@
-export const CURRENT_RELEASE_ID = "beta-2.1";
-export const RELEASE_ACK_ID = "beta-2.1-score";
+export const CURRENT_RELEASE_ID = "beta-3";
+export const RELEASE_ACK_ID = "beta-3-v2";
 
-export type ReleaseFeatureVisualId = "bogen" | "events" | "account-score";
+export type ReleaseFeatureVisualId =
+  | "bogen"
+  | "events"
+  | "account-score"
+  | "portfolio-2"
+  | "clean-mode";
 
 export type ReleaseFeature = {
   title: string;
@@ -72,6 +77,26 @@ export const RELEASES: ReleaseNote[] = [
       },
       {
         title: "UI updates",
+      },
+    ],
+  },
+  {
+    id: "beta-3",
+    version: "Beta v3",
+    title: "Clean mode and Portfolio 2.0",
+    date: "August 14th, 2026",
+    summary:
+      "A quieter dashboard when you want it, and a book you can actually fill in — holdings first, then names you’re considering.",
+    features: [
+      {
+        title: "Portfolio 2.0",
+        visual: "portfolio-2",
+        body: "Log the shares you already hold, with a buy price or a buy date. Search your watchlist first, then the rest of the tape.",
+      },
+      {
+        title: "Clean mode",
+        visual: "clean-mode",
+        body: "A slider in Settings (and in Let’s customize) switches Clean and Normal. Clean keeps today’s pick, your book, and a short mover list.",
       },
     ],
   },

@@ -10,7 +10,7 @@ import {
 } from "@/components/ArchiveBar";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
-import { ArchiveCalendarLock, PortfolioLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
+import { ArchiveCalendarLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
 import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
@@ -18,6 +18,7 @@ import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
+import { NewBadge } from "@/components/NewBadge";
 import { LOCAL_EXPERIMENT, useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
@@ -103,6 +104,11 @@ function ProfileNavLink({
         }`}
       >
         <TVMIcon name="profile" size={compact ? 22 : 26} />
+        {compact ? (
+          <span className="absolute -right-2 -top-2">
+            <NewBadge feature="settings" />
+          </span>
+        ) : null}
       </span>
       {!compact && (
         <span className="pointer-events-none relative z-[1] min-w-0 overflow-visible bg-transparent">
@@ -116,10 +122,15 @@ function ProfileNavLink({
             {pro ? <ProGlowPhrase>{name}</ProGlowPhrase> : name}
           </span>
           {pro ? (
-            <span className="mt-1 block font-display text-sm font-bold leading-tight">
+            <span className="mt-1 flex items-center gap-2 font-display text-sm font-bold leading-tight">
               <ProGlowPhrase>Pro account</ProGlowPhrase>
+              <NewBadge feature="settings" />
             </span>
-          ) : null}
+          ) : (
+            <span className="mt-1 block">
+              <NewBadge feature="settings" />
+            </span>
+          )}
         </span>
       )}
     </BogenHit>
@@ -440,20 +451,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ).map((item) => {
             const active = navIsActive(pathname, item.href);
             const compact = sidebarMode !== "expanded";
-            if (item.label === "Portfolio") {
-              return (
-                <BogenHit
-                  key={item.href}
-                  id={item.bogen}
-                  compact={compact}
-                  className={compact ? "justify-center" : ""}
-                >
-                  <div className="min-w-0 flex-1">
-                    <PortfolioLock compact={compact} />
-                  </div>
-                </BogenHit>
-              );
-            }
             return (
               <BogenHit
                 key={item.href}
@@ -471,9 +468,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 />
                 <span className="pointer-events-none relative z-[1]">
                   <TVMIcon name={item.icon} />
+                  {compact && item.label === "Portfolio" ? (
+                    <span className="absolute -right-2 -top-1">
+                      <NewBadge feature="portfolio" />
+                    </span>
+                  ) : null}
                 </span>
                 {!compact && (
-                  <span className="pointer-events-none relative z-[1]">{item.label}</span>
+                  <span className="pointer-events-none relative z-[1] flex items-center gap-2">
+                    {item.label}
+                    {item.label === "Portfolio" ? <NewBadge feature="portfolio" /> : null}
+                  </span>
                 )}
               </BogenHit>
             );
@@ -552,19 +557,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             ? dashboardNav.filter((item) => item.label !== "Screener")
             : dashboardNav
           ).map((item) => {
-                  if (item.label === "Portfolio") {
-                    return (
-                      <BogenHit
-                        key={item.href}
-                        id={item.bogen}
-                        className=""
-                      >
-                        <div className="min-w-0 flex-1">
-                          <PortfolioLock />
-                        </div>
-                      </BogenHit>
-                    );
-                  }
                   const active = navIsActive(pathname, item.href);
                   return (
                     <BogenHit
@@ -585,7 +577,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       <span className="pointer-events-none relative z-[1]">
                         <TVMIcon name={item.icon} />
                       </span>
-                      <span className="pointer-events-none relative z-[1]">{item.label}</span>
+                      <span className="pointer-events-none relative z-[1] flex items-center gap-2">
+                        {item.label}
+                        {item.label === "Portfolio" ? (
+                          <NewBadge feature="portfolio" />
+                        ) : null}
+                      </span>
                     </BogenHit>
                   );
                 })}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PortfolioGate } from "@/components/PortfolioGate";
+import { PortfolioWorkbench } from "@/components/PortfolioWorkbench";
 import { uniqueStocks } from "@/lib/chart-series";
 import { getDashboardSnapshot } from "@/lib/snapshot";
 
@@ -15,7 +15,10 @@ export default async function PortfolioPage({
   const { archive } = await searchParams;
   const snapshot = await getDashboardSnapshot(archive);
   const stocks = uniqueStocks([...snapshot.topMovers, ...snapshot.topPicks]);
-  const defaultSymbol = snapshot.topPicks[0]?.symbol ?? stocks[0]?.symbol ?? "AAPL";
 
-  return <PortfolioGate stocks={stocks} defaultSymbol={defaultSymbol} />;
+  return (
+    <div className="dashboard-research">
+      <PortfolioWorkbench stocks={stocks} screened={snapshot.screenedStocks} />
+    </div>
+  );
 }

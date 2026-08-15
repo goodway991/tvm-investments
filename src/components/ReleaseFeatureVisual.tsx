@@ -199,10 +199,108 @@ function AccountScoreVisual() {
   );
 }
 
+function PortfolioTwoVisual() {
+  return (
+    <MiniWindow title="Portfolio · Current book">
+      <div className="space-y-3 bg-surface p-4">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
+              Current book
+            </p>
+            <p className="font-display text-lg font-bold text-ink">$24,810</p>
+          </div>
+          <p className="text-[11px] text-ink-soft">2 holdings</p>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-ink/[0.08] bg-white">
+          <div className="flex items-center justify-between px-3 py-2">
+            <div>
+              <p className="font-display text-sm font-bold text-ink">AMZN</p>
+              <p className="text-[10px] text-ink-soft">50 shares · bought 3/12</p>
+            </div>
+            <p className="text-sm font-semibold text-ink">$8,920</p>
+          </div>
+          <div className="flex items-center justify-between border-t border-ink/[0.06] px-3 py-2">
+            <div>
+              <p className="font-display text-sm font-bold text-ink">GOOGL</p>
+              <p className="text-[10px] text-ink-soft">30 shares · $164.20</p>
+            </div>
+            <p className="text-sm font-semibold text-ink">$4,926</p>
+          </div>
+        </div>
+        <div className="relative rounded-2xl border border-violet/40 bg-white px-3 py-2.5 pl-9 text-[12px] text-ink-soft">
+          Search the tape or your watchlist…
+          <span className="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border border-ink/30" />
+        </div>
+      </div>
+    </MiniWindow>
+  );
+}
+
+function CleanModeVisual() {
+  return (
+    <MiniWindow title="Settings · Dashboard layout">
+      <div className="wn-density-stage bg-surface p-4">
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-xs font-semibold text-ink">Clean</span>
+          <span className="tvm-switch wn-density-switch" aria-hidden>
+            <span className="tvm-switch-thumb" />
+          </span>
+          <span className="text-xs font-semibold text-ink">Normal</span>
+        </div>
+        <div className="relative mt-4 h-[9.5rem]">
+          <div className="wn-density-pane wn-density-clean overflow-hidden rounded-2xl border border-ink/[0.08] bg-white p-3">
+            <p className="text-[10px] font-semibold text-ink">Today at a glance</p>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              <div className="glass-violet rounded-xl p-2 text-white">
+                <p className="text-[8px] text-white/80">Top pick</p>
+                <p className="font-display text-xs font-bold">+2.4%</p>
+              </div>
+              <div className="glass-violet rounded-xl p-2 text-white">
+                <p className="text-[8px] text-white/80">Your book</p>
+                <p className="font-display text-xs font-bold">74</p>
+              </div>
+            </div>
+            <div className="mt-2 space-y-1 rounded-xl bg-surface p-2">
+              <div className="h-1.5 w-full rounded-full bg-ink/[0.08]" />
+              <div className="h-1.5 w-4/5 rounded-full bg-ink/[0.08]" />
+              <div className="h-1.5 w-3/5 rounded-full bg-ink/[0.08]" />
+            </div>
+          </div>
+          <div className="wn-density-pane wn-density-normal overflow-hidden rounded-2xl border border-ink/[0.08] bg-white p-3">
+            <div className="grid grid-cols-4 gap-1">
+              {["Pick", "1,487", "86", "74"].map((value) => (
+                <div key={value} className="glass-violet rounded-lg p-1.5 text-white">
+                  <p className="font-display text-[10px] font-bold leading-none">{value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1">
+              <div className="h-10 rounded-lg bg-surface" />
+              <div className="space-y-1">
+                <div className="h-2 rounded bg-surface" />
+                <div className="h-2 rounded bg-surface" />
+                <div className="h-2 rounded bg-surface" />
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-1">
+              <div className="h-8 rounded-lg bg-surface" />
+              <div className="h-8 rounded-lg bg-surface" />
+              <div className="h-8 rounded-lg bg-surface" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </MiniWindow>
+  );
+}
+
 const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   bogen: BogenVisual,
   events: EventsVisual,
   "account-score": AccountScoreVisual,
+  "portfolio-2": PortfolioTwoVisual,
+  "clean-mode": CleanModeVisual,
 };
 
 export function ReleaseFeatureVisual({ id }: { id: ReleaseFeatureVisualId }) {

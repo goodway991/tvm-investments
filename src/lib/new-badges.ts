@@ -1,6 +1,12 @@
 export const NEW_BADGE_DAYS = 3;
 
-export const NEW_FEATURE_IDS = ["bogen"] as const;
+export const NEW_FEATURE_IDS = [
+  "bogen",
+  "portfolio",
+  "settings",
+  "density",
+  "appearance",
+] as const;
 
 export type NewFeatureId = (typeof NEW_FEATURE_IDS)[number];
 
