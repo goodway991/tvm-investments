@@ -497,15 +497,17 @@ export function SettingsPanel() {
           <p className="mt-1 text-sm text-ink-soft">{user?.email}</p>
         </div>
         {entitlement.plan === "pro" ? (
-          era.features.proProfileStack ? (
-            <ProGlowPhrase className="text-sm">Pro</ProGlowPhrase>
+          era.features.proProfileGlow ? (
+            <span className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold">
+              <ProGlowText>Pro</ProGlowText>
+            </span>
           ) : (
             <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white">
               <ProGlowText>Pro</ProGlowText>
             </span>
           )
         ) : (
-          <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white">
+          <span className="rounded-full border border-ink/10 px-4 py-2 text-sm font-semibold text-ink-soft">
             Free
           </span>
         )}

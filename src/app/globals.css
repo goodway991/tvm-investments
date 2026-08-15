@@ -979,18 +979,19 @@ button:not(:disabled):hover .archive-flow-node {
 
 .plan-current-pane {
   position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
+  top: 10px;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
   width: auto;
   z-index: 0;
   pointer-events: none;
-  border-radius: 16px;
-  background: rgba(47, 98, 255, 0.1);
+  border-radius: 18px;
+  background: rgb(var(--violet) / 0.06);
   box-shadow:
-    0 0 0 2px rgba(47, 98, 255, 0.72),
-    0 0 16px rgba(47, 98, 255, 0.28);
+    0 0 0 1.5px rgb(var(--violet) / 0.42),
+    0 8px 28px -12px rgb(var(--violet) / 0.45),
+    0 0 18px rgb(var(--violet) / 0.16);
 }
 
 .plan-current-pane.is-free {
@@ -1002,10 +1003,11 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 html.dark .plan-current-pane {
-  background: rgba(59, 130, 246, 0.16);
+  background: rgba(96, 165, 250, 0.08);
   box-shadow:
-    0 0 0 2px rgba(96, 165, 250, 0.7),
-    0 0 16px rgba(59, 130, 246, 0.32);
+    0 0 0 1.5px rgba(147, 197, 253, 0.5),
+    0 8px 32px -14px rgba(59, 130, 246, 0.55),
+    0 0 22px rgba(59, 130, 246, 0.2);
 }
 
 .plan-compare-h,

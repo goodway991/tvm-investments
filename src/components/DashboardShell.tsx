@@ -155,7 +155,6 @@ function UpgradeNavCard({
   vintage?: boolean;
 }) {
   const proChip = plan === "pro";
-  const clearUpgrade = !proChip;
   const body = proChip ? (
     compact ? (
       <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
@@ -190,10 +189,7 @@ function UpgradeNavCard({
     <BogenHit
       id="nav-upgrade"
       compact={compact}
-      onDark={!clearUpgrade}
-      className={`rounded-2xl ${widgetBox(compact)} ${
-        clearUpgrade ? "bg-transparent" : "glass-violet text-white"
-      }`}
+      className={`rounded-2xl ${widgetBox(compact)} pro-profile-glow bg-transparent`}
     >
       {proChip || vintage ? (
         <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
@@ -522,13 +518,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <TVMBrand />
           </button>
           {entitlement.plan === "pro" ? (
-            <span className="text-sm uppercase">
+            <span className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold">
               <ProGlowText>Pro</ProGlowText>
             </span>
           ) : (
-            <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold uppercase text-white">
-              {entitlement.plan}
-            </span>
+            <button
+              type="button"
+              onClick={openUpgrade}
+              className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold"
+            >
+              <ProGlowPhrase>Pro</ProGlowPhrase>
+            </button>
           )}
         </div>
 
