@@ -1,7 +1,7 @@
-import { showBeta3Labs } from "@/lib/beta-labs";
+import { showTvm10Labs } from "@/lib/beta-labs";
 
-export const CURRENT_RELEASE_ID = showBeta3Labs() ? "beta-3" : "beta-2.1";
-export const RELEASE_ACK_ID = showBeta3Labs() ? "beta-3-v2" : "beta-2.1-score";
+export const CURRENT_RELEASE_ID = showTvm10Labs() ? "tvm-1" : "beta-3";
+export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-v1" : "beta-3-live";
 
 const RELEASE_ACK_ORDER = [
   "beta-1",
@@ -9,11 +9,14 @@ const RELEASE_ACK_ORDER = [
   "beta-2.1-score",
   "beta-2.2",
   "beta-3-v2",
+  "beta-3-live",
+  "tvm-1-v1",
 ];
 
 const RELEASE_ACK_ALIASES: Record<string, string> = {
   "beta-2.1": "beta-2.1-score",
-  "beta-3": "beta-3-v2",
+  "beta-3": "beta-3-live",
+  "tvm-1": "tvm-1-v1",
 };
 
 function normalizeReleaseAck(id: string) {
@@ -54,7 +57,8 @@ export type ReleaseFeatureVisualId =
   | "events"
   | "account-score"
   | "portfolio-2"
-  | "clean-mode";
+  | "clean-mode"
+  | "customize";
 
 export type ReleaseFeature = {
   title: string;
@@ -130,22 +134,37 @@ export const RELEASES: ReleaseNote[] = [
   },
   {
     id: "beta-3",
-    version: "Beta v3",
-    title: "Clean mode and Portfolio 2.0",
-    date: "August 14th, 2026",
+    version: "Beta v3.0",
+    title: "Clean mode",
+    date: "August 15th, 2026",
     summary:
-      "A quieter dashboard when you want it, and a book you can actually fill in — holdings first, then names you’re considering.",
+      "A quieter dashboard when you want it, and a first-run sheet so the desk is yours.",
     features: [
       {
-        title: "Portfolio 2.0",
-        visual: "portfolio-2",
-        body: "Log the shares you already hold, with a buy price or a buy date. Search your watchlist first, then the rest of the tape.",
+        title: "Clean vs Normal",
+        visual: "clean-mode",
+        body: "Flip the slider in Settings or Let’s customize. Clean is Welcome, today’s pick, your book, and three movers. Normal is the full dashboard.",
       },
       {
-        title: "Clean mode",
-        visual: "clean-mode",
-        body: "A slider in Settings (and in Let’s customize) switches Clean and Normal. Clean keeps today’s pick, your book, and a short mover list.",
+        title: "Let’s customize",
+        visual: "customize",
+        body: "A short setup for Bogen, light or dark, and Clean vs Normal. You can change any of it later in Settings.",
       },
+    ],
+  },
+  {
+    id: "tvm-1",
+    version: "TVM 1.0",
+    title: "Ultra desk",
+    date: "August 15th, 2026",
+    summary:
+      "Builds on Beta v3.0. Country and time zone for every account. Ultra gets a 9am good morning, Portfolio 2.0, and a workstation.",
+    items: [
+      "Country and time zone in Let’s customize and Settings — every plan",
+      "Ultra: good morning at 9:00 in your zone",
+      "Ultra: Portfolio 2.0 with Analyze, unlimited Predict, and scenarios",
+      "Ultra: workstation — heatmap, compare, signal weights, tags, notes, recipes, keyboard, compact terminal",
+      "Pro keeps the simple book cap / construction page",
     ],
   },
 ];

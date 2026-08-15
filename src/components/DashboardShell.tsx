@@ -15,7 +15,7 @@ import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
-import { showBeta3Labs } from "@/lib/beta-labs";
+import { showTvm10Labs, showUltraDesk } from "@/lib/beta-labs";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
@@ -27,6 +27,7 @@ import { planHasPro, type PlanId } from "@/lib/plans";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
+  { label: "Workstation", href: "/dashboard/workstation", icon: "screener" as const, bogen: "nav-screener" as const, ultra: true },
   { label: "Daily Brief", href: "/dashboard/brief", icon: "brief" as const, bogen: "nav-brief" as const },
   { label: "Screener", href: "/dashboard/screener", icon: "screener" as const, bogen: "nav-screener" as const },
   { label: "Reports", href: "/dashboard/reports", icon: "reports" as const, bogen: "nav-reports" as const },
@@ -472,7 +473,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <TVMBrand showWordmark={sidebarMode === "expanded"} />
           </span>
         </BogenHit>
-        {sidebarMode === "expanded" && !rewind && showBeta3Labs() ? (
+        {sidebarMode === "expanded" && !rewind && showTvm10Labs() ? (
           <p className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
             {LOCAL_EXPERIMENT}
           </p>
@@ -482,13 +483,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {(clean
             ? dashboardNav.filter((item) => item.label !== "Screener")
             : dashboardNav
-          ).map((item) => {
+          )
+            .filter(
+              (item) =>
+                item.label !== "Workstation" || showUltraDesk(entitlement.plan),
+            )
+            .map((item) => {
             const active = navIsActive(pathname, item.href);
             const compact = sidebarMode !== "expanded";
             const portfolioLocked =
-              item.label === "Portfolio" &&
-              !showBeta3Labs() &&
-              !canUsePreviewFeature(entitlement.role, "portfolio");
+              item.label === "Portfolio" && !showTvm10Labs();
             if (portfolioLocked) {
               return (
                 <BogenHit
@@ -619,12 +623,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 {(clean
             ? dashboardNav.filter((item) => item.label !== "Screener")
             : dashboardNav
-          ).map((item) => {
+          )
+            .filter(
+              (item) =>
+                item.label !== "Workstation" || showUltraDesk(entitlement.plan),
+            )
+            .map((item) => {
                   const active = navIsActive(pathname, item.href);
                   const portfolioLocked =
-                    item.label === "Portfolio" &&
-                    !showBeta3Labs() &&
-                    !canUsePreviewFeature(entitlement.role, "portfolio");
+                    item.label === "Portfolio" && !showTvm10Labs();
                   if (portfolioLocked) {
                     return (
                       <BogenHit

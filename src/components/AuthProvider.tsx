@@ -41,6 +41,7 @@ import {
   resolveAccountName,
   splitPersonName,
 } from "@/lib/person-name";
+import { isValidCountry, isValidTimeZone } from "@/lib/locales";
 import { parseTicker } from "@/lib/ticker";
 import { overlayLabsPlan, planHasPro, watchlistLimitForPlan, type PlanId } from "@/lib/plans";
 import {
@@ -72,6 +73,8 @@ export interface AccountProfile {
   tourCompletedAt: Date | null;
   seenRelease: string;
   newSeen: NewSeenMap;
+  country: string;
+  timeZone: string;
 }
 
 export interface AccountEntitlement {
@@ -119,6 +122,7 @@ interface AuthContextValue {
   acknowledgeRelease: () => Promise<void>;
   isFeatureNew: (feature: NewFeatureId) => boolean;
   updateDisplayName: (firstName: string, lastName: string) => Promise<void>;
+  updateLocale: (country: string, timeZone: string) => Promise<void>;
   updateWatchlist: (symbols: string[]) => Promise<void>;
   updatePortfolio: (cash: number, totalValue: number) => Promise<void>;
   savePosition: (position: Omit<PortfolioPosition, "currentPrice"> & { currentPrice?: number }) => Promise<void>;
@@ -250,6 +254,8 @@ function profileFrom(data: DocumentData): AccountProfile {
     tourCompletedAt: asDate(data.tourCompletedAt),
     seenRelease: typeof data.seenRelease === "string" ? data.seenRelease : "",
     newSeen: parseNewSeen(data.newSeen),
+    country: typeof data.country === "string" ? data.country : "",
+    timeZone: typeof data.timeZone === "string" ? data.timeZone : "",
   };
 }
 
@@ -271,6 +277,8 @@ function profileFromAuth(user: User): AccountProfile {
     tourCompletedAt: null,
     seenRelease: "",
     newSeen: {},
+    country: "",
+    timeZone: "",
   };
 }
 
@@ -725,6 +733,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user],
   );
 
+  const updateLocale = useCallback(
+    async (country: string, timeZone: string) => {
+      const db = getClientFirestore();
+      if (!user) throw new Error("Sign in to save your time zone.");
+      const nextCountry = country.trim().toUpperCase();
+      const nextZone = timeZone.trim();
+      if (!isValidCountry(nextCountry) || !isValidTimeZone(nextZone)) {
+        throw new Error("Pick a listed country and a valid time zone.");
+      }
+      setProfile((current) =>
+        current
+          ? { ...current, country: nextCountry, timeZone: nextZone }
+          : current,
+      );
+      if (db) {
+        try {
+          await updateDoc(doc(db, "users", user.uid), {
+            country: nextCountry,
+            timeZone: nextZone,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (saveError) {
+          console.error(saveError);
+        }
+      }
+    },
+    [user],
+  );
+
   const updateWatchlist = useCallback(
     async (symbols: string[]) => {
       const db = getClientFirestore();
@@ -883,6 +920,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       acknowledgeRelease,
       isFeatureNew,
       updateDisplayName,
+      updateLocale,
       updateWatchlist,
       updatePortfolio,
       savePosition,
@@ -901,6 +939,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       acknowledgeRelease,
       isFeatureNew,
       updateDisplayName,
+      updateLocale,
       portfolio,
       positions,
       profile,

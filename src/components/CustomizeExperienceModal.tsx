@@ -9,7 +9,9 @@ import { useExperience } from "@/components/ExperienceProvider";
 import { useAuth } from "@/components/AuthProvider";
 import { useTour } from "@/components/TourProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
-import { showBeta3Labs, showCustomizeExperience } from "@/lib/beta-labs";
+import { showCustomizeExperience, showTvm10Labs } from "@/lib/beta-labs";
+import { LocalePicker } from "@/components/LocalePicker";
+import { guessLocale, isValidCountry, isValidTimeZone } from "@/lib/locales";
 
 function MiniChrome({
   title,
@@ -99,14 +101,25 @@ export function CustomizeExperienceModal() {
   } = useExperience();
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const { appearance, setAppearance } = useTheme();
-  const { user, loading, tourPending, giftPending, entitlement } = useAuth();
+  const { user, loading, tourPending, giftPending, entitlement, profile, updateLocale } =
+    useAuth();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
   const [step, setStep] = useState(0);
+  const guessed = guessLocale();
+  const [country, setCountry] = useState(guessed.country);
+  const [timeZone, setTimeZone] = useState(guessed.timeZone);
 
   useEffect(() => {
-    if (customizeOpen) setStep(0);
-  }, [customizeOpen]);
+    if (customizeOpen) {
+      const guess = guessLocale();
+      setCountry(profile?.country || guess.country);
+      setTimeZone(profile?.timeZone || guess.timeZone);
+      if (!customizeSeen) setStep(0);
+      else if (showTvm10Labs() && !profile?.timeZone) setStep(3);
+      else setStep(0);
+    }
+  }, [customizeOpen, customizeSeen, profile?.country, profile?.timeZone]);
 
   useEffect(() => {
     if (
@@ -117,11 +130,11 @@ export function CustomizeExperienceModal() {
       tourOpen ||
       rewind ||
       giftPending ||
-      customizeSeen ||
       customizeOpen
     ) {
       return;
     }
+    if (customizeSeen && (!showTvm10Labs() || profile?.timeZone)) return;
     openCustomize();
   }, [
     customizeOpen,
@@ -130,6 +143,7 @@ export function CustomizeExperienceModal() {
     giftPending,
     loading,
     openCustomize,
+    profile?.timeZone,
     rewind,
     tourOpen,
     tourPending,
@@ -139,8 +153,8 @@ export function CustomizeExperienceModal() {
   if (!customizeOpen || rewind) return null;
   if (!showCustomizeExperience(entitlement.role)) return null;
 
-  const labs = showBeta3Labs();
-  const lastStep = labs ? 2 : 1;
+  const tvm10 = showTvm10Labs();
+  const lastStep = tvm10 ? 3 : 2;
   const last = step === lastStep;
 
   return (
@@ -152,7 +166,7 @@ export function CustomizeExperienceModal() {
       header={
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-            Step {step + 1} of {labs ? 3 : 2}
+            Step {step + 1} of {tvm10 ? 4 : 3}
           </p>
           <h2
             id="customize-title"
@@ -176,6 +190,10 @@ export function CustomizeExperienceModal() {
             type="button"
             onClick={() => {
               if (last) {
+                if (tvm10) {
+                  if (!isValidCountry(country) || !isValidTimeZone(timeZone)) return;
+                  void updateLocale(country, timeZone);
+                }
                 finishCustomize();
                 setStep(0);
                 return;
@@ -265,7 +283,7 @@ export function CustomizeExperienceModal() {
         </div>
       ) : null}
 
-      {labs && step === 2 ? (
+      {step === 2 ? (
         <div>
           <h3 className="font-display text-lg font-bold text-ink">How much detail?</h3>
           <p className="mt-1 text-sm leading-relaxed text-ink-soft">
@@ -311,6 +329,24 @@ export function CustomizeExperienceModal() {
                 The full dashboard — every card, chart, calculator, and flagged pick.
               </p>
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {tvm10 && step === 3 ? (
+        <div>
+          <h3 className="font-display text-lg font-bold text-ink">Where are you?</h3>
+          <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+            Country and time zone are for every account. Ultra uses this for a
+            9:00am good morning in your local time.
+          </p>
+          <div className="mt-4">
+            <LocalePicker
+              country={country}
+              timeZone={timeZone}
+              onCountry={setCountry}
+              onTimeZone={setTimeZone}
+            />
           </div>
         </div>
       ) : null}

@@ -11,6 +11,7 @@ import { UpgradeProvider } from "@/components/UpgradeProvider";
 import { BogenProvider } from "@/components/BogenProvider";
 import { ExperienceProvider } from "@/components/ExperienceProvider";
 import { CustomizeExperienceModal } from "@/components/CustomizeExperienceModal";
+import { GoodMorningModal } from "@/components/GoodMorningModal";
 import { MotionPauseRoot } from "@/components/LoopMotion";
 import { SiteEraProvider } from "@/components/SiteEraProvider";
 
@@ -30,6 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                       <GiftedProModal />
                       <CustomizeExperienceModal />
                       <WhatsNewModal />
+                      <GoodMorningModal />
                     </MaintenanceGate>
                   </BogenProvider>
                 </TourProvider>

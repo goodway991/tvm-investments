@@ -1,15 +1,27 @@
-import { showBeta3Labs } from "@/lib/beta-labs";
+import { showTvm10Labs } from "@/lib/beta-labs";
 
 export const PLAN_PRICES = {
-  monthly: { perMonth: 8, billed: 8, periodLabel: "billed monthly" },
-  yearly: { perMonth: 5, billed: 60, periodLabel: "billed $60 yearly" },
+  pro: {
+    monthly: { perMonth: 8, billed: 8 },
+    yearly: { perMonth: 5, billed: 60 },
+  },
+  ultra: {
+    monthly: { perMonth: 12, billed: 12 },
+    yearly: { perMonth: 10, billed: 120 },
+  },
 } as const;
 
-export type BillingInterval = keyof typeof PLAN_PRICES;
+export type PaidPlanId = keyof typeof PLAN_PRICES;
+export type BillingInterval = "monthly" | "yearly";
 
-export function yearlySavingsPercent() {
-  const monthlyAnnual = PLAN_PRICES.monthly.perMonth * 12;
-  return Math.round((1 - PLAN_PRICES.yearly.billed / monthlyAnnual) * 100);
+export function priceFor(plan: PaidPlanId, interval: BillingInterval) {
+  return PLAN_PRICES[plan][interval];
+}
+
+export function yearlySavingsPercent(plan: PaidPlanId = "pro") {
+  const prices = PLAN_PRICES[plan];
+  const monthlyAnnual = prices.monthly.perMonth * 12;
+  return Math.round((1 - prices.yearly.billed / monthlyAnnual) * 100);
 }
 
 export const FREE_SECTOR_DIVE_LIMIT = 2;
@@ -41,9 +53,9 @@ export function overlayLabsPlan(
   stored: string | undefined,
 ): PlanId {
   const base: PlanId = stored === "pro" || stored === "ultra" ? stored : "free";
-  if (!showBeta3Labs()) return base === "ultra" ? "pro" : base;
+  if (!showTvm10Labs()) return base === "ultra" ? "pro" : base;
   if (role === "admin") return "ultra";
-  return base === "ultra" ? "pro" : base;
+  return base;
 }
 
 /** Flip these to true when a coming-soon feature ships for everyone. */

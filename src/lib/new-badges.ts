@@ -1,6 +1,6 @@
 export const NEW_BADGE_DAYS = 3;
 
-import { showBeta3Labs } from "@/lib/beta-labs";
+import { showTvm10Labs } from "@/lib/beta-labs";
 
 export const NEW_FEATURE_IDS = [
   "bogen",
@@ -13,8 +13,8 @@ export const NEW_FEATURE_IDS = [
 export type NewFeatureId = (typeof NEW_FEATURE_IDS)[number];
 
 export function publicNewFeatureIds(): NewFeatureId[] {
-  if (showBeta3Labs()) return [...NEW_FEATURE_IDS];
-  return ["bogen", "settings", "appearance"];
+  if (showTvm10Labs()) return [...NEW_FEATURE_IDS];
+  return ["bogen", "settings", "appearance", "density"];
 }
 
 export type NewSeenMap = Partial<Record<NewFeatureId, string>>;

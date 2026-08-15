@@ -7,8 +7,7 @@ import {
   PortfolioConstructionMark,
   PortfolioLock,
 } from "@/components/TestingSuiteLock";
-import { canUsePreviewFeature } from "@/lib/plans";
-import { showBeta3Labs } from "@/lib/beta-labs";
+import { showUltraDesk } from "@/lib/beta-labs";
 import { BogenHeading } from "@/components/BogenProvider";
 
 export function PortfolioGate({
@@ -19,7 +18,7 @@ export function PortfolioGate({
   screened?: ScreenedStock[];
 }) {
   const { entitlement } = useAuth();
-  if (showBeta3Labs() || canUsePreviewFeature(entitlement.role, "portfolio")) {
+  if (showUltraDesk(entitlement.plan)) {
     return (
       <div className="dashboard-research">
         <PortfolioWorkbench stocks={stocks} screened={screened} />

@@ -250,7 +250,7 @@ function CleanModeVisual() {
         </div>
         <div className="relative mt-4 h-[9.5rem]">
           <div className="wn-density-pane wn-density-clean overflow-hidden rounded-2xl border border-ink/[0.08] bg-white p-3">
-            <p className="text-[10px] font-semibold text-ink">Today at a glance</p>
+            <p className="font-display text-[11px] font-bold text-ink">Welcome, Alex</p>
             <div className="mt-2 grid grid-cols-2 gap-1.5">
               <div className="glass-violet rounded-xl p-2 text-white">
                 <p className="text-[8px] text-white/80">Top pick</p>
@@ -295,12 +295,62 @@ function CleanModeVisual() {
   );
 }
 
+function CustomizeVisual() {
+  return (
+    <MiniWindow title="Let’s customize your experience">
+      <div className="wn-customize-stage relative bg-surface p-4">
+        <p className="relative h-4 text-[10px] font-semibold uppercase tracking-widest text-violet">
+          <span className="wn-customize-step wn-customize-s1">Step 1 of 3</span>
+          <span className="wn-customize-step wn-customize-s2">Step 2 of 3</span>
+          <span className="wn-customize-step wn-customize-s3">Step 3 of 3</span>
+        </p>
+        <div className="relative mt-3 h-[8.6rem]">
+          <div className="wn-customize-pane wn-customize-p1">
+            <p className="font-display text-sm font-bold text-ink">Bogen mode</p>
+            <p className="mt-1 text-[11px] text-ink-soft">Question marks next to each feature.</p>
+            <div className="mt-3 flex gap-2">
+              <span className="glass-violet rounded-full px-3 py-1 text-[11px] font-semibold text-white">
+                On
+              </span>
+              <span className="rounded-full border border-ink/10 px-3 py-1 text-[11px] font-semibold text-ink-soft">
+                Off
+              </span>
+            </div>
+          </div>
+          <div className="wn-customize-pane wn-customize-p2">
+            <p className="font-display text-sm font-bold text-ink">Appearance</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="rounded-xl bg-[#12192c] p-3 ring-1 ring-violet">
+                <p className="text-[10px] font-semibold text-white">Dark</p>
+              </div>
+              <div className="rounded-xl bg-[#f4f6fb] p-3 ring-1 ring-ink/10">
+                <p className="text-[10px] font-semibold text-ink">Light</p>
+              </div>
+            </div>
+          </div>
+          <div className="wn-customize-pane wn-customize-p3">
+            <p className="font-display text-sm font-bold text-ink">Clean vs Normal</p>
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <span className="text-xs font-semibold text-ink">Clean</span>
+              <span className="tvm-switch wn-density-switch" aria-hidden>
+                <span className="tvm-switch-thumb" />
+              </span>
+              <span className="text-xs font-semibold text-ink">Normal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </MiniWindow>
+  );
+}
+
 const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   bogen: BogenVisual,
   events: EventsVisual,
   "account-score": AccountScoreVisual,
   "portfolio-2": PortfolioTwoVisual,
   "clean-mode": CleanModeVisual,
+  customize: CustomizeVisual,
 };
 
 export function ReleaseFeatureVisual({ id }: { id: ReleaseFeatureVisualId }) {

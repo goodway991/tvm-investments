@@ -100,7 +100,7 @@ service cloud.firestore {
           "uid", "email", "displayName", "createdAt", "updatedAt",
           "tosVersion", "tosAcceptedAt", "privacyAcceptedAt",
           "firstName", "lastName", "tourCompletedAt", "seenRelease", "seenTour",
-          "newSeen"
+          "newSeen", "country", "timeZone"
         ])
         && data.keys().hasAll([
           "uid", "email", "displayName", "createdAt", "updatedAt"
@@ -156,6 +156,22 @@ service cloud.firestore {
         && (
           !data.keys().hasAny(["newSeen"])
           || validNewSeen(data.newSeen)
+        )
+        && (
+          !data.keys().hasAny(["country"])
+          || (
+            data.country is string
+            && data.country.size() == 2
+            && data.country.matches("^[A-Z]{2}$")
+          )
+        )
+        && (
+          !data.keys().hasAny(["timeZone"])
+          || (
+            data.timeZone is string
+            && data.timeZone.size() >= 3
+            && data.timeZone.size() <= 64
+          )
         );
     }
 
@@ -656,6 +672,11 @@ service cloud.firestore {
     }
 
     match /site/maintenance {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /site/releases {
       allow read: if true;
       allow write: if false;
     }

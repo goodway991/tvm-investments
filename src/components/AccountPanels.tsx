@@ -11,7 +11,9 @@ import { useExperience } from "@/components/ExperienceProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
-import { showBeta3Labs, showCustomizeExperience } from "@/lib/beta-labs";
+import { showBeta3Labs, showCustomizeExperience, showTvm10Labs } from "@/lib/beta-labs";
+import { LocalePicker } from "@/components/LocalePicker";
+import { guessLocale } from "@/lib/locales";
 import { RELEASE_ISO, releaseVisibleOn } from "@/lib/site-era";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
@@ -363,6 +365,7 @@ export function SettingsPanel() {
     positions,
     logout,
     updateDisplayName,
+    updateLocale,
   } = useAuth();
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
@@ -378,6 +381,10 @@ export function SettingsPanel() {
   const [lastName, setLastName] = useState("");
   const [nameBusy, setNameBusy] = useState(false);
   const [nameError, setNameError] = useState("");
+  const guess = guessLocale();
+  const [country, setCountry] = useState(profile?.country || guess.country);
+  const [timeZone, setTimeZone] = useState(profile?.timeZone || guess.timeZone);
+  const [localeBusy, setLocaleBusy] = useState(false);
 
   function startEditName() {
     setFirstName(profile?.firstName || "");
@@ -563,6 +570,36 @@ export function SettingsPanel() {
         </button>
       </div>
 
+      {showTvm10Labs() ? (
+        <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+          <p className="font-semibold text-ink">Country and time zone</p>
+          <p className="mt-1">
+            Saved to your account. Ultra uses 9:00 in this zone for good morning.
+          </p>
+          <div className="mt-4">
+            <LocalePicker
+              country={country}
+              timeZone={timeZone}
+              onCountry={setCountry}
+              onTimeZone={setTimeZone}
+            />
+          </div>
+          <button
+            type="button"
+            disabled={localeBusy}
+            onClick={() => {
+              setLocaleBusy(true);
+              void updateLocale(country, timeZone).finally(() =>
+                setLocaleBusy(false),
+              );
+            }}
+            className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {localeBusy ? "Saving…" : "Save location"}
+          </button>
+        </div>
+      ) : null}
+
       {era.features.darkMode ? (
         <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
           <p className="flex items-center gap-2 font-semibold text-ink">
@@ -678,10 +715,15 @@ export function SettingsPanel() {
         <div className="mt-3 space-y-2">
           {[...RELEASES]
             .reverse()
-            .filter((release) =>
-              (showBeta3Labs() || release.id !== "beta-3") &&
-              releaseVisibleOn(RELEASE_ISO[release.id] ?? "9999-99-99", archiveDate),
-            )
+            .filter((release) => {
+              if (!showTvm10Labs() && release.id === "tvm-1") {
+                return false;
+              }
+              return releaseVisibleOn(
+                RELEASE_ISO[release.id] ?? "9999-99-99",
+                archiveDate,
+              );
+            })
             .map((release) => (
               <VersionCard
                 key={release.id}

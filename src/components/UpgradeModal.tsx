@@ -6,19 +6,31 @@ import { useAuth } from "@/components/AuthProvider";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { PlanComparisonTable } from "@/components/PlanComparisonTable";
 import { TVMIcon } from "@/components/TVMBrand";
-import { PLAN_PRICES, yearlySavingsPercent, type BillingInterval } from "@/lib/plans";
+import { showTvm10Labs } from "@/lib/beta-labs";
+import {
+  priceFor,
+  yearlySavingsPercent,
+  type BillingInterval,
+  type PaidPlanId,
+} from "@/lib/plans";
 import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 
 export function UpgradeModal({ onClose }: { onClose: () => void }) {
   const { user, entitlement } = useAuth();
+  const showUltra = showTvm10Labs();
+  const alreadyPro = entitlement.plan === "pro";
+  const alreadyUltra = entitlement.plan === "ultra";
+  const [pickedPlan, setPickedPlan] = useState<PaidPlanId>(
+    alreadyUltra ? "ultra" : "pro",
+  );
   const [billing, setBilling] = useState<BillingInterval>("monthly");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const price = PLAN_PRICES[billing];
-  const alreadyPro = entitlement.plan === "pro";
-  const alreadyUltra = entitlement.plan === "ultra";
-  const savePercent = yearlySavingsPercent();
+  const price = priceFor(pickedPlan, billing);
+  const savePercent = yearlySavingsPercent(pickedPlan);
+  const glowClass =
+    pickedPlan === "ultra" ? "ultra-profile-glow-move" : "pro-profile-glow-move";
 
   async function startCheckout() {
     setError("");
@@ -27,7 +39,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ interval: billing }),
+        body: JSON.stringify({ interval: billing, plan: pickedPlan }),
       });
       const payload = (await response.json()) as { url?: string; error?: string };
       if (payload.url) {
@@ -64,15 +76,21 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
                   <UltraShinePhrase>Your plan</UltraShinePhrase>
                 ) : alreadyPro ? (
                   "Your plan"
+                ) : showUltra ? (
+                  <ProGlowText>Pick a plan</ProGlowText>
                 ) : (
                   <ProGlowText>Free vs Pro</ProGlowText>
                 )}
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
-                <ProGlowText>
-                  Pro unlocks separate short-term and long-term lists, richer culture
-                  write-ups, larger watchlists, and full backtests.
-                </ProGlowText>
+                {showUltra ? (
+                  "Tap Pro or Ultra in the table. Monthly and yearly prices follow that plan."
+                ) : (
+                  <ProGlowText>
+                    Pro unlocks separate short-term and long-term lists, richer culture
+                    write-ups, larger watchlists, and full backtests.
+                  </ProGlowText>
+                )}
               </p>
             </div>
             <button
@@ -96,10 +114,12 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
                 key={value}
                 type="button"
                 onClick={() => setBilling(value)}
-                className={`relative rounded-full px-5 py-2 text-sm font-semibold transition-all ${
+                className={`relative rounded-full px-5 py-2 text-sm font-semibold transition-all ${glowClass} ${
                   billing === value
-                    ? "glass-violet text-white"
-                    : "bg-white/60 text-ink-soft hover:text-ink"
+                    ? pickedPlan === "ultra"
+                      ? "text-white"
+                      : "text-ink"
+                    : "opacity-70"
                 }`}
               >
                 {label}
@@ -120,8 +140,8 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
               </p>
               <p className="mt-1 text-sm text-ink-soft">
                 {billing === "yearly"
-                  ? `$${PLAN_PRICES.yearly.billed} billed once a year · $${PLAN_PRICES.yearly.perMonth}/month effective`
-                  : `$${PLAN_PRICES.monthly.billed} billed each month`}
+                  ? `$${price.billed} billed once a year · $${price.perMonth}/month effective`
+                  : `$${price.billed} billed each month`}
               </p>
             </div>
 
@@ -129,7 +149,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
               <p className="ultra-profile-glow rounded-full px-6 py-3 text-center text-sm font-semibold">
                 Currently on <UltraShinePhrase>Ultra</UltraShinePhrase>
               </p>
-            ) : alreadyPro ? (
+            ) : alreadyPro && pickedPlan === "pro" ? (
               <p className="pro-profile-glow rounded-full bg-transparent px-6 py-3 text-center text-sm font-semibold">
                 Currently on <ProGlowText>Pro</ProGlowText>
               </p>
@@ -138,15 +158,21 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
                 type="button"
                 onClick={startCheckout}
                 disabled={loading}
-                className="pro-profile-glow rounded-full bg-transparent px-7 py-3.5 text-sm font-semibold transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                className={`${glowClass} rounded-full bg-transparent px-7 py-3.5 text-sm font-semibold transition-transform hover:-translate-y-0.5 disabled:opacity-60`}
               >
-                {loading ? "Opening Stripe…" : <ProGlowText>Upgrade to Pro</ProGlowText>}
+                {loading ? (
+                  "Opening Stripe…"
+                ) : pickedPlan === "ultra" ? (
+                  <UltraShinePhrase>Upgrade to Ultra</UltraShinePhrase>
+                ) : (
+                  <ProGlowText>Upgrade to Pro</ProGlowText>
+                )}
               </button>
             ) : (
               <Link
                 href="/login"
                 onClick={onClose}
-                className="pro-profile-glow rounded-full bg-transparent px-7 py-3.5 text-center text-sm font-semibold transition-transform hover:-translate-y-0.5"
+                className={`${glowClass} rounded-full bg-transparent px-7 py-3.5 text-center text-sm font-semibold transition-transform hover:-translate-y-0.5`}
               >
                 Log in to upgrade
               </Link>
@@ -166,7 +192,11 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
         </p>
       }
     >
-      <PlanComparisonTable currentPlan={entitlement.plan} />
+      <PlanComparisonTable
+        currentPlan={entitlement.plan}
+        selectedPlan={pickedPlan}
+        onSelectPlan={setPickedPlan}
+      />
     </OverlaySheet>
   );
 }
