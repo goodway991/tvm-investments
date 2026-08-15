@@ -1079,8 +1079,8 @@ html.dark .plan-current-pane {
   background-size: 200% 100%;
   background-clip: text;
   -webkit-background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
   box-shadow: none !important;
   filter: none;
   animation: pro-border-flow 3.8s linear infinite;

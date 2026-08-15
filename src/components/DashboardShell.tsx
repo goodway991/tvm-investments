@@ -100,9 +100,10 @@ function ProfileNavLink({
             {pro ? <ProGlowPhrase>{name}</ProGlowPhrase> : name}
           </span>
           {pro ? (
-            <ProGlowPhrase className="mt-1 block text-sm leading-tight">
-              Pro account
-            </ProGlowPhrase>
+            <span className="pro-glow-wrap mt-1 block text-sm leading-tight">
+              <span className="pro-name-glow">Pro</span>{" "}
+              <span className="pro-name-glow">account</span>
+            </span>
           ) : null}
         </span>
       )}
@@ -137,7 +138,10 @@ function UpgradeNavCard({
     ) : (
       <span className="pointer-events-none relative z-[1] min-w-0">
         <span className="block text-sm font-semibold leading-tight">
-          <ProGlowPhrase>Pro account</ProGlowPhrase>
+          <span className="pro-glow-wrap">
+            <span className="pro-name-glow">Pro</span>{" "}
+            <span className="pro-name-glow">account</span>
+          </span>
         </span>
         <span className="block text-[11px] font-medium leading-tight text-white/80">
           Unlocked

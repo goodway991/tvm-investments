@@ -20,12 +20,12 @@ export function ProGlowText({
   children: string | (string | number)[];
 }) {
   const text = Array.isArray(children) ? children.join("") : children;
-  const parts = String(text).split(/(\bPro\b)/);
+  const parts = String(text).split(/(\bPro account\b|\bPro\b)/);
   return (
     <>
       {parts.map((part, index) =>
-        part === "Pro" ? (
-          <ProGlowPhrase key={index}>Pro</ProGlowPhrase>
+        part === "Pro" || part === "Pro account" ? (
+          <ProGlowPhrase key={index}>{part}</ProGlowPhrase>
         ) : part ? (
           <Fragment key={index}>{part}</Fragment>
         ) : null,
