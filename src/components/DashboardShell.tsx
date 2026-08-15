@@ -45,6 +45,10 @@ function accountLabel(
   });
 }
 
+function navWindowClass(active: boolean, inactive = "text-ink-soft hover:bg-ink/[0.04] hover:text-ink") {
+  return active ? "nav-window-active text-ink" : inactive;
+}
+
 function ProfileNavLink({
   compact = false,
   name,
@@ -64,15 +68,12 @@ function ProfileNavLink({
     <BogenHit
       id="nav-account"
       compact={compact}
-      onDark={active && !pro}
-      className={`rounded-2xl text-left duration-300 ${
+      className={`rounded-2xl text-left ${
         compact ? "h-14 justify-center px-2" : "min-h-[72px] gap-3.5 px-3.5 py-3.5"
       } ${
-        active && !pro
-          ? "glass-violet text-white"
-          : pro
-            ? "bg-transparent"
-            : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
+        pro
+          ? "bg-transparent"
+          : navWindowClass(active)
       }`}
     >
       <Link
@@ -83,9 +84,9 @@ function ProfileNavLink({
         aria-label={pro ? `${name}, Pro account` : name}
       />
       <span
-        className={`pointer-events-none relative z-[1] grid shrink-0 place-items-center rounded-full ${
+        className={`pointer-events-none relative z-[1] grid shrink-0 place-items-center rounded-full bg-ink/[0.08] ${
           compact ? "h-11 w-11" : "h-12 w-12"
-        } ${active && !pro ? "bg-white/20" : "bg-ink/[0.08]"}`}
+        }`}
       >
         <TVMIcon name="profile" size={compact ? 22 : 26} />
       </span>
@@ -208,15 +209,12 @@ function PreviewSidebar({
         <BogenHit
           id="nav-archive"
           compact={compact}
-          onDark={archiveRoute && !archiveLive}
-          className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+          className={`rounded-2xl py-3 text-left text-[15px] font-medium ${
             compact ? "justify-center px-2" : "gap-3.5 px-4"
           } ${
             archiveLive
               ? "archive-widget-live bg-sky-50 text-ink"
-              : archiveRoute
-                ? "glass-violet text-white"
-                : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
+              : navWindowClass(archiveRoute)
           }`}
         >
           <Link
@@ -253,14 +251,9 @@ function PreviewSidebar({
         <BogenHit
           id="nav-horizon"
           compact={compact}
-          onDark={horizonActive}
-          className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+          className={`rounded-2xl py-3 text-left text-[15px] font-medium ${
             compact ? "justify-center px-2" : "gap-3.5 px-4"
-          } ${
-            horizonActive
-              ? "glass-violet text-white"
-              : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
-          }`}
+          } ${navWindowClass(horizonActive)}`}
         >
           <Link
             href={withArchiveQuery("/dashboard/horizon", archive)}
@@ -421,14 +414,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 id={item.bogen}
                 compact={compact}
-                onDark={active}
-                className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
+                className={`rounded-2xl py-3 text-left text-[15px] font-medium ${
                   compact ? "justify-center px-2" : "gap-3.5 px-4"
-                } ${
-                  active
-                    ? "glass-violet text-white"
-                    : "text-ink-soft hover:bg-ink/[0.04] hover:text-ink"
-                }`}
+                } ${navWindowClass(active)}`}
               >
                 <Link
                   href={withArchiveQuery(item.href, archive)}
@@ -519,12 +507,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     <BogenHit
                       key={item.href}
                       id={item.bogen}
-                      onDark={active}
-                      className={`gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium duration-300 ${
-                        active
-                          ? "glass-violet text-white"
-                          : "text-ink-soft hover:bg-violet/[0.05] hover:text-ink"
-                      }`}
+                      className={`gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium ${navWindowClass(
+                        active,
+                        "text-ink-soft hover:bg-violet/[0.05] hover:text-ink",
+                      )}`}
                     >
                       <Link
                         href={withArchiveQuery(item.href, archive)}
