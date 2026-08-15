@@ -1238,26 +1238,26 @@ html.dark .plan-current-pane.plan-ultra-pane {
   display: inline;
   font-weight: 800;
   line-height: 1.05;
+  background-color: #000;
   background-image: linear-gradient(
     105deg,
-    #c8c8c8 0%,
-    #e8e8e8 22%,
-    #ffffff 42%,
-    #ffffff 50%,
-    #e8e8e8 72%,
-    #c8c8c8 100%
+    #000 0%,
+    #000 42%,
+    #fff 50%,
+    #000 58%,
+    #000 100%
   );
-  background-size: 340% 100%;
+  background-size: 200% 100%;
   background-repeat: no-repeat;
   background-clip: text;
   -webkit-background-clip: text;
-  color: transparent;
+  color: #000;
   -webkit-text-fill-color: transparent;
   filter:
     drop-shadow(0 0 4px rgba(255, 255, 255, 0.95))
     drop-shadow(0 0 14px rgba(255, 255, 255, 0.55))
     drop-shadow(0 0 28px rgba(255, 255, 255, 0.28));
-  animation: ultra-shine-sweep 7.5s ease-in-out infinite alternate;
+  animation: ultra-shine-sweep 3.2s linear infinite;
 }
 
 @keyframes ultra-shine-sweep {

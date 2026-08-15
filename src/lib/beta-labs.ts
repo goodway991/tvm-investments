@@ -7,3 +7,8 @@ export function showBeta3Labs() {
   if (vercel === "production" || vercel === "preview") return false;
   return true;
 }
+
+/** Clean/Normal customize sheet — admin on localhost labs only. Never on Vercel. */
+export function showCustomizeExperience(role?: string) {
+  return showBeta3Labs() && role === "admin";
+}

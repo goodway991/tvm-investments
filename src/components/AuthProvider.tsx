@@ -43,7 +43,11 @@ import {
 } from "@/lib/person-name";
 import { parseTicker } from "@/lib/ticker";
 import { overlayLabsPlan, planHasPro, watchlistLimitForPlan, type PlanId } from "@/lib/plans";
-import { RELEASE_ACK_ID } from "@/lib/release-notes";
+import {
+  laterReleaseAck,
+  RELEASE_ACK_ID,
+  releaseIsAcknowledged,
+} from "@/lib/release-notes";
 import { CURRENT_TOUR_ID } from "@/lib/virtual-tour";
 import {
   isNewBadgeActive,
@@ -448,10 +452,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const tourIsPending =
                 !roleIsAdmin && completedTour !== CURRENT_TOUR_ID;
               setTourPending(tourIsPending);
-              const seen =
-                (typeof data.seenRelease === "string" && data.seenRelease) ||
-                readReleaseSeen(nextUser.uid);
-              setReleasePending(!tourIsPending && seen !== RELEASE_ACK_ID);
+              const seen = laterReleaseAck(
+                typeof data.seenRelease === "string" ? data.seenRelease : "",
+                readReleaseSeen(nextUser.uid),
+              );
+              setReleasePending(
+                !tourIsPending && !releaseIsAcknowledged(seen),
+              );
             },
             () => {
               setProfile(profileFromAuth(nextUser));
@@ -629,8 +636,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     writeTourSeen(user.uid, CURRENT_TOUR_ID);
     setTourPending(false);
-    const seenRelease = readReleaseSeen(user.uid);
-    setReleasePending(seenRelease !== RELEASE_ACK_ID);
+    const seenRelease = laterReleaseAck(
+      readReleaseSeen(user.uid),
+      profile?.seenRelease || "",
+    );
+    setReleasePending(!releaseIsAcknowledged(seenRelease));
     if (!db) return;
     try {
       await updateDoc(doc(db, "users", user.uid), {
@@ -641,23 +651,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (tourError) {
       console.error(tourError);
     }
-  }, [user]);
+  }, [profile?.seenRelease, user]);
 
   const acknowledgeRelease = useCallback(async () => {
     const db = getClientFirestore();
     if (!user) return;
-    writeReleaseSeen(user.uid, RELEASE_ACK_ID);
+    const next = laterReleaseAck(
+      laterReleaseAck(readReleaseSeen(user.uid), profile?.seenRelease || ""),
+      RELEASE_ACK_ID,
+    );
+    writeReleaseSeen(user.uid, next);
     setReleasePending(false);
     if (!db) return;
     try {
       await updateDoc(doc(db, "users", user.uid), {
-        seenRelease: RELEASE_ACK_ID,
+        seenRelease: next,
         updatedAt: serverTimestamp(),
       });
     } catch (releaseError) {
       console.error(releaseError);
     }
-  }, [user]);
+  }, [profile?.seenRelease, user]);
 
   const isFeatureNew = useCallback(
     (feature: NewFeatureId) => {

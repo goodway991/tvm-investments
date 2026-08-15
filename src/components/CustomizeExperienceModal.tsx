@@ -9,7 +9,7 @@ import { useExperience } from "@/components/ExperienceProvider";
 import { useAuth } from "@/components/AuthProvider";
 import { useTour } from "@/components/TourProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
-import { showBeta3Labs } from "@/lib/beta-labs";
+import { showBeta3Labs, showCustomizeExperience } from "@/lib/beta-labs";
 
 function MiniChrome({
   title,
@@ -99,7 +99,7 @@ export function CustomizeExperienceModal() {
   } = useExperience();
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const { appearance, setAppearance } = useTheme();
-  const { user, loading, tourPending, giftPending } = useAuth();
+  const { user, loading, tourPending, giftPending, entitlement } = useAuth();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
   const [step, setStep] = useState(0);
@@ -110,7 +110,7 @@ export function CustomizeExperienceModal() {
 
   useEffect(() => {
     if (
-      !showBeta3Labs() ||
+      !showCustomizeExperience(entitlement.role) ||
       !user ||
       loading ||
       tourPending ||
@@ -126,6 +126,7 @@ export function CustomizeExperienceModal() {
   }, [
     customizeOpen,
     customizeSeen,
+    entitlement.role,
     giftPending,
     loading,
     openCustomize,
@@ -136,6 +137,7 @@ export function CustomizeExperienceModal() {
   ]);
 
   if (!customizeOpen || rewind) return null;
+  if (!showCustomizeExperience(entitlement.role)) return null;
 
   const labs = showBeta3Labs();
   const lastStep = labs ? 2 : 1;

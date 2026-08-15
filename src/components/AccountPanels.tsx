@@ -11,7 +11,7 @@ import { useExperience } from "@/components/ExperienceProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
-import { showBeta3Labs } from "@/lib/beta-labs";
+import { showBeta3Labs, showCustomizeExperience } from "@/lib/beta-labs";
 import { RELEASE_ISO, releaseVisibleOn } from "@/lib/site-era";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
@@ -612,21 +612,23 @@ export function SettingsPanel() {
             Normal
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => openCustomize()}
-          className="mt-3 text-sm font-semibold text-violet"
-        >
-          Customize experience
-        </button>
-        {entitlement.role === "admin" ? (
-          <button
-            type="button"
-            onClick={() => openCustomize()}
-            className="glass-violet mt-3 block rounded-full px-5 py-2.5 text-sm font-semibold text-white"
-          >
-            Let’s get you started
-          </button>
+        {showCustomizeExperience(entitlement.role) ? (
+          <>
+            <button
+              type="button"
+              onClick={() => openCustomize()}
+              className="mt-3 text-sm font-semibold text-violet"
+            >
+              Customize experience
+            </button>
+            <button
+              type="button"
+              onClick={() => openCustomize()}
+              className="glass-violet mt-3 block rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+            >
+              Let’s get you started
+            </button>
+          </>
         ) : null}
       </div>
       ) : null}

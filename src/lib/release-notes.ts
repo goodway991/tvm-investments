@@ -3,6 +3,52 @@ import { showBeta3Labs } from "@/lib/beta-labs";
 export const CURRENT_RELEASE_ID = showBeta3Labs() ? "beta-3" : "beta-2.1";
 export const RELEASE_ACK_ID = showBeta3Labs() ? "beta-3-v2" : "beta-2.1-score";
 
+const RELEASE_ACK_ORDER = [
+  "beta-1",
+  "beta-2",
+  "beta-2.1-score",
+  "beta-2.2",
+  "beta-3-v2",
+];
+
+const RELEASE_ACK_ALIASES: Record<string, string> = {
+  "beta-2.1": "beta-2.1-score",
+  "beta-3": "beta-3-v2",
+};
+
+function normalizeReleaseAck(id: string) {
+  return RELEASE_ACK_ALIASES[id] || id;
+}
+
+function ackIndex(id: string) {
+  return RELEASE_ACK_ORDER.indexOf(normalizeReleaseAck(id));
+}
+
+export function releaseIsAcknowledged(
+  seen: string,
+  required = RELEASE_ACK_ID,
+) {
+  if (!seen) return false;
+  const seenId = normalizeReleaseAck(seen);
+  const needId = normalizeReleaseAck(required);
+  if (seenId === needId) return true;
+  const seenIdx = ackIndex(seenId);
+  const needIdx = ackIndex(needId);
+  if (seenIdx === -1 || needIdx === -1) return false;
+  return seenIdx >= needIdx;
+}
+
+export function laterReleaseAck(left: string, right: string) {
+  if (!left) return right;
+  if (!right) return left;
+  const leftIdx = ackIndex(left);
+  const rightIdx = ackIndex(right);
+  if (leftIdx === -1 && rightIdx === -1) return right;
+  if (leftIdx === -1) return right;
+  if (rightIdx === -1) return left;
+  return leftIdx >= rightIdx ? left : right;
+}
+
 export type ReleaseFeatureVisualId =
   | "bogen"
   | "events"
