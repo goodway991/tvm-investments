@@ -16,6 +16,7 @@ import {
   uniqueStocks,
 } from "@/lib/chart-series";
 import { computeAccountScore } from "@/lib/account-score";
+import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
 
 function signedPercent(value: number) {
