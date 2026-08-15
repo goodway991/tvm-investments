@@ -18,7 +18,6 @@ export type BogenId =
   | "ticker-search"
   | "watchlist-pulse"
   | "todays-movers"
-  | "overview-calculator"
   | "flagged-picks"
   | "brief"
   | "market-events"
@@ -62,7 +61,7 @@ export type BogenTipCopy = {
 export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   "nav-dashboard": {
     title: "Dashboard",
-    what: "Home after you sign in. It summarizes today’s scan: top pick, movers, watchlist pulse, and a quick calculator.",
+    what: "Home after you sign in. It summarizes today’s scan: top pick, movers, watchlist pulse, and flagged picks.",
     how: "Tap a summary card to jump to that page or open a stock sheet. Use search to look up a ticker.",
   },
   "nav-brief": {
@@ -154,11 +153,6 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     title: "Today’s movers",
     what: "A short list of the largest session moves, ranked by percent change versus the previous close.",
     how: "Tap a row to open that stock. View all opens the full movers page.",
-  },
-  "overview-calculator": {
-    title: "Quick calculator",
-    what: "Illustrative dollar outcomes if a name moved ±5% or ±10%. Not a recommendation.",
-    how: "Type a dollar amount. The four boxes update. For a named ticker, use the full calculator on this page or Portfolio.",
   },
   "flagged-picks": {
     title: "Flagged picks",

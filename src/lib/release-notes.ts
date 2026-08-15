@@ -1,7 +1,7 @@
 import { showTvm10Labs } from "@/lib/beta-labs";
 
 export const CURRENT_RELEASE_ID = showTvm10Labs() ? "tvm-1" : "beta-3";
-export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-v1" : "beta-3-live";
+export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-v1" : "beta-3-reopen";
 
 const RELEASE_ACK_ORDER = [
   "beta-1",
@@ -10,6 +10,7 @@ const RELEASE_ACK_ORDER = [
   "beta-2.2",
   "beta-3-v2",
   "beta-3-live",
+  "beta-3-reopen",
   "tvm-1-v1",
 ];
 

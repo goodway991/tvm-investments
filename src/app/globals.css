@@ -404,6 +404,21 @@ html.dark .hover\:bg-white\/60:hover {
   background-color: rgb(255 255 255 / 0.08);
 }
 
+html.dark .bg-white\/75,
+html.dark .bg-white\/70,
+html.dark .bg-white\/50,
+html.dark .dashboard-research .bg-white\/75,
+html.dark .dashboard-research .bg-white\/70,
+html.dark .dashboard-research .bg-white\/50 {
+  background-color: rgba(18, 26, 46, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.dark .text-amber-600,
+html.dark .text-amber-700 {
+  color: #fbbf24 !important;
+}
+
 html.dark .recharts-cartesian-axis-tick-value,
 html.dark .recharts-text {
   fill: #d2dcf0 !important;

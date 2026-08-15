@@ -234,7 +234,7 @@ export function TopPicks({
                         {fundamentalRows(pick).map(([label, value]) => (
                           <div
                             key={label}
-                            className="flex items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2.5"
+                            className="sheet-well flex items-center justify-between gap-3 rounded-xl px-3 py-2.5"
                           >
                             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet">
                               {label}
@@ -347,7 +347,7 @@ function TextRows({ lines }: { lines: string[] }) {
       {lines.map((line, index) => (
         <p
           key={`${line}-${index}`}
-          className="rounded-xl bg-white/75 px-3 py-2.5 text-sm leading-relaxed text-ink"
+          className="sheet-well rounded-xl px-3 py-2.5 text-sm leading-relaxed text-ink"
         >
           {line}
         </p>
@@ -370,7 +370,7 @@ function SignalGrid({
         {signals.map((signal) => (
           <div
             key={signal.strategyId}
-            className="flex items-start justify-between gap-2 rounded-xl bg-white/75 px-3 py-2.5"
+            className="sheet-well flex items-start justify-between gap-2 rounded-xl px-3 py-2.5"
           >
             <div>
               <p className="font-display text-sm font-bold text-ink">{signal.strategyName}</p>

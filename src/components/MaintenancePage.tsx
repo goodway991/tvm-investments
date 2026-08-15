@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { PublicShell } from "@/components/PublicShell";
 
 export function MaintenancePage() {
@@ -21,6 +22,9 @@ export function MaintenancePage() {
             The research desk is briefly offline. Check back later — landing and
             about pages stay open in the meantime.
           </p>
+          <div className="mx-auto mt-6 max-w-sm text-left">
+            <MaintenanceNavCard />
+          </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/"

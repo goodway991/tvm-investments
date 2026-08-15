@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
 import { LegalFooter } from "@/components/LegalFooter";
+import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { ProGlowText } from "@/components/ProGlowText";
 import { useUpgrade } from "@/components/UpgradeProvider";
 
@@ -224,23 +225,26 @@ export function PublicShell({
           ))}
         </div>
 
-        <div className="glass mt-auto rounded-2xl p-4">
-          <p className="font-display text-sm font-semibold text-ink">
-            <ProGlowText>Go Pro</ProGlowText>
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-            Unlock live-time screening and full backtests.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              openUpgrade();
-            }}
-            className="glass-violet mt-3 block w-full rounded-full py-2 text-center text-sm font-medium text-white transition-transform hover:-translate-y-0.5"
-          >
-            Upgrade
-          </button>
+        <div className="mt-auto space-y-2">
+          <MaintenanceNavCard />
+          <div className="glass rounded-2xl p-4">
+            <p className="font-display text-sm font-semibold text-ink">
+              <ProGlowText>Go Pro</ProGlowText>
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+              Unlock live-time screening and full backtests.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                openUpgrade();
+              }}
+              className="glass-violet mt-3 block w-full rounded-full py-2 text-center text-sm font-medium text-white transition-transform hover:-translate-y-0.5"
+            >
+              Upgrade
+            </button>
+          </div>
         </div>
       </aside>
 

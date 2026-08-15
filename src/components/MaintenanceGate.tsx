@@ -79,7 +79,7 @@ function writeDismissed(fingerprint: string) {
 }
 
 export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
-  const { warning, text, start, end } = useMaintenance();
+  const { warning, lock, text, start, end } = useMaintenance();
   const [open, setOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -99,7 +99,7 @@ export function MaintenanceNavCard({ compact = false }: { compact?: boolean }) {
     };
   }, [open]);
 
-  if (!warning) return null;
+  if (!warning && !lock) return null;
   const detail = end
     ? `Until ${end}`
     : start
@@ -234,9 +234,13 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
     }
   }, [isAdmin, loading, pathname, resolved.lock, router, user]);
 
+  const onLockPage = pathname === "/maintenance";
   const fingerprint = useMemo(() => warningFingerprint(site), [site]);
-  const warningOn = resolved.warning;
-  const showWarning = mounted && warningOn && dismissed !== fingerprint;
+  const warningOn = resolved.warning || resolved.lock;
+  const showWarning =
+    mounted &&
+    warningOn &&
+    (onLockPage || dismissed !== fingerprint);
   const warningText = formatWarningText(site);
   const maintenanceValue = useMemo(
     () => ({
@@ -281,14 +285,16 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
     showWarning && typeof document !== "undefined" ? (
       <div ref={bannerRef} role="status" className="site-warning">
         <p className="site-warning-text">{warningText}</p>
-        <button
-          type="button"
-          className="site-warning-close"
-          aria-label="Dismiss maintenance notice"
-          onClick={dismiss}
-        >
-          <TVMIcon name="close" size={16} />
-        </button>
+        {onLockPage ? null : (
+          <button
+            type="button"
+            className="site-warning-close"
+            aria-label="Dismiss maintenance notice"
+            onClick={dismiss}
+          >
+            <TVMIcon name="close" size={16} />
+          </button>
+        )}
       </div>
     ) : null;
 

@@ -101,8 +101,16 @@ export function CustomizeExperienceModal() {
   } = useExperience();
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const { appearance, setAppearance } = useTheme();
-  const { user, loading, tourPending, giftPending, entitlement, profile, updateLocale } =
-    useAuth();
+  const {
+    user,
+    loading,
+    tourPending,
+    giftPending,
+    releasePending,
+    entitlement,
+    profile,
+    updateLocale,
+  } = useAuth();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
   const [step, setStep] = useState(0);
@@ -130,6 +138,7 @@ export function CustomizeExperienceModal() {
       tourOpen ||
       rewind ||
       giftPending ||
+      releasePending ||
       customizeOpen
     ) {
       return;
@@ -143,6 +152,7 @@ export function CustomizeExperienceModal() {
     giftPending,
     loading,
     openCustomize,
+    releasePending,
     profile?.timeZone,
     rewind,
     tourOpen,
@@ -150,7 +160,7 @@ export function CustomizeExperienceModal() {
     user,
   ]);
 
-  if (!customizeOpen || rewind) return null;
+  if (!customizeOpen || rewind || releasePending) return null;
   if (!showCustomizeExperience(entitlement.role)) return null;
 
   const tvm10 = showTvm10Labs();
@@ -326,7 +336,7 @@ export function CustomizeExperienceModal() {
               <NormalDashboardPreview />
               <p className="mt-3 font-display text-base font-bold text-ink">Normal</p>
               <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-                The full dashboard — every card, chart, calculator, and flagged pick.
+                The full dashboard — every card, chart, and flagged pick.
               </p>
             </button>
           </div>

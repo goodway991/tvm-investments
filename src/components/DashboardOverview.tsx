@@ -89,7 +89,6 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
   const clean = density === "clean" && !rewind;
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [investment, setInvestment] = useState(0);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
   const allStocks = useMemo(
@@ -488,69 +487,12 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
           </Link>
         </article>
       ) : (
-      <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-stretch">
-        <article className="glass-strong w-full shrink-0 rounded-[24px] p-6 md:w-[22rem]">
-          <div className="glass-violet relative rounded-2xl p-5 text-white">
-            <BogenTip
-              id="overview-calculator"
-              tone="onDark"
-              className="absolute right-3 top-3"
-            />
-            <div className="flex items-center justify-between">
-              <label htmlFor="overview-investment" className="text-xs text-white/80">
-                Your investment
-              </label>
-              <span className="text-xs text-white/80">USD</span>
-            </div>
-            <div className="mt-1 flex items-center gap-1">
-              <span className="font-display text-2xl font-bold">$</span>
-              <input
-                id="overview-investment"
-                value={investment}
-                min={0}
-                onChange={(event) =>
-                  setInvestment(Math.max(0, Number(event.target.value) || 0))
-                }
-                className="w-full bg-transparent font-display text-2xl font-bold outline-none placeholder:text-white/50"
-                type="number"
-              />
-            </div>
-          </div>
-          <p className="mt-4 text-xs font-medium text-ink-soft">Projected outcomes</p>
-          <div className="mt-2 grid grid-cols-2 gap-2.5">
-            {[-10, -5, 5, 10].map((percent) => (
-              <div
-                key={percent}
-                className={`rounded-xl p-3 ${
-                  percent < 0 ? "bg-coral/10" : "bg-emerald-400/10"
-                }`}
-              >
-                <p
-                  className={`text-xs font-semibold ${
-                    percent < 0 ? "text-coral" : "text-emerald-600"
-                  }`}
-                >
-                  {percent > 0 ? "+" : ""}
-                  {percent}%
-                </p>
-                <p className="font-display text-base font-bold text-ink">
-                  $
-                  {(investment * (1 + percent / 100)).toLocaleString(undefined, {
-                    maximumFractionDigits: 0,
-                  })}
-                </p>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <div className="min-w-0 flex-1">
+        <div className="mt-4">
           <FlaggedPicksPanel
             picks={snapshot.topPicks}
             onOpen={setSelectedSymbol}
           />
         </div>
-      </div>
       )}
 
       {selectedStock && (

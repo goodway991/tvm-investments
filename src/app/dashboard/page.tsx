@@ -4,7 +4,7 @@ import { getDashboardSnapshot } from "@/lib/snapshot";
 
 export const metadata: Metadata = {
   title: "Dashboard — TVM Investments",
-  description: "Daily movers, composite signals, research reports, and investment scenarios.",
+  description: "Daily movers, composite signals, and research reports.",
 };
 
 export default async function DashboardPage({

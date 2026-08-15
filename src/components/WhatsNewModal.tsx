@@ -7,7 +7,6 @@ import { useAuth } from "@/components/AuthProvider";
 import { useMaintenance } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { CURRENT_RELEASE } from "@/lib/release-notes";
-import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 export function WhatsNewModal() {
@@ -15,15 +14,13 @@ export function WhatsNewModal() {
   const { lock: maintenanceLock } = useMaintenance();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
-  const { customizeOpen } = useExperience();
 
   if (
     !releasePending ||
     tourOpen ||
     rewind ||
     maintenanceLock ||
-    giftPending ||
-    customizeOpen
+    giftPending
   ) {
     return null;
   }

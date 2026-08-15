@@ -191,7 +191,7 @@ function DiveWidget({ block }: { block: DiveBlock }) {
           {block.stats.map((stat, index) => (
             <div
               key={`${stat.symbol}-${index}`}
-              className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl bg-white/75 px-3 py-2.5"
+              className="sheet-well flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-3 py-2.5"
             >
               <span className="font-display text-sm font-bold text-ink">{stat.symbol}</span>
               <span className="font-display text-sm font-semibold text-ink">
@@ -230,7 +230,7 @@ function DiveWidget({ block }: { block: DiveBlock }) {
           {block.headlines.map((headline, index) => (
             <li
               key={`${headline}-${index}`}
-              className="rounded-xl bg-white/70 px-3 py-2 text-sm leading-relaxed text-ink"
+              className="sheet-well rounded-xl px-3 py-2 text-sm leading-relaxed text-ink"
             >
               {headline}
             </li>
@@ -310,7 +310,7 @@ export function TechSector({
               onClick={() => setIndex((value) => Math.max(0, value - 1))}
               className={`grid h-9 w-9 place-items-center rounded-full ${
                 atStart
-                  ? "cursor-default text-zinc-300"
+                  ? "cursor-default text-ink-soft/40"
                   : "glass text-violet hover:-translate-y-0.5 hover:text-violet"
               }`}
               aria-label="Previous sector"
@@ -331,7 +331,7 @@ export function TechSector({
               onClick={() => setIndex((value) => Math.min(deck.length - 1, value + 1))}
               className={`grid h-9 w-9 place-items-center rounded-full ${
                 atEnd
-                  ? "cursor-default text-zinc-300"
+                  ? "cursor-default text-ink-soft/40"
                   : "glass text-violet hover:-translate-y-0.5 hover:text-violet"
               }`}
               aria-label="Next sector"
