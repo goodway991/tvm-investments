@@ -19,6 +19,16 @@ export function FeedbackPanel() {
       setStatus("error");
       return;
     }
+    if (rating < 1) {
+      setError("Pick a rating from 1 to 5 stars.");
+      setStatus("error");
+      return;
+    }
+    if (message.trim().length < 8) {
+      setError("Write between 8 and 4,000 characters.");
+      setStatus("error");
+      return;
+    }
     setStatus("sending");
     setError("");
     try {
@@ -29,11 +39,13 @@ export function FeedbackPanel() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ kind, rating, message }),
+        body: JSON.stringify({ kind, rating, message: message.trim() }),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
       if (!response.ok) {
-        throw new Error(payload.error || "Unable to send feedback.");
+        throw new Error(payload?.error || "Unable to send feedback.");
       }
       setStatus("sent");
       setMessage("");
