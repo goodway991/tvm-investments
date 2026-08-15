@@ -565,7 +565,6 @@ export function SettingsPanel() {
                 onCheckedChange={(dark) => setAppearance(dark ? "dark" : "light")}
                 aria-label="Dark mode"
               />
-              <NewBadge feature="appearance" />
             <span className={`text-sm font-semibold ${resolved === "dark" ? "text-ink" : "text-ink-soft"}`}>
               Dark
             </span>
@@ -603,7 +602,6 @@ export function SettingsPanel() {
             onCheckedChange={(normal) => setDensity(normal ? "normal" : "clean")}
             aria-label="Normal dashboard layout"
           />
-          <NewBadge feature="density" />
           <span className={`text-sm font-semibold ${density === "normal" ? "text-ink" : "text-ink-soft"}`}>
             Normal
           </span>

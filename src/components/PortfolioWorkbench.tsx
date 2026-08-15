@@ -5,6 +5,7 @@ import type { ScreenedStock, StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { StockSearchField, type SearchHit } from "@/components/StockSearchField";
 import { BogenHeading } from "@/components/BogenProvider";
+import { PortfolioAnalysis } from "@/components/PortfolioAnalysis";
 import { POPULAR_WATCHLIST } from "@/lib/watchlist-symbols";
 
 type DraftRow = {
@@ -393,6 +394,8 @@ export function PortfolioWorkbench({
         {message ? <p className="mt-3 text-sm text-emerald-700">{message}</p> : null}
         {error ? <p className="mt-3 text-sm text-coral">{error}</p> : null}
       </section>
+
+      <PortfolioAnalysis stocks={stocks} screened={screened} cash={cashValue} />
 
       <section className="glass-strong rounded-[24px] p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">

@@ -392,7 +392,7 @@ function snapshotForAug13(): DailySnapshot {
       },
       {
         title: "Energy lagged megacap software",
-        region: "Energy",
+        region: "US",
         impact: "bearish",
         summary: "On the sample tape, XOM printed red while AAPL and MSFT held modest gains.",
         date,
