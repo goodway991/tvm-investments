@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ScreenedStock } from "@/types";
 import { BogenHeading } from "@/components/BogenProvider";
+import { pageSlice, StockPager } from "@/components/StockPager";
 
 interface FilterPanelProps {
   initialStocks: ScreenedStock[];
@@ -51,6 +52,7 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [results, setResults] = useState(initialStocks.map(toRow));
   const [find, setFind] = useState("");
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const visible = results.filter((stock) => {
     const needle = find.trim().toLowerCase();
@@ -60,6 +62,11 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
       stock.name.toLowerCase().includes(needle)
     );
   });
+  const paged = pageSlice(visible, page);
+
+  useEffect(() => {
+    setPage(0);
+  }, [find, results]);
 
   async function applyFilters() {
     setLoading(true);
@@ -140,7 +147,9 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
         </button>
       </div>
 
-      <p className="text-sm text-ink-soft mb-4">{visible.length} stocks match</p>
+      <p className="text-sm text-ink-soft mb-4">
+        {visible.length} stocks match · 10 per page
+      </p>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -158,7 +167,7 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
             </tr>
           </thead>
           <tbody>
-            {visible.map((s) => (
+            {paged.slice.map((s) => (
               <tr key={s.symbol} className="border-b border-ink/[0.05]">
                 <td className="py-2 pr-4 font-medium text-ink">{s.symbol}</td>
                 <td className="py-2 pr-4 text-right">{s.peRatio?.toFixed(1) ?? "—"}</td>
@@ -180,6 +189,7 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
           </tbody>
         </table>
       </div>
+      <StockPager page={paged.page} pages={paged.pages} onPage={setPage} />
     </div>
   );
 }

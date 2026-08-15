@@ -55,23 +55,31 @@ export async function saveDailySnapshot(snapshot: DailySnapshot): Promise<boolea
   if (!db) return false;
 
   try {
-    await db.collection("daily_snapshots").doc(snapshot.id).set(snapshot);
-    await pruneOldSnapshots(db);
+    const ref = db.collection("daily_snapshots").doc(snapshot.id);
+    const existing = await ref.get();
+    const sameStamp =
+      existing.exists &&
+      String(existing.data()?.generatedAt || "") === snapshot.generatedAt;
+    await ref.set(snapshot);
+    const hadDate = await writeSnapshotIndex(db, snapshot);
 
-    for (const pick of snapshot.topPicks) {
-      await db.collection("backtest_entries").add({
-        date: snapshot.date,
-        symbol: pick.symbol,
-        pickRank: pick.rank ?? 0,
-        entryPrice: pick.price,
-        compositeScore: pick.compositeScore,
-        return1d: null,
-        return1w: null,
-        return1m: null,
-        spReturn1d: null,
-        spReturn1w: null,
-        spReturn1m: null,
-      } satisfies BacktestEntry);
+    if (!sameStamp && !hadDate) {
+      for (const pick of snapshot.topPicks) {
+        await db.collection("backtest_entries").add({
+          date: snapshot.date,
+          symbol: pick.symbol,
+          pickRank: pick.rank ?? 0,
+          entryPrice: pick.price,
+          compositeScore: pick.compositeScore,
+          return1d: null,
+          return1w: null,
+          return1m: null,
+          spReturn1d: null,
+          spReturn1w: null,
+          spReturn1m: null,
+        } satisfies BacktestEntry);
+      }
+      await refreshBacktestMeta(db);
     }
 
     return true;
@@ -79,6 +87,41 @@ export async function saveDailySnapshot(snapshot: DailySnapshot): Promise<boolea
     console.warn("Firebase snapshot save failed:", error);
     return false;
   }
+}
+
+async function writeSnapshotIndex(
+  db: FirebaseFirestore.Firestore,
+  snapshot: DailySnapshot,
+) {
+  const ref = db.collection("meta").doc("snapshots");
+  const current = await ref.get();
+  const previous = Array.isArray(current.data()?.dates)
+    ? (current.data()!.dates as unknown[]).map(String)
+    : [];
+  const hadDate = previous.includes(snapshot.date);
+  const dates = Array.from(new Set([snapshot.date, ...previous]))
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date))
+    .sort()
+    .reverse()
+    .slice(0, ARCHIVE_KEEP_DAYS);
+  const extra = previous.filter(
+    (date) => !dates.includes(date) && date !== snapshot.date,
+  );
+  await ref.set({
+    latestId: snapshot.id,
+    latestDate: snapshot.date,
+    generatedAt: snapshot.generatedAt,
+    dates,
+    updatedAt: new Date().toISOString(),
+  });
+  if (extra.length) {
+    const batch = db.batch();
+    for (const date of extra) {
+      batch.delete(db.collection("daily_snapshots").doc(date));
+    }
+    await batch.commit();
+  }
+  return hadDate;
 }
 
 export async function getLatestSnapshot(): Promise<DailySnapshot | null> {
@@ -106,9 +149,17 @@ export async function getSnapshotByDate(date: string): Promise<DailySnapshot | n
 export async function listSnapshotDates(limit = ARCHIVE_KEEP_DAYS): Promise<string[]> {
   const db = await getAdminDb();
   if (!db) return [];
+  const index = await db.collection("meta").doc("snapshots").get();
+  if (index.exists) {
+    return (Array.isArray(index.data()?.dates) ? index.data()!.dates : [])
+      .map((date: unknown) => String(date))
+      .filter((date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date))
+      .slice(0, limit);
+  }
   const snap = await db
     .collection("daily_snapshots")
     .orderBy("date", "desc")
+    .select("date")
     .limit(limit)
     .get();
   return snap.docs
@@ -116,26 +167,26 @@ export async function listSnapshotDates(limit = ARCHIVE_KEEP_DAYS): Promise<stri
     .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date));
 }
 
-async function pruneOldSnapshots(db: FirebaseFirestore.Firestore) {
-  const snap = await db
-    .collection("daily_snapshots")
-    .orderBy("date", "desc")
-    .limit(ARCHIVE_KEEP_DAYS + 40)
-    .get();
-  const extra = snap.docs.slice(ARCHIVE_KEEP_DAYS);
-  if (extra.length === 0) return;
-  const batch = db.batch();
-  for (const doc of extra) {
-    batch.delete(doc.ref);
-  }
-  await batch.commit();
-}
-
 export async function getBacktestSummary(): Promise<BacktestSummary | null> {
   const db = await getAdminDb();
   if (!db) return null;
 
-  const snap = await db.collection("backtest_entries").orderBy("date", "desc").limit(90).get();
+  const cached = await db.collection("meta").doc("backtest").get();
+  const summary = cached.data()?.summary as BacktestSummary | undefined;
+  if (summary && typeof summary.totalDays === "number") {
+    return summary;
+  }
+  return refreshBacktestMeta(db);
+}
+
+async function refreshBacktestMeta(
+  db: FirebaseFirestore.Firestore,
+): Promise<BacktestSummary | null> {
+  const snap = await db
+    .collection("backtest_entries")
+    .orderBy("date", "desc")
+    .limit(90)
+    .get();
   const entries = snap.docs.map((d) => d.data() as BacktestEntry);
 
   if (entries.length === 0) return null;
@@ -147,7 +198,7 @@ export async function getBacktestSummary(): Promise<BacktestSummary | null> {
   const r1w = entries.map((e) => e.return1w).filter((v): v is number => v != null);
   const r1m = entries.map((e) => e.return1m).filter((v): v is number => v != null);
 
-  return {
+  const summary: BacktestSummary = {
     totalDays: new Set(entries.map((e) => e.date)).size,
     avgReturn1d: avg(r1d),
     avgReturn1w: avg(r1w),
@@ -157,6 +208,11 @@ export async function getBacktestSummary(): Promise<BacktestSummary | null> {
     spAvgReturn1m: avg(entries.map((e) => e.spReturn1m).filter((v): v is number => v != null)),
     entries,
   };
+  await db.collection("meta").doc("backtest").set({
+    summary,
+    updatedAt: new Date().toISOString(),
+  });
+  return summary;
 }
 
 export async function saveUserInvestment(data: {

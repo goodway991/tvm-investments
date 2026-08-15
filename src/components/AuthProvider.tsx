@@ -20,7 +20,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
-  onSnapshot,
+  getDocs,
   serverTimestamp,
   setDoc,
   Timestamp,
@@ -383,16 +383,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    let documentUnsubscribers: Array<() => void> = [];
     let cancelled = false;
 
-    const clearDocumentListeners = () => {
-      documentUnsubscribers.forEach((unsubscribe) => unsubscribe());
-      documentUnsubscribers = [];
-    };
-
     const unsubscribeAuth = onAuthStateChanged(auth, async (nextUser) => {
-      clearDocumentListeners();
       setUser(nextUser);
       setError("");
 
@@ -425,117 +418,108 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await ensureAccountDocuments(nextUser);
         if (cancelled) return;
 
-        documentUnsubscribers = [
-          onSnapshot(
-            doc(db, "users", nextUser.uid),
-            (snapshot) => {
-              if (!snapshot.exists()) return;
-              const data = snapshot.data();
-              const nextProfile = profileFrom(data);
-              setProfile({
-                ...nextProfile,
-                displayName: resolveAccountName({
-                  profileName: nextProfile.displayName,
-                  authName: nextUser.displayName,
-                  email: nextUser.email,
-                }),
-              });
-              const roleIsAdmin =
-                nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-              const storedTour =
-                typeof data.seenTour === "string" ? data.seenTour : "";
-              const localTour = readTourSeen(nextUser.uid);
-              const completedTour =
-                storedTour ||
-                localTour ||
-                (asDate(data.tourCompletedAt) ? "tour-1" : "");
-              const tourIsPending =
-                !roleIsAdmin && completedTour !== CURRENT_TOUR_ID;
-              setTourPending(tourIsPending);
-              const seen = laterReleaseAck(
-                typeof data.seenRelease === "string" ? data.seenRelease : "",
-                readReleaseSeen(nextUser.uid),
-              );
-              setReleasePending(
-                !tourIsPending && !releaseIsAcknowledged(seen),
-              );
-            },
-            () => {
-              setProfile(profileFromAuth(nextUser));
-            },
-          ),
-          onSnapshot(doc(db, "entitlements", nextUser.uid), (snapshot) => {
-            if (!snapshot.exists()) return;
-            const data = snapshot.data();
-            const role =
-              data.role === "admin" ||
-              nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
-                ? "admin"
-                : "client";
-            const plan = overlayLabsPlan(
-              role,
-              typeof data.plan === "string" ? data.plan : undefined,
-            );
-            setEntitlement({
-              role,
-              plan,
-              watchlistLimit: watchlistLimitForPlan(plan),
-              cooldownDays: Number(data.cooldownDays) || 0,
-            });
-            const grantId = grantIdFrom(data);
-            setGiftGrantId(grantId);
-            setGiftPending(
-              data.role === "client" &&
-                data.plan === "pro" &&
-                data.source === "comp" &&
-                !data.giftAckedAt &&
-                readGiftSeen(nextUser.uid) !== grantId,
-            );
+        const [userSnap, entitlementSnap, watchSnap, portfolioSnap, positionSnap] =
+          await Promise.all([
+            getDoc(doc(db, "users", nextUser.uid)),
+            getDoc(doc(db, "entitlements", nextUser.uid)),
+            getDoc(doc(db, "watchlists", nextUser.uid)),
+            getDoc(doc(db, "portfolios", nextUser.uid)),
+            getDocs(collection(db, "portfolios", nextUser.uid, "positions")),
+          ]);
+
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          const nextProfile = profileFrom(data);
+          setProfile({
+            ...nextProfile,
+            displayName: resolveAccountName({
+              profileName: nextProfile.displayName,
+              authName: nextUser.displayName,
+              email: nextUser.email,
+            }),
+          });
+          const roleIsAdmin =
+            nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+          const storedTour =
+            typeof data.seenTour === "string" ? data.seenTour : "";
+          const localTour = readTourSeen(nextUser.uid);
+          const completedTour =
+            storedTour ||
+            localTour ||
+            (asDate(data.tourCompletedAt) ? "tour-1" : "");
+          const tourIsPending =
+            !roleIsAdmin && completedTour !== CURRENT_TOUR_ID;
+          setTourPending(tourIsPending);
+          const seen = laterReleaseAck(
+            typeof data.seenRelease === "string" ? data.seenRelease : "",
+            readReleaseSeen(nextUser.uid),
+          );
+          setReleasePending(!tourIsPending && !releaseIsAcknowledged(seen));
+        }
+
+        if (entitlementSnap.exists()) {
+          const data = entitlementSnap.data();
+          const role =
+            data.role === "admin" ||
+            nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+              ? "admin"
+              : "client";
+          const plan = overlayLabsPlan(
+            role,
+            typeof data.plan === "string" ? data.plan : undefined,
+          );
+          setEntitlement({
+            role,
+            plan,
+            watchlistLimit: watchlistLimitForPlan(plan),
+            cooldownDays: Number(data.cooldownDays) || 0,
+          });
+          const grantId = grantIdFrom(data);
+          setGiftGrantId(grantId);
+          setGiftPending(
+            data.role === "client" &&
+              data.plan === "pro" &&
+              data.source === "comp" &&
+              !data.giftAckedAt &&
+              readGiftSeen(nextUser.uid) !== grantId,
+          );
+        }
+
+        if (!watchSnap.exists()) {
+          setWatchlist(defaultWatchlist);
+        } else {
+          const data = watchSnap.data();
+          setWatchlist({
+            symbols: Array.isArray(data.symbols) ? data.symbols.map(String) : [],
+            changedAt: asDate(data.changedAt),
+            nextChangeAt: asDate(data.nextChangeAt),
+            exists: true,
+          });
+        }
+
+        if (portfolioSnap.exists()) {
+          const data = portfolioSnap.data();
+          setPortfolio({
+            cash: Number(data.cash) || 0,
+            totalValue: Number(data.totalValue) || 0,
+          });
+        }
+
+        setPositions(
+          positionSnap.docs.map((position) => {
+            const data = position.data();
+            return {
+              symbol: String(data.symbol),
+              shares: Number(data.shares) || 0,
+              averageCost: Number(data.averageCost) || 0,
+              currentPrice: Number(data.currentPrice) || 0,
+              purchasedAt:
+                typeof data.purchasedAt === "string" && data.purchasedAt
+                  ? data.purchasedAt
+                  : null,
+            };
           }),
-          onSnapshot(doc(db, "watchlists", nextUser.uid), (snapshot) => {
-            if (!snapshot.exists()) {
-              setWatchlist(defaultWatchlist);
-              return;
-            }
-            const data = snapshot.data();
-            setWatchlist({
-              symbols: Array.isArray(data.symbols)
-                ? data.symbols.map(String)
-                : [],
-              changedAt: asDate(data.changedAt),
-              nextChangeAt: asDate(data.nextChangeAt),
-              exists: true,
-            });
-          }),
-          onSnapshot(doc(db, "portfolios", nextUser.uid), (snapshot) => {
-            if (!snapshot.exists()) return;
-            const data = snapshot.data();
-            setPortfolio({
-              cash: Number(data.cash) || 0,
-              totalValue: Number(data.totalValue) || 0,
-            });
-          }),
-          onSnapshot(
-            collection(db, "portfolios", nextUser.uid, "positions"),
-            (snapshot) => {
-              setPositions(
-                snapshot.docs.map((position) => {
-                  const data = position.data();
-                  return {
-                    symbol: String(data.symbol),
-                    shares: Number(data.shares) || 0,
-                    averageCost: Number(data.averageCost) || 0,
-                    currentPrice: Number(data.currentPrice) || 0,
-                    purchasedAt:
-                      typeof data.purchasedAt === "string" && data.purchasedAt
-                        ? data.purchasedAt
-                        : null,
-                  };
-                }),
-              );
-            },
-          ),
-        ];
+        );
       } catch (accountError) {
         console.error(accountError);
         setError(
@@ -548,7 +532,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true;
-      clearDocumentListeners();
       unsubscribeAuth();
     };
   }, []);
@@ -571,6 +554,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }).finally(() => {
       watchlistResetting.current = false;
     });
+    setWatchlist((current) => ({
+      ...current,
+      symbols: [],
+      changedAt: new Date(),
+      nextChangeAt: new Date(),
+      exists: true,
+    }));
   }, [
     entitlement.plan,
     entitlement.role,
@@ -778,6 +768,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           updatedAt: serverTimestamp(),
         });
       }
+      setWatchlist({
+        symbols: normalized,
+        changedAt: new Date(),
+        nextChangeAt: nextChangeAt.toDate(),
+        exists: true,
+      });
     },
     [entitlement, user, watchlist],
   );
@@ -796,6 +792,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         { merge: true },
       );
+      setPortfolio({
+        cash: Math.max(0, cash),
+        totalValue: Math.max(0, totalValue),
+      });
     },
     [user],
   );
@@ -809,14 +809,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const db = getClientFirestore();
       if (!db || !user) throw new Error("Sign in to update your portfolio.");
       const symbol = position.symbol.trim().toUpperCase();
-      await setDoc(doc(db, "portfolios", user.uid, "positions", symbol), {
-        uid: user.uid,
+      const next = {
         symbol,
         shares: Math.max(0, position.shares),
         averageCost: Math.max(0, position.averageCost),
         currentPrice: Math.max(0, position.currentPrice ?? position.averageCost),
         purchasedAt: position.purchasedAt || null,
+      };
+      await setDoc(doc(db, "portfolios", user.uid, "positions", symbol), {
+        uid: user.uid,
+        ...next,
         updatedAt: serverTimestamp(),
+      });
+      setPositions((current) => {
+        const without = current.filter((row) => row.symbol !== symbol);
+        return [...without, next];
       });
     },
     [user],
@@ -828,6 +835,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!db || !user) throw new Error("Sign in to update your portfolio.");
       await deleteDoc(
         doc(db, "portfolios", user.uid, "positions", symbol.toUpperCase()),
+      );
+      setPositions((current) =>
+        current.filter((row) => row.symbol !== symbol.toUpperCase()),
       );
     },
     [user],

@@ -11,6 +11,7 @@ import {
 } from "@/components/StockDetailModal";
 import { TVMIcon } from "@/components/TVMBrand";
 import { BogenHeading } from "@/components/BogenProvider";
+import { pageSlice, StockPager } from "@/components/StockPager";
 
 type WatchlistStock = Pick<StockCandidate, "symbol" | "name">;
 
@@ -40,6 +41,7 @@ export function WatchlistPanel({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     setDraft(watchlist.symbols);
@@ -119,6 +121,10 @@ export function WatchlistPanel({
     );
   }, [candidates, query]);
 
+  useEffect(() => {
+    setPage(0);
+  }, [query, compact]);
+
   const cooldownActive =
     entitlement.plan === "free" &&
     watchlist.exists &&
@@ -132,6 +138,8 @@ export function WatchlistPanel({
 
   const selectedStock = selectedSymbol ? detailFor(selectedSymbol) : null;
   const selectedReport = reports.find((report) => report.symbol === selectedSymbol);
+  const compactPaged = pageSlice(draft, page);
+  const resultsPaged = pageSlice(results, page);
 
   function add(stock: WatchlistStock) {
     setError("");
@@ -254,15 +262,16 @@ export function WatchlistPanel({
       {compact ? (
         <div className="mt-5">
           {draft.length ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {draft.map((symbol, index) => {
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {compactPaged.slice.map((symbol, index) => {
                 const stock = detailFor(symbol);
                 if (stock) {
                   return (
                     <FlaggedPickButton
                       key={symbol}
                       stock={stock}
-                      index={index}
+                      index={compactPaged.page * 10 + index}
                       onOpen={() => setSelectedSymbol(symbol)}
                     />
                   );
@@ -287,7 +296,13 @@ export function WatchlistPanel({
                   </div>
                 );
               })}
-            </div>
+              </div>
+              <StockPager
+                page={compactPaged.page}
+                pages={compactPaged.pages}
+                onPage={setPage}
+              />
+            </>
           ) : (
             <p className="rounded-2xl bg-surface px-4 py-6 text-sm text-ink-soft">
               No watched stocks yet. Expand to add names, then save.
@@ -327,7 +342,7 @@ export function WatchlistPanel({
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {results.length ? (
-                results.map((stock) => {
+                resultsPaged.slice.map((stock) => {
                 const selected = draft.includes(stock.symbol);
                 return (
                   <button
@@ -367,6 +382,11 @@ export function WatchlistPanel({
                 </p>
               )}
             </div>
+            <StockPager
+              page={resultsPaged.page}
+              pages={resultsPaged.pages}
+              onPage={setPage}
+            />
           </div>
         </>
       )}

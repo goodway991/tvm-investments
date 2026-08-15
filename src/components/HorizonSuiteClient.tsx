@@ -6,7 +6,8 @@ import {
   collection,
   deleteDoc,
   doc,
-  onSnapshot,
+  getDoc,
+  getDocs,
   serverTimestamp,
   setDoc,
   writeBatch,
@@ -75,31 +76,31 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
   useEffect(() => {
     const db = getClientFirestore();
     if (!db || !user) return;
-    const unsubSim = onSnapshot(doc(db, "horizon_sims", user.uid), (snapshot) => {
-      setSimExists(snapshot.exists());
+    let cancelled = false;
+    void Promise.all([
+      getDoc(doc(db, "horizon_sims", user.uid)),
+      getDocs(collection(db, "horizon_sims", user.uid, "positions")),
+    ]).then(([simSnap, posSnap]) => {
+      if (cancelled) return;
+      setSimExists(simSnap.exists());
       setSimReady(true);
-      if (!snapshot.exists()) return;
-      setCash(Number(snapshot.data().cash) || 0);
+      if (simSnap.exists()) {
+        setCash(Number(simSnap.data().cash) || 0);
+      }
+      setPositions(
+        posSnap.docs.map((position) => {
+          const data = position.data();
+          return {
+            symbol: String(data.symbol),
+            shares: Number(data.shares) || 0,
+            averageCost: Number(data.averageCost) || 0,
+            currentPrice: Number(data.currentPrice) || 0,
+          };
+        }),
+      );
     });
-    const unsubPos = onSnapshot(
-      collection(db, "horizon_sims", user.uid, "positions"),
-      (snapshot) => {
-        setPositions(
-          snapshot.docs.map((position) => {
-            const data = position.data();
-            return {
-              symbol: String(data.symbol),
-              shares: Number(data.shares) || 0,
-              averageCost: Number(data.averageCost) || 0,
-              currentPrice: Number(data.currentPrice) || 0,
-            };
-          }),
-        );
-      },
-    );
     return () => {
-      unsubSim();
-      unsubPos();
+      cancelled = true;
     };
   }, [user]);
 
@@ -112,6 +113,9 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
       totalValue: HORIZON_STARTING_CASH,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+    }).then(() => {
+      setSimExists(true);
+      setCash(HORIZON_STARTING_CASH);
     });
   }, [simExists, simReady, user]);
 

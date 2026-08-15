@@ -16,7 +16,7 @@ import {
 } from "@/lib/snapshot-cache";
 
 let inflightLiveSnapshot: Promise<DailySnapshot> | null = null;
-const SNAPSHOT_MEMORY_TTL_MS = 45_000;
+const SNAPSHOT_MEMORY_TTL_MS = 5 * 60_000;
 let latestMemory: { at: number; snapshot: DailySnapshot } | null = null;
 
 function rememberLatest(snapshot: DailySnapshot) {

@@ -1239,16 +1239,16 @@ html.dark .plan-current-pane.plan-ultra-pane {
   font-weight: 800;
   line-height: 1.05;
   background-color: #000;
-  background-image: linear-gradient(
-    105deg,
-    #000 0%,
-    #000 42%,
-    #fff 50%,
-    #000 58%,
-    #000 100%
+  background-image: repeating-linear-gradient(
+    90deg,
+    #000 0em,
+    #000 2.15em,
+    #fff 2.55em,
+    #000 2.95em,
+    #000 5.1em
   );
-  background-size: 200% 100%;
-  background-repeat: no-repeat;
+  background-size: 5.1em 100%;
+  background-repeat: repeat;
   background-clip: text;
   -webkit-background-clip: text;
   color: #000;
@@ -1257,15 +1257,15 @@ html.dark .plan-current-pane.plan-ultra-pane {
     drop-shadow(0 0 4px rgba(255, 255, 255, 0.95))
     drop-shadow(0 0 14px rgba(255, 255, 255, 0.55))
     drop-shadow(0 0 28px rgba(255, 255, 255, 0.28));
-  animation: ultra-shine-sweep 3.2s linear infinite;
+  animation: ultra-shine-sweep 2.4s linear infinite;
 }
 
 @keyframes ultra-shine-sweep {
-  0% {
-    background-position: 0% 50%;
+  from {
+    background-position: 0 50%;
   }
-  100% {
-    background-position: 100% 50%;
+  to {
+    background-position: -5.1em 50%;
   }
 }
 
