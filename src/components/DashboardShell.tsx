@@ -124,6 +124,7 @@ function UpgradeNavCard({
   vintage?: boolean;
 }) {
   const proChip = plan === "pro";
+  const clearUpgrade = !proChip;
   const body = proChip ? (
     compact ? (
       <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
@@ -138,13 +139,13 @@ function UpgradeNavCard({
       </span>
     )
   ) : compact ? (
-    <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">Pro</span>
+    <span className="pro-name-glow pointer-events-none relative z-[1] text-[11px] uppercase">
+      Pro
+    </span>
   ) : (
     <span className="pointer-events-none relative z-[1] min-w-0">
-      <span className="block text-sm font-semibold leading-tight">Upgrade to Pro</span>
-      <span className="block text-[11px] font-medium leading-tight text-white/80">
-        Unlock more
-      </span>
+      <span className="pro-name-glow block text-sm leading-tight">Upgrade to Pro</span>
+      <span className="pro-name-glow mt-0.5 block text-[11px] leading-tight">Unlock more</span>
     </span>
   );
 
@@ -152,8 +153,10 @@ function UpgradeNavCard({
     <BogenHit
       id="nav-upgrade"
       compact={compact}
-      onDark
-      className={`glass-violet rounded-2xl text-white ${widgetBox(compact)}`}
+      onDark={!clearUpgrade}
+      className={`rounded-2xl ${widgetBox(compact)} ${
+        clearUpgrade ? "glass" : "glass-violet text-white"
+      }`}
     >
       {proChip || vintage ? (
         <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
