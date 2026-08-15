@@ -1,4 +1,4 @@
-export type SiteEraId = "beta-1" | "beta-2" | "live";
+export type SiteEraId = "beta-1" | "beta-1b" | "beta-2" | "live";
 
 export type SiteEraFeatures = {
   darkMode: boolean;
@@ -7,6 +7,8 @@ export type SiteEraFeatures = {
   accountScore: boolean;
   eventExpand: boolean;
   proProfileStack: boolean;
+  proProfileGlow: boolean;
+  navOutlineGlow: boolean;
   sectorDives: boolean;
   scanUniverseCopy: boolean;
 };
@@ -25,12 +27,19 @@ const BETA_1_FEATURES: SiteEraFeatures = {
   accountScore: false,
   eventExpand: false,
   proProfileStack: false,
+  proProfileGlow: false,
+  navOutlineGlow: false,
   sectorDives: true,
   scanUniverseCopy: false,
 };
 
-const BETA_2_FEATURES: SiteEraFeatures = {
+const BETA_1B_FEATURES: SiteEraFeatures = {
   ...BETA_1_FEATURES,
+  maintenanceNav: true,
+};
+
+const BETA_2_FEATURES: SiteEraFeatures = {
+  ...BETA_1B_FEATURES,
   darkMode: true,
   maintenanceNav: true,
   scanUniverseCopy: true,
@@ -43,6 +52,8 @@ const LIVE_FEATURES: SiteEraFeatures = {
   accountScore: true,
   eventExpand: true,
   proProfileStack: true,
+  proProfileGlow: true,
+  navOutlineGlow: true,
   sectorDives: true,
   scanUniverseCopy: true,
 };
@@ -53,6 +64,12 @@ export const SITE_ERAS: SiteEra[] = [
     label: "Beta v1",
     from: "2026-08-12",
     features: BETA_1_FEATURES,
+  },
+  {
+    id: "beta-1b",
+    label: "Aug 13",
+    from: "2026-08-13",
+    features: BETA_1B_FEATURES,
   },
   {
     id: "beta-2",

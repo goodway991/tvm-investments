@@ -5,6 +5,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { PlanComparisonTable } from "@/components/PlanComparisonTable";
 import { useTour } from "@/components/TourProvider";
+import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { ProGlowText } from "@/components/ProGlowText";
 
@@ -12,9 +13,10 @@ export function GiftedProModal() {
   const { giftPending, acknowledgeGift } = useAuth();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
+  const { customizeOpen } = useExperience();
   const [busy, setBusy] = useState(false);
 
-  if (!giftPending || tourOpen || rewind) return null;
+  if (!giftPending || tourOpen || rewind || customizeOpen) return null;
 
   async function continueOn() {
     if (busy) return;

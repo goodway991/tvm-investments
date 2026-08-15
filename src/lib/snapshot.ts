@@ -6,7 +6,7 @@ import type { DailySnapshot, StockCandidate } from "@/types";
 import { isDemoMode, runDailyAnalysis, runFallbackSnapshot } from "@/lib/analysis-pipeline";
 import { lastCompletedSessionDate } from "@/lib/archive-window";
 import { getLatestSnapshot, getSnapshotByDate } from "@/lib/firebase/admin";
-import { ARCHIVE_DEMO_DATE, buildArchiveDemoSnapshot } from "@/lib/archive-demo";
+import { buildArchiveDemoSnapshot, isArchiveDemoDate } from "@/lib/archive-demo";
 import { hydrateSectorDives } from "@/lib/sector-dives";
 import { hasNewsLlm } from "@/lib/scoring";
 import {
@@ -162,11 +162,12 @@ export const getDashboardSnapshot = cache(async function getDashboardSnapshot(
   const date = parseArchiveDate(archiveDate);
   try {
     if (date) {
+      if (isArchiveDemoDate(date)) {
+        return normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true });
+      }
       const archived = await getSnapshotByDate(date);
       if (archived) return normalizeSnapshot(archived, { freeze: true });
-      if (date === ARCHIVE_DEMO_DATE) {
-        return normalizeSnapshot(buildArchiveDemoSnapshot(), { freeze: true });
-      }
+      return normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true });
     }
     if (
       latestMemory &&
@@ -219,8 +220,8 @@ export const getDashboardSnapshot = cache(async function getDashboardSnapshot(
     }
   }
 
-  if (date === ARCHIVE_DEMO_DATE) {
-    return normalizeSnapshot(buildArchiveDemoSnapshot(), { freeze: true });
+  if (date) {
+    return normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true });
   }
 
   return normalizeSnapshot(await runFallbackSnapshot());

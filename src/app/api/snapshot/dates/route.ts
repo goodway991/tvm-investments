@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ARCHIVE_DEMO_DATE, mergeArchiveDates } from "@/lib/archive-demo";
+import { ARCHIVE_DEMO_DATES, mergeArchiveDates } from "@/lib/archive-demo";
 import { FREE_ARCHIVE_LOOKBACK_DAYS } from "@/lib/plans";
 import { listSnapshotDates } from "@/lib/firebase/admin";
 import { readDiskSnapshot } from "@/lib/snapshot-cache";
@@ -17,7 +17,7 @@ export async function GET() {
     rules: {
       freeLookbackDays: FREE_ARCHIVE_LOOKBACK_DAYS,
       proFromJoinDate: true,
-      seededDemoDate: ARCHIVE_DEMO_DATE,
+      seededDemoDates: ARCHIVE_DEMO_DATES,
     },
   });
 }

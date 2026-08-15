@@ -10,7 +10,7 @@ import {
 } from "@/components/ArchiveBar";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
-import { ArchiveCalendarLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
+import { ArchiveCalendarLock, PortfolioLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
 import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
@@ -18,6 +18,7 @@ import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
+import { LOCAL_EXPERIMENT, useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 export const dashboardNav = [
@@ -49,6 +50,15 @@ function navWindowClass(active: boolean, inactive = "text-ink-soft hover:bg-ink/
   return active ? "nav-window-active text-ink" : inactive;
 }
 
+function navItemClass(
+  active: boolean,
+  outline: boolean,
+  inactive = "text-ink-soft hover:bg-ink/[0.04] hover:text-ink",
+) {
+  if (outline) return navWindowClass(active, inactive);
+  return active ? "glass-violet text-white" : inactive;
+}
+
 function ProfileNavLink({
   compact = false,
   name,
@@ -56,6 +66,8 @@ function ProfileNavLink({
   href,
   onNavigate,
   pro = false,
+  glow = false,
+  outline = true,
 }: {
   compact?: boolean;
   name: string;
@@ -63,6 +75,8 @@ function ProfileNavLink({
   href: string;
   onNavigate?: () => void;
   pro?: boolean;
+  glow?: boolean;
+  outline?: boolean;
 }) {
   return (
     <BogenHit
@@ -71,9 +85,9 @@ function ProfileNavLink({
       className={`rounded-2xl text-left ${
         compact ? "h-14 justify-center px-2" : "min-h-[72px] gap-3.5 px-3.5 py-3.5"
       } ${
-        pro
+        pro && glow
           ? "pro-profile-glow bg-transparent"
-          : navWindowClass(active)
+          : navItemClass(active, outline)
       }`}
     >
       <Link
@@ -195,12 +209,16 @@ function PreviewSidebar({
 }) {
   const { entitlement } = useAuth();
   const { era } = useSiteEra();
+  const { density } = useExperience();
+  const clean = density === "clean";
+  const outline = era.features.navOutlineGlow;
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const archive = searchParams.get("archive");
   const showArchive = canUsePreviewFeature(entitlement.role, "archiveCalendar");
   const showHorizon =
     era.id === "live" && canUsePreviewFeature(entitlement.role, "horizonSuite");
+  const hideLocks = clean;
   const archiveRoute = navIsActive(pathname, "/dashboard/archive");
   const horizonActive = navIsActive(pathname, "/dashboard/horizon");
   const archiveLive = Boolean(archive);
@@ -216,7 +234,7 @@ function PreviewSidebar({
           } ${
             archiveLive
               ? "archive-widget-live bg-sky-50 text-ink"
-              : navWindowClass(archiveRoute)
+              : navItemClass(archiveRoute, outline)
           }`}
         >
           <Link
@@ -238,7 +256,7 @@ function PreviewSidebar({
             </span>
           )}
         </BogenHit>
-      ) : (
+      ) : hideLocks ? null : (
         <BogenHit
           id="nav-archive"
           compact={compact}
@@ -255,7 +273,7 @@ function PreviewSidebar({
           compact={compact}
           className={`rounded-2xl py-3 text-left text-[15px] font-medium ${
             compact ? "justify-center px-2" : "gap-3.5 px-4"
-          } ${navWindowClass(horizonActive)}`}
+          } ${navItemClass(horizonActive, outline)}`}
         >
           <Link
             href={withArchiveQuery("/dashboard/horizon", archive)}
@@ -271,7 +289,7 @@ function PreviewSidebar({
             <span className="pointer-events-none relative z-[1]">Horizon Suite</span>
           )}
         </BogenHit>
-      ) : (
+      ) : era.id !== "live" || hideLocks ? null : (
         <BogenHit
           id="nav-horizon"
           compact={compact}
@@ -288,7 +306,10 @@ function PreviewSidebar({
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, profile, entitlement, loading, error, tourPending } = useAuth();
-  const { era } = useSiteEra();
+  const { era, rewind } = useSiteEra();
+  const { density } = useExperience();
+  const clean = density === "clean" && !rewind;
+  const outline = era.features.navOutlineGlow;
   const { openUpgrade } = useUpgrade();
   const { isOpen: tourOpen, openTour } = useTour();
   const pathname = usePathname();
@@ -406,11 +427,33 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <TVMBrand showWordmark={sidebarMode === "expanded"} />
           </span>
         </BogenHit>
+        {sidebarMode === "expanded" && !rewind ? (
+          <p className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
+            {LOCAL_EXPERIMENT}
+          </p>
+        ) : null}
 
         <nav className="mt-10 flex flex-col gap-1.5" aria-label="Dashboard navigation">
-          {dashboardNav.map((item) => {
+          {(clean
+            ? dashboardNav.filter((item) => item.label !== "Screener")
+            : dashboardNav
+          ).map((item) => {
             const active = navIsActive(pathname, item.href);
             const compact = sidebarMode !== "expanded";
+            if (item.label === "Portfolio") {
+              return (
+                <BogenHit
+                  key={item.href}
+                  id={item.bogen}
+                  compact={compact}
+                  className={compact ? "justify-center" : ""}
+                >
+                  <div className="min-w-0 flex-1">
+                    <PortfolioLock compact={compact} />
+                  </div>
+                </BogenHit>
+              );
+            }
             return (
               <BogenHit
                 key={item.href}
@@ -418,7 +461,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 compact={compact}
                 className={`rounded-2xl py-3 text-left text-[15px] font-medium ${
                   compact ? "justify-center px-2" : "gap-3.5 px-4"
-                } ${navWindowClass(active)}`}
+                } ${navItemClass(active, outline)}`}
               >
                 <Link
                   href={withArchiveQuery(item.href, archive)}
@@ -457,6 +500,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             active={navIsActive(pathname, "/dashboard/settings")}
             href={withArchiveQuery("/dashboard/settings", archive)}
             pro={stackPro}
+            glow={era.features.proProfileGlow}
+            outline={outline}
           />
         </div>
       </aside>
@@ -503,14 +548,31 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
               <nav className="mt-8 flex flex-col gap-1.5">
-                {dashboardNav.map((item) => {
+                {(clean
+            ? dashboardNav.filter((item) => item.label !== "Screener")
+            : dashboardNav
+          ).map((item) => {
+                  if (item.label === "Portfolio") {
+                    return (
+                      <BogenHit
+                        key={item.href}
+                        id={item.bogen}
+                        className=""
+                      >
+                        <div className="min-w-0 flex-1">
+                          <PortfolioLock />
+                        </div>
+                      </BogenHit>
+                    );
+                  }
                   const active = navIsActive(pathname, item.href);
                   return (
                     <BogenHit
                       key={item.href}
                       id={item.bogen}
-                      className={`gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium ${navWindowClass(
+                      className={`gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium ${navItemClass(
                         active,
+                        outline,
                         "text-ink-soft hover:bg-violet/[0.05] hover:text-ink",
                       )}`}
                     >
@@ -547,6 +609,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   href={withArchiveQuery("/dashboard/settings", archive)}
                   onNavigate={() => setMobileMenuOpen(false)}
                   pro={stackPro}
+                  glow={era.features.proProfileGlow}
+                  outline={outline}
                 />
               </div>
             </aside>

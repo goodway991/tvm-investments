@@ -6,6 +6,7 @@ import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { TVMIcon } from "@/components/TVMBrand";
 import { useTheme, type Appearance } from "@/components/ThemeProvider";
+import { useExperience } from "@/components/ExperienceProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
@@ -381,6 +382,7 @@ export function SettingsPanel() {
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
   const { appearance, setAppearance } = useTheme();
+  const { density, setDensity, openCustomize } = useExperience();
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const { era, rewind, archiveDate } = useSiteEra();
   const glowName = entitlement.plan === "pro" && era.features.proProfileStack;
@@ -583,6 +585,47 @@ export function SettingsPanel() {
             </select>
           </label>
         </div>
+      ) : null}
+
+      {!rewind ? (
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="font-semibold text-ink">Dashboard layout</p>
+        <p className="mt-1">
+          Clean keeps today’s pick, your book, and a short mover list. Normal is
+          the full dashboard.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setDensity("clean")}
+            className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
+              density === "clean"
+                ? "glass-violet text-white"
+                : "border border-ink/10 text-ink-soft hover:text-ink"
+            }`}
+          >
+            Clean
+          </button>
+          <button
+            type="button"
+            onClick={() => setDensity("normal")}
+            className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
+              density === "normal"
+                ? "glass-violet text-white"
+                : "border border-ink/10 text-ink-soft hover:text-ink"
+            }`}
+          >
+            Normal
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => openCustomize()}
+          className="mt-3 text-sm font-semibold text-violet"
+        >
+          Customize experience
+        </button>
+      </div>
       ) : null}
 
       {era.features.bogen ? (
