@@ -11,6 +11,7 @@ service cloud.firestore {
     //   tourCompletedAt: timestamp (set after the virtual tour)
     //   seenTour: string tour version, e.g. "tour-3" (re-shows when it changes)
     //   newSeen: optional map of feature id -> "YYYY-MM-DD" first-seen day
+    //     keys: bogen, portfolio, settings, density, appearance
     //     (New badges hide 3 calendar days after first login that sees them)
     //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
     //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
@@ -34,6 +35,7 @@ service cloud.firestore {
     // portfolios/{uid}/positions/{symbol}
     //   uid: string, symbol: string, shares: number
     //   averageCost: number, currentPrice: number, updatedAt: timestamp
+    //   purchasedAt: optional "YYYY-MM-DD" buy date (or null)
     //
     // horizon_sims/{uid}
     //   uid: string, cash: number, totalValue: number
@@ -163,22 +165,40 @@ service cloud.firestore {
         && value.matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$");
     }
 
+    function validNewSeenStamp(map, key) {
+      return !map.keys().hasAny([key]) || validDayStamp(map[key]);
+    }
+
     function validNewSeen(value) {
       return value is map
         && value.size() <= 24
-        && value.keys().hasOnly(["bogen"])
-        && (
-          !value.keys().hasAny(["bogen"])
-          || validDayStamp(value.bogen)
+        && value.keys().hasOnly([
+          "bogen", "portfolio", "settings", "density", "appearance"
+        ])
+        && validNewSeenStamp(value, "bogen")
+        && validNewSeenStamp(value, "portfolio")
+        && validNewSeenStamp(value, "settings")
+        && validNewSeenStamp(value, "density")
+        && validNewSeenStamp(value, "appearance");
+    }
+
+    function newSeenKeyFrozen(prior, next, key) {
+      return !prior.keys().hasAny([key])
+        || (
+          next.keys().hasAny([key])
+          && next[key] == prior[key]
         );
     }
 
     function newSeenFrozen(prior, next) {
       return !prior.keys().hasAny(["newSeen"])
-        || !prior.newSeen.keys().hasAny(["bogen"])
         || (
           next.keys().hasAny(["newSeen"])
-          && next.newSeen.bogen == prior.newSeen.bogen
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "bogen")
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "portfolio")
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "settings")
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "density")
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "appearance")
         );
     }
 
@@ -426,9 +446,19 @@ service cloud.firestore {
         && data.totalValue == 10000;
     }
 
+    function validPurchasedAt(value) {
+      return value == null
+        || (
+          value is string
+          && value.size() == 10
+          && value.matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+        );
+    }
+
     function validPosition(data, uid, symbol) {
       return data.keys().hasOnly([
-          "uid", "symbol", "shares", "averageCost", "currentPrice", "updatedAt"
+          "uid", "symbol", "shares", "averageCost", "currentPrice",
+          "updatedAt", "purchasedAt"
         ])
         && data.keys().hasAll([
           "uid", "symbol", "shares", "averageCost", "currentPrice", "updatedAt"
@@ -447,7 +477,11 @@ service cloud.firestore {
         && data.currentPrice is number
         && data.currentPrice >= 0
         && data.currentPrice <= 10000000
-        && data.updatedAt is timestamp;
+        && data.updatedAt is timestamp
+        && (
+          !data.keys().hasAny(["purchasedAt"])
+          || validPurchasedAt(data.purchasedAt)
+        );
     }
 
     match /users/{uid} {
