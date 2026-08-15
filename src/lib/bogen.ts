@@ -92,14 +92,14 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     how: "Tap the orange card to read the full window. The site unlocks automatically when the end time passes.",
   },
   "nav-upgrade": {
-    title: "Pro",
-    what: "Your plan badge. Free is the core scan; Pro unlocks longer notes, more movers, extra watchlist slots, and more.",
-    how: "If you are Free, tap to see the plan table and checkout. If you already have Pro, this just confirms it.",
+    title: "Upgrade to Pro",
+    what: "Free is the core scan. Pro unlocks longer notes, more movers, extra watchlist slots, and more.",
+    how: "Tap to see the plan table and checkout.",
   },
   "nav-account": {
     title: "Account",
-    what: "Settings for your name, plan, appearance, Bogen mode, the virtual tour, and feedback.",
-    how: "Tap your name at the bottom of the sidebar. Changes to your name save to this account.",
+    what: "Your name and plan, plus Settings for appearance, Bogen mode, the virtual tour, and feedback.",
+    how: "Tap the profile row at the bottom of the sidebar. Pro sits under your name on that same row.",
   },
   "nav-logo": {
     title: "The TVM mark",

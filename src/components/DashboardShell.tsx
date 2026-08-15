@@ -63,8 +63,8 @@ function ProfileNavLink({
       id="nav-account"
       compact={compact}
       onDark={active && !pro}
-      className={`rounded-2xl py-3 text-left text-[15px] font-medium duration-300 ${
-        compact ? "justify-center px-2" : "gap-3.5 px-4"
+      className={`rounded-2xl text-left duration-300 ${
+        compact ? "h-14 justify-center px-2" : "min-h-[72px] gap-3.5 px-3.5 py-3.5"
       } ${
         active && !pro
           ? "glass-violet text-white"
@@ -78,18 +78,27 @@ function ProfileNavLink({
         onClick={onNavigate}
         title={compact ? name : undefined}
         className="absolute inset-0 z-0 rounded-2xl"
-        aria-label={name}
+        aria-label={pro ? `${name}, Pro account` : name}
       />
       <span
-        className={`pointer-events-none relative z-[1] grid h-8 w-8 shrink-0 place-items-center rounded-full ${
-          active ? "bg-white/20" : "bg-ink/[0.08]"
-        }`}
+        className={`pointer-events-none relative z-[1] grid shrink-0 place-items-center rounded-full ${
+          compact ? "h-11 w-11" : "h-12 w-12"
+        } ${active && !pro ? "bg-white/20" : "bg-ink/[0.08]"}`}
       >
-        <TVMIcon name="profile" size={18} />
+        <TVMIcon name="profile" size={compact ? 22 : 26} />
       </span>
       {!compact && (
-        <span className="pointer-events-none relative z-[1] min-w-0 truncate bg-transparent leading-tight">
-          {pro ? <span className="pro-name-glow">{name}</span> : name}
+        <span className="pointer-events-none relative z-[1] min-w-0 bg-transparent">
+          <span
+            className={`block truncate leading-tight ${
+              pro ? "text-lg" : "text-[15px] font-medium"
+            }`}
+          >
+            {pro ? <span className="pro-name-glow">{name}</span> : name}
+          </span>
+          {pro ? (
+            <span className="pro-name-glow mt-1 block text-sm leading-tight">Pro account</span>
+          ) : null}
         </span>
       )}
     </BogenHit>
@@ -424,11 +433,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <div className="mt-auto space-y-2 pt-4">
           <MaintenanceNavCard compact={sidebarMode !== "expanded"} />
-          <UpgradeNavCard
-            compact={sidebarMode !== "expanded"}
-            plan={entitlement.plan}
-            onUpgrade={openUpgrade}
-          />
+          {entitlement.plan === "free" ? (
+            <UpgradeNavCard
+              compact={sidebarMode !== "expanded"}
+              plan={entitlement.plan}
+              onUpgrade={openUpgrade}
+            />
+          ) : null}
           <ProfileNavLink
             compact={sidebarMode !== "expanded"}
             name={accountLabel(profile, user)}
@@ -509,13 +520,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <PreviewSidebar onNavigate={() => setMobileMenuOpen(false)} />
               <div className="mt-auto space-y-2 pt-4">
                 <MaintenanceNavCard />
-                <UpgradeNavCard
-                  plan={entitlement.plan}
-                  onUpgrade={() => {
-                    setMobileMenuOpen(false);
-                    openUpgrade();
-                  }}
-                />
+                {entitlement.plan === "free" ? (
+                  <UpgradeNavCard
+                    plan={entitlement.plan}
+                    onUpgrade={() => {
+                      setMobileMenuOpen(false);
+                      openUpgrade();
+                    }}
+                  />
+                ) : null}
                 <ProfileNavLink
                   name={accountLabel(profile, user)}
                   active={navIsActive(pathname, "/dashboard/settings")}
