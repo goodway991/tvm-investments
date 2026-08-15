@@ -429,12 +429,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           watchlistLimit: watchlistLimitForPlan(plan),
           cooldownDays: 0,
         });
-        setLoading(false);
-      } else {
-        setLoading(true);
       }
-      try {
-        const hydrate = ensureAccountDocuments(nextUser).then((loaded) => {
+      setLoading(false);
+      void ensureAccountDocuments(nextUser)
+        .then((loaded) => {
           if (cancelled || !loaded) return;
 
           const userSnap = loaded.profile;
@@ -544,22 +542,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .catch((positionError) => {
               console.error(positionError);
             });
+        })
+        .catch((accountError) => {
+          console.error(accountError);
+          setError(
+            "Your account was authenticated, but its Firebase profile could not be loaded.",
+          );
         });
-
-        await Promise.race([
-          hydrate,
-          new Promise<void>((resolve) => {
-            window.setTimeout(resolve, 8000);
-          }),
-        ]);
-      } catch (accountError) {
-        console.error(accountError);
-        setError(
-          "Your account was authenticated, but its Firebase profile could not be loaded.",
-        );
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
     });
 
     return () => {
