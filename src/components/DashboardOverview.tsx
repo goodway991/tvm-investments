@@ -77,6 +77,8 @@ function FlaggedPicksPanel({
     </article>
   );
 }
+
+function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
@@ -433,9 +435,8 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         </article>
       </div>
 
-      {!clean ? (
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]">
-        <article className="glass-strong rounded-[24px] p-6">
+      <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-stretch">
+        <article className="glass-strong w-full shrink-0 rounded-[24px] p-6 md:w-[22rem]">
           <div className="glass-violet relative rounded-2xl p-5 text-white">
             <BogenTip
               id="overview-calculator"
@@ -490,19 +491,13 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
           </div>
         </article>
 
-        <FlaggedPicksPanel
-          picks={snapshot.topPicks}
-          onOpen={setSelectedSymbol}
-        />
-        </div>
-      ) : (
-        <div className="mt-4">
+        <div className="min-w-0 flex-1">
           <FlaggedPicksPanel
             picks={snapshot.topPicks}
             onOpen={setSelectedSymbol}
           />
         </div>
-      )}
+      </div>
 
       {selectedStock && (
         <StockDetailModal
