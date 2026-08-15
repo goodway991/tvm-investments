@@ -992,22 +992,15 @@ button:not(:disabled):hover .archive-flow-node {
   .plan-compare {
     grid-template-columns: minmax(0, 1fr) 7.75rem 7.75rem;
   }
-
-  .plan-current-pane.is-free {
-    left: calc(100% - 15.5rem + 8px);
-    width: calc(7.75rem - 16px);
-  }
-
-  .plan-current-pane.is-pro {
-    right: 8px;
-    width: calc(7.75rem - 16px);
-  }
 }
 
 .plan-current-pane {
   position: absolute;
   top: 8px;
   bottom: 8px;
+  left: 8px;
+  right: 8px;
+  width: auto;
   z-index: 0;
   pointer-events: none;
   border-radius: 16px;
@@ -1018,13 +1011,11 @@ button:not(:disabled):hover .archive-flow-node {
 }
 
 .plan-current-pane.is-free {
-  left: calc(100% - 13.5rem + 8px);
-  width: calc(6.75rem - 16px);
+  grid-column: 2;
 }
 
 .plan-current-pane.is-pro {
-  right: 8px;
-  width: calc(6.75rem - 16px);
+  grid-column: 3;
 }
 
 html.dark .plan-current-pane {
