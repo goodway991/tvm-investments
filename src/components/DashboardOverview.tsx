@@ -23,7 +23,60 @@ import { UltraShinePhrase } from "@/components/UltraText";
 import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
-function signedPercent(value: number) {
+function FlaggedPicksPanel({
+  picks,
+  onOpen,
+}: {
+  picks: DailySnapshot["topPicks"];
+  onOpen: (symbol: string) => void;
+}) {
+  return (
+    <article id="flagged-picks" className="glass-strong scroll-mt-8 rounded-[24px] p-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-lg font-semibold text-ink">
+          <BogenHeading id="flagged-picks">Today&apos;s flagged picks</BogenHeading>
+        </h2>
+        <span className="text-right text-xs text-ink-soft">
+          Ranked by composite score
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {[0, 1, 2].map((index) => {
+          const stock = picks[index];
+          if (!stock) {
+            return (
+              <div key={`empty-pick-${index}`} className="glass w-full rounded-2xl p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-display font-bold text-ink">—</p>
+                    <p className="text-[11px] text-ink-soft">No pick this session</p>
+                  </div>
+                  <span className="font-display text-sm font-bold text-violet">—</span>
+                </div>
+                <p className="mt-1 text-[11px] text-ink-soft">ST — · LT —</p>
+                <div className="my-2 h-[54px] rounded-lg bg-white/50" />
+                <div className="flex items-center justify-between">
+                  <span className="font-display text-sm font-bold text-ink">—</span>
+                  <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-xs font-semibold text-violet">
+                    Pick {index + 1}
+                  </span>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <FlaggedPickButton
+              key={stock.symbol}
+              stock={stock}
+              index={index}
+              onOpen={() => onOpen(stock.symbol)}
+            />
+          );
+        })}
+      </div>
+    </article>
+  );
+}
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
@@ -381,7 +434,8 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       </div>
 
       {!clean ? (
-        <article className="mt-4 glass-strong rounded-[24px] p-6 lg:max-w-md">
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]">
+        <article className="glass-strong rounded-[24px] p-6">
           <div className="glass-violet relative rounded-2xl p-5 text-white">
             <BogenTip
               id="overview-calculator"
@@ -435,54 +489,20 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
             ))}
           </div>
         </article>
-      ) : null}
 
-      <div className={`mt-4 grid gap-4 ${clean ? "" : "lg:grid-cols-1"}`}>
-        <article id="flagged-picks" className="glass-strong scroll-mt-8 rounded-[24px] p-6">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-lg font-semibold text-ink">
-              <BogenHeading id="flagged-picks">Today&apos;s flagged picks</BogenHeading>
-            </h2>
-            <span className="text-right text-xs text-ink-soft">
-              Ranked by composite score
-            </span>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {[0, 1, 2].map((index) => {
-              const stock = snapshot.topPicks[index];
-              if (!stock) {
-                return (
-                  <div key={`empty-pick-${index}`} className="glass w-full rounded-2xl p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-display font-bold text-ink">—</p>
-                        <p className="text-[11px] text-ink-soft">No pick this session</p>
-                      </div>
-                      <span className="font-display text-sm font-bold text-violet">—</span>
-                    </div>
-                    <p className="mt-1 text-[11px] text-ink-soft">ST — · LT —</p>
-                    <div className="my-2 h-[54px] rounded-lg bg-white/50" />
-                    <div className="flex items-center justify-between">
-                      <span className="font-display text-sm font-bold text-ink">—</span>
-                      <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-xs font-semibold text-violet">
-                        Pick {index + 1}
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <FlaggedPickButton
-                  key={stock.symbol}
-                  stock={stock}
-                  index={index}
-                  onOpen={() => setSelectedSymbol(stock.symbol)}
-                />
-              );
-            })}
-          </div>
-        </article>
-      </div>
+        <FlaggedPicksPanel
+          picks={snapshot.topPicks}
+          onOpen={setSelectedSymbol}
+        />
+        </div>
+      ) : (
+        <div className="mt-4">
+          <FlaggedPicksPanel
+            picks={snapshot.topPicks}
+            onOpen={setSelectedSymbol}
+          />
+        </div>
+      )}
 
       {selectedStock && (
         <StockDetailModal
