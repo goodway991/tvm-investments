@@ -1075,7 +1075,10 @@ html.dark .plan-current-pane {
   -webkit-text-fill-color: transparent;
   box-shadow: none !important;
   animation: pro-border-flow 3.8s linear infinite;
-  filter: drop-shadow(0 0 4px rgba(228, 212, 255, 0.7));
+  filter:
+    drop-shadow(0 0 6px rgba(228, 212, 255, 0.95))
+    drop-shadow(0 0 12px rgba(255, 210, 176, 0.5))
+    drop-shadow(0 0 16px rgba(201, 215, 255, 0.42));
 }
 
 @keyframes pro-border-flow {
@@ -1107,12 +1110,26 @@ html.dark .plan-current-pane {
     0 0 32px rgba(47, 98, 255, 0.22);
 }
 
-html.dark .nav-window-active {
-  border-color: rgba(190, 220, 255, 0.55);
+.upgrade-pro-glow {
+  background: transparent !important;
+  border: 1px solid rgba(228, 212, 255, 0.45);
   box-shadow:
-    0 0 0 1px rgba(140, 190, 255, 0.28),
-    0 0 22px rgba(70, 140, 255, 0.48),
-    0 0 36px rgba(47, 98, 255, 0.28);
+    0 0 0 1px rgba(255, 210, 176, 0.22),
+    0 0 16px rgba(228, 212, 255, 0.4),
+    0 0 28px rgba(201, 215, 255, 0.28);
+}
+
+html.dark .upgrade-pro-glow {
+  border-color: rgba(228, 212, 255, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(255, 210, 176, 0.28),
+    0 0 18px rgba(228, 212, 255, 0.48),
+    0 0 32px rgba(201, 215, 255, 0.32);
+}
+
+.upgrade-pro-glow .pro-name-glow {
+  display: block;
+  width: 100%;
 }
 
 .bogen-tip {
