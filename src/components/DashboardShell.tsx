@@ -91,18 +91,19 @@ function ProfileNavLink({
         <TVMIcon name="profile" size={compact ? 22 : 26} />
       </span>
       {!compact && (
-        <span className="pointer-events-none relative z-[1] min-w-0 bg-transparent">
+        <span className="pointer-events-none relative z-[1] min-w-0 overflow-visible bg-transparent">
           <span
-            className={`block truncate leading-tight ${
-              pro ? "text-lg" : "text-[15px] font-medium"
-            }`}
+            className={
+              pro
+                ? "font-display text-lg font-bold leading-tight"
+                : "block truncate text-[15px] font-medium leading-tight"
+            }
           >
             {pro ? <ProGlowPhrase>{name}</ProGlowPhrase> : name}
           </span>
           {pro ? (
-            <span className="pro-glow-wrap mt-1 block text-sm leading-tight">
-              <span className="pro-name-glow">Pro</span>{" "}
-              <span className="pro-name-glow">account</span>
+            <span className="mt-1 block font-display text-sm font-bold leading-tight">
+              <ProGlowPhrase>Pro account</ProGlowPhrase>
             </span>
           ) : null}
         </span>
@@ -137,11 +138,8 @@ function UpgradeNavCard({
       </span>
     ) : (
       <span className="pointer-events-none relative z-[1] min-w-0">
-        <span className="block text-sm font-semibold leading-tight">
-          <span className="pro-glow-wrap">
-            <span className="pro-name-glow">Pro</span>{" "}
-            <span className="pro-name-glow">account</span>
-          </span>
+        <span className="block font-display text-sm font-bold leading-tight">
+          <ProGlowPhrase>Pro account</ProGlowPhrase>
         </span>
         <span className="block text-[11px] font-medium leading-tight text-white/80">
           Unlocked
@@ -153,9 +151,13 @@ function UpgradeNavCard({
         <ProGlowPhrase>Pro</ProGlowPhrase>
       </span>
   ) : (
-    <span className="pointer-events-none relative z-[1] flex min-w-0 flex-col items-start">
-      <ProGlowPhrase className="text-sm leading-tight">Upgrade to Pro</ProGlowPhrase>
-      <ProGlowPhrase className="mt-0.5 text-[11px] leading-tight">Unlock more</ProGlowPhrase>
+    <span className="pointer-events-none relative z-[1] flex min-w-0 flex-col items-start overflow-visible">
+      <span className="font-display text-sm font-bold leading-tight">
+        <ProGlowPhrase>Upgrade to Pro</ProGlowPhrase>
+      </span>
+      <span className="mt-0.5 font-display text-[11px] font-bold leading-tight">
+        <ProGlowPhrase>Unlock more</ProGlowPhrase>
+      </span>
     </span>
   );
 
@@ -165,7 +167,7 @@ function UpgradeNavCard({
       compact={compact}
       onDark={!clearUpgrade}
       className={`rounded-2xl ${widgetBox(compact)} ${
-        clearUpgrade ? "upgrade-pro-glow" : "glass-violet text-white"
+        clearUpgrade ? "bg-transparent" : "glass-violet text-white"
       }`}
     >
       {proChip || vintage ? (

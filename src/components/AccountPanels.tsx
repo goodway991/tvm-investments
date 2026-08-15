@@ -383,6 +383,7 @@ export function SettingsPanel() {
   const { appearance, setAppearance } = useTheme();
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const { era, rewind, archiveDate } = useSiteEra();
+  const glowName = entitlement.plan === "pro" && era.features.proProfileStack;
   const [loggingOut, setLoggingOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -482,11 +483,21 @@ export function SettingsPanel() {
           ) : (
             <div className="flex items-center gap-2">
               <h2 className="font-display text-2xl font-bold text-ink">
-                {resolveAccountName({
-                  profileName: profile?.displayName,
-                  authName: user?.displayName,
-                  email: user?.email,
-                })}
+                {glowName ? (
+                  <ProGlowPhrase>
+                    {resolveAccountName({
+                      profileName: profile?.displayName,
+                      authName: user?.displayName,
+                      email: user?.email,
+                    })}
+                  </ProGlowPhrase>
+                ) : (
+                  resolveAccountName({
+                    profileName: profile?.displayName,
+                    authName: user?.displayName,
+                    email: user?.email,
+                  })
+                )}
               </h2>
               <button
                 type="button"

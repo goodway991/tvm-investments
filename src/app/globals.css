@@ -1053,7 +1053,7 @@ html.dark .plan-current-pane {
 }
 
 .pro-glow-wrap {
-  display: inline;
+  display: inline !important;
   filter:
     drop-shadow(0 0 5px rgba(228, 212, 255, 0.82))
     drop-shadow(0 0 9px rgba(255, 210, 176, 0.4));
@@ -1113,23 +1113,6 @@ html.dark .plan-current-pane {
     0 0 0 1px rgba(140, 190, 255, 0.22),
     0 0 18px rgba(70, 140, 255, 0.4),
     0 0 32px rgba(47, 98, 255, 0.22);
-}
-
-.upgrade-pro-glow {
-  background: transparent !important;
-  border: 1px solid rgba(228, 212, 255, 0.45);
-  box-shadow:
-    0 0 0 1px rgba(255, 210, 176, 0.22),
-    0 0 16px rgba(228, 212, 255, 0.4),
-    0 0 28px rgba(201, 215, 255, 0.28);
-}
-
-html.dark .upgrade-pro-glow {
-  border-color: rgba(228, 212, 255, 0.5);
-  box-shadow:
-    0 0 0 1px rgba(255, 210, 176, 0.28),
-    0 0 18px rgba(228, 212, 255, 0.48),
-    0 0 32px rgba(201, 215, 255, 0.32);
 }
 
 .bogen-tip {
