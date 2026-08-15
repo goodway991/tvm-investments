@@ -205,46 +205,31 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       <div className="flex flex-wrap items-center gap-4">
         <div className="mr-auto">
           <h1 className="font-display text-3xl font-bold text-ink">
-            {clean ? "Today at a glance" : (
-              <>
-                Welcome,{" "}
-                {ultraName ? (
-                  <UltraShinePhrase>
-                    {resolveAccountName({
-                      profileName: profile?.displayName,
-                      authName: user?.displayName,
-                      email: user?.email,
-                    })}
-                  </UltraShinePhrase>
-                ) : glowName ? (
-                  <ProGlowPhrase>
-                    {resolveAccountName({
-                      profileName: profile?.displayName,
-                      authName: user?.displayName,
-                      email: user?.email,
-                    })}
-                  </ProGlowPhrase>
-                ) : (
-                  resolveAccountName({
-                    profileName: profile?.displayName,
-                    authName: user?.displayName,
-                    email: user?.email,
-                  })
-                )}
-              </>
-            )}
-          </h1>
-          {clean ? (
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
-              Welcome,{" "}
-              {resolveAccountName({
+            Welcome,{" "}
+            {ultraName ? (
+              <UltraShinePhrase>
+                {resolveAccountName({
+                  profileName: profile?.displayName,
+                  authName: user?.displayName,
+                  email: user?.email,
+                })}
+              </UltraShinePhrase>
+            ) : glowName ? (
+              <ProGlowPhrase>
+                {resolveAccountName({
+                  profileName: profile?.displayName,
+                  authName: user?.displayName,
+                  email: user?.email,
+                })}
+              </ProGlowPhrase>
+            ) : (
+              resolveAccountName({
                 profileName: profile?.displayName,
                 authName: user?.displayName,
                 email: user?.email,
-              })}
-              . Here’s the session in a few lines — tap a name to read more.
-            </p>
-          ) : null}
+              })
+            )}
+          </h1>
         </div>
         {!clean ? (
         <form className="flex items-center gap-2" onSubmit={submitTickerSearch}>
@@ -356,13 +341,14 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         })}
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.7fr_1fr]">
+      <div className={`mt-4 grid gap-4 ${clean ? "" : "lg:grid-cols-[1.7fr_1fr]"}`}>
         <MarketPulse
           snapshot={snapshot}
           stocks={allStocks}
           onOpenStock={(symbol) => setSelectedSymbol(symbol)}
         />
 
+        {clean ? null : (
         <article className="glass-strong flex flex-col rounded-[24px] p-6">
           <h2 className="font-display text-lg font-semibold text-ink">
             <BogenHeading id="todays-movers">Today&apos;s movers</BogenHeading>
@@ -433,8 +419,75 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
             <TVMIcon name="arrow" size={16} />
           </Link>
         </article>
+        )}
       </div>
 
+      {clean ? (
+        <article className="glass-strong mt-4 flex flex-col rounded-[24px] p-6">
+          <h2 className="font-display text-lg font-semibold text-ink">
+            <BogenHeading id="todays-movers">Today&apos;s movers</BogenHeading>
+          </h2>
+          <div className="mt-4 flex-1 space-y-3.5">
+            {[0, 1, 2].map((index) => {
+              const stock = filteredMovers[index];
+              if (!stock) {
+                return (
+                  <div
+                    key={`empty-mover-${index}`}
+                    className="glass flex w-full items-center gap-3 rounded-2xl p-2.5"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-violet/10 text-violet">
+                      —
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-ink">—</p>
+                      <p className="truncate text-xs text-ink-soft">No mover this slot</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[11px] text-ink-soft">Prev —</p>
+                      <p className="font-display text-sm font-bold text-ink">—</p>
+                    </div>
+                  </div>
+                );
+              }
+              const move = sessionMove(stock);
+              return (
+                <button
+                  key={stock.symbol}
+                  type="button"
+                  onClick={() => setSelectedSymbol(stock.symbol)}
+                  className="glass flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-all hover:-translate-y-0.5 hover:bg-white/50"
+                >
+                  <MoveMark up={move.up} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-ink">{stock.symbol}</p>
+                    <p className="truncate text-xs text-ink-soft">{compactCompanyName(stock.name)}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-[11px] text-ink-soft">
+                      Prev ${move.previous.toFixed(2)}
+                    </p>
+                    <p
+                      className={`font-display text-sm font-bold ${
+                        move.up ? "text-emerald-600" : "text-coral"
+                      }`}
+                    >
+                      ${move.current.toFixed(2)}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <Link
+            href="/dashboard/movers"
+            className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-violet"
+          >
+            View all
+            <TVMIcon name="arrow" size={16} />
+          </Link>
+        </article>
+      ) : (
       <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-stretch">
         <article className="glass-strong w-full shrink-0 rounded-[24px] p-6 md:w-[22rem]">
           <div className="glass-violet relative rounded-2xl p-5 text-white">
@@ -498,6 +551,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
           />
         </div>
       </div>
+      )}
 
       {selectedStock && (
         <StockDetailModal

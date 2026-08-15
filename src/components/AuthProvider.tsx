@@ -282,9 +282,18 @@ async function ensureAccountDocuments(user: User) {
   const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   const profileRef = doc(db, "users", user.uid);
   const entitlementRef = doc(db, "entitlements", user.uid);
+  const watchlistRef = doc(db, "watchlists", user.uid);
   const portfolioRef = doc(db, "portfolios", user.uid);
 
-  const profile = await getDoc(profileRef);
+  const [profile, entitlement, watchlist, portfolio] = await Promise.all([
+    getDoc(profileRef),
+    getDoc(entitlementRef),
+    getDoc(watchlistRef),
+    getDoc(portfolioRef),
+  ]);
+
+  const creates: Array<Promise<unknown>> = [];
+
   if (!profile.exists()) {
     try {
       sessionStorage.removeItem(LEGAL_STORAGE_KEY);
@@ -318,41 +327,49 @@ async function ensureAccountDocuments(user: User) {
               displayName: "TVM Member",
             };
 
-    await setDoc(profileRef, {
-      uid: user.uid,
-      email: user.email,
-      ...named,
-      createdAt: now,
-      updatedAt: now,
-      tosVersion: TOS_VERSION,
-      tosAcceptedAt: now,
-      privacyAcceptedAt: now,
-    });
+    creates.push(
+      setDoc(profileRef, {
+        uid: user.uid,
+        email: user.email,
+        ...named,
+        createdAt: now,
+        updatedAt: now,
+        tosVersion: TOS_VERSION,
+        tosAcceptedAt: now,
+        privacyAcceptedAt: now,
+      }),
+    );
   }
 
-  const entitlement = await getDoc(entitlementRef);
   if (!entitlement.exists()) {
-    await setDoc(entitlementRef, {
-      uid: user.uid,
-      role: isAdmin ? "admin" : "client",
-      plan: isAdmin ? "pro" : "free",
-      watchlistLimit: isAdmin ? 100 : 10,
-      cooldownDays: isAdmin ? 0 : 7,
-      createdAt: now,
-      updatedAt: now,
-    });
+    creates.push(
+      setDoc(entitlementRef, {
+        uid: user.uid,
+        role: isAdmin ? "admin" : "client",
+        plan: isAdmin ? "pro" : "free",
+        watchlistLimit: isAdmin ? 100 : 10,
+        cooldownDays: isAdmin ? 0 : 7,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
   }
 
-  const portfolio = await getDoc(portfolioRef);
   if (!portfolio.exists()) {
-    await setDoc(portfolioRef, {
-      uid: user.uid,
-      cash: 0,
-      totalValue: 0,
-      createdAt: now,
-      updatedAt: now,
-    });
+    creates.push(
+      setDoc(portfolioRef, {
+        uid: user.uid,
+        cash: 0,
+        totalValue: 0,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
   }
+
+  if (creates.length) await Promise.all(creates);
+
+  return { profile, entitlement, watchlist, portfolio };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -403,7 +420,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setLoading(true);
       setProfile(profileFromAuth(nextUser));
       if (nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         const plan = overlayLabsPlan("admin", "pro");
@@ -413,113 +429,129 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           watchlistLimit: watchlistLimitForPlan(plan),
           cooldownDays: 0,
         });
+        setLoading(false);
+      } else {
+        setLoading(true);
       }
       try {
-        await ensureAccountDocuments(nextUser);
-        if (cancelled) return;
+        const hydrate = ensureAccountDocuments(nextUser).then((loaded) => {
+          if (cancelled || !loaded) return;
 
-        const [userSnap, entitlementSnap, watchSnap, portfolioSnap, positionSnap] =
-          await Promise.all([
-            getDoc(doc(db, "users", nextUser.uid)),
-            getDoc(doc(db, "entitlements", nextUser.uid)),
-            getDoc(doc(db, "watchlists", nextUser.uid)),
-            getDoc(doc(db, "portfolios", nextUser.uid)),
-            getDocs(collection(db, "portfolios", nextUser.uid, "positions")),
-          ]);
+          const userSnap = loaded.profile;
+          const entitlementSnap = loaded.entitlement;
+          const watchSnap = loaded.watchlist;
+          const portfolioSnap = loaded.portfolio;
 
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          const nextProfile = profileFrom(data);
-          setProfile({
-            ...nextProfile,
-            displayName: resolveAccountName({
-              profileName: nextProfile.displayName,
-              authName: nextUser.displayName,
-              email: nextUser.email,
-            }),
-          });
-          const roleIsAdmin =
-            nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-          const storedTour =
-            typeof data.seenTour === "string" ? data.seenTour : "";
-          const localTour = readTourSeen(nextUser.uid);
-          const completedTour =
-            storedTour ||
-            localTour ||
-            (asDate(data.tourCompletedAt) ? "tour-1" : "");
-          const tourIsPending =
-            !roleIsAdmin && completedTour !== CURRENT_TOUR_ID;
-          setTourPending(tourIsPending);
-          const seen = laterReleaseAck(
-            typeof data.seenRelease === "string" ? data.seenRelease : "",
-            readReleaseSeen(nextUser.uid),
-          );
-          setReleasePending(!tourIsPending && !releaseIsAcknowledged(seen));
-        }
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            const nextProfile = profileFrom(data);
+            setProfile({
+              ...nextProfile,
+              displayName: resolveAccountName({
+                profileName: nextProfile.displayName,
+                authName: nextUser.displayName,
+                email: nextUser.email,
+              }),
+            });
+            const roleIsAdmin =
+              nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+            const storedTour =
+              typeof data.seenTour === "string" ? data.seenTour : "";
+            const localTour = readTourSeen(nextUser.uid);
+            const completedTour =
+              storedTour ||
+              localTour ||
+              (asDate(data.tourCompletedAt) ? "tour-1" : "");
+            const tourIsPending =
+              !roleIsAdmin && completedTour !== CURRENT_TOUR_ID;
+            setTourPending(tourIsPending);
+            const seen = laterReleaseAck(
+              typeof data.seenRelease === "string" ? data.seenRelease : "",
+              readReleaseSeen(nextUser.uid),
+            );
+            setReleasePending(!tourIsPending && !releaseIsAcknowledged(seen));
+          }
 
-        if (entitlementSnap.exists()) {
-          const data = entitlementSnap.data();
-          const role =
-            data.role === "admin" ||
-            nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
-              ? "admin"
-              : "client";
-          const plan = overlayLabsPlan(
-            role,
-            typeof data.plan === "string" ? data.plan : undefined,
-          );
-          setEntitlement({
-            role,
-            plan,
-            watchlistLimit: watchlistLimitForPlan(plan),
-            cooldownDays: Number(data.cooldownDays) || 0,
-          });
-          const grantId = grantIdFrom(data);
-          setGiftGrantId(grantId);
-          setGiftPending(
-            data.role === "client" &&
-              data.plan === "pro" &&
-              data.source === "comp" &&
-              !data.giftAckedAt &&
-              readGiftSeen(nextUser.uid) !== grantId,
-          );
-        }
+          if (entitlementSnap.exists()) {
+            const data = entitlementSnap.data();
+            const role =
+              data.role === "admin" ||
+              nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+                ? "admin"
+                : "client";
+            const plan = overlayLabsPlan(
+              role,
+              typeof data.plan === "string" ? data.plan : undefined,
+            );
+            setEntitlement({
+              role,
+              plan,
+              watchlistLimit: watchlistLimitForPlan(plan),
+              cooldownDays: Number(data.cooldownDays) || 0,
+            });
+            const grantId = grantIdFrom(data);
+            setGiftGrantId(grantId);
+            setGiftPending(
+              data.role === "client" &&
+                data.plan === "pro" &&
+                data.source === "comp" &&
+                !data.giftAckedAt &&
+                readGiftSeen(nextUser.uid) !== grantId,
+            );
+          }
 
-        if (!watchSnap.exists()) {
-          setWatchlist(defaultWatchlist);
-        } else {
-          const data = watchSnap.data();
-          setWatchlist({
-            symbols: Array.isArray(data.symbols) ? data.symbols.map(String) : [],
-            changedAt: asDate(data.changedAt),
-            nextChangeAt: asDate(data.nextChangeAt),
-            exists: true,
-          });
-        }
+          if (!watchSnap.exists()) {
+            setWatchlist(defaultWatchlist);
+          } else {
+            const data = watchSnap.data();
+            setWatchlist({
+              symbols: Array.isArray(data.symbols)
+                ? data.symbols.map(String)
+                : [],
+              changedAt: asDate(data.changedAt),
+              nextChangeAt: asDate(data.nextChangeAt),
+              exists: true,
+            });
+          }
 
-        if (portfolioSnap.exists()) {
-          const data = portfolioSnap.data();
-          setPortfolio({
-            cash: Number(data.cash) || 0,
-            totalValue: Number(data.totalValue) || 0,
-          });
-        }
+          if (portfolioSnap.exists()) {
+            const data = portfolioSnap.data();
+            setPortfolio({
+              cash: Number(data.cash) || 0,
+              totalValue: Number(data.totalValue) || 0,
+            });
+          }
 
-        setPositions(
-          positionSnap.docs.map((position) => {
-            const data = position.data();
-            return {
-              symbol: String(data.symbol),
-              shares: Number(data.shares) || 0,
-              averageCost: Number(data.averageCost) || 0,
-              currentPrice: Number(data.currentPrice) || 0,
-              purchasedAt:
-                typeof data.purchasedAt === "string" && data.purchasedAt
-                  ? data.purchasedAt
-                  : null,
-            };
+          void getDocs(collection(db, "portfolios", nextUser.uid, "positions"))
+            .then((positionSnap) => {
+              if (cancelled) return;
+              setPositions(
+                positionSnap.docs.map((position) => {
+                  const data = position.data();
+                  return {
+                    symbol: String(data.symbol),
+                    shares: Number(data.shares) || 0,
+                    averageCost: Number(data.averageCost) || 0,
+                    currentPrice: Number(data.currentPrice) || 0,
+                    purchasedAt:
+                      typeof data.purchasedAt === "string" && data.purchasedAt
+                        ? data.purchasedAt
+                        : null,
+                  };
+                }),
+              );
+            })
+            .catch((positionError) => {
+              console.error(positionError);
+            });
+        });
+
+        await Promise.race([
+          hydrate,
+          new Promise<void>((resolve) => {
+            window.setTimeout(resolve, 8000);
           }),
-        );
+        ]);
       } catch (accountError) {
         console.error(accountError);
         setError(
