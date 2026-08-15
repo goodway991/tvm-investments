@@ -17,6 +17,7 @@ import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
+import { ProGlowText } from "@/components/ProGlowText";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 export const dashboardNav = [
@@ -98,7 +99,9 @@ function ProfileNavLink({
             {pro ? <span className="pro-name-glow">{name}</span> : name}
           </span>
           {pro ? (
-            <span className="pro-name-glow mt-1 block text-sm leading-tight">Pro account</span>
+            <span className="mt-1 block text-sm leading-tight">
+              <ProGlowText>Pro account</ProGlowText>
+            </span>
           ) : null}
         </span>
       )}
@@ -128,24 +131,30 @@ function UpgradeNavCard({
   const body = proChip ? (
     compact ? (
       <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
-        Pro
+        <ProGlowText>Pro</ProGlowText>
       </span>
     ) : (
       <span className="pointer-events-none relative z-[1] min-w-0">
-        <span className="block text-sm font-semibold leading-tight">Pro account</span>
+        <span className="block text-sm font-semibold leading-tight">
+          <ProGlowText>Pro account</ProGlowText>
+        </span>
         <span className="block text-[11px] font-medium leading-tight text-white/80">
           Unlocked
         </span>
       </span>
     )
   ) : compact ? (
-    <span className="pro-name-glow pointer-events-none relative z-[1] text-[11px] uppercase">
-      Pro
+    <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
+      <ProGlowText>Pro</ProGlowText>
     </span>
   ) : (
-    <span className="pointer-events-none relative z-[1] min-w-0">
-      <span className="pro-name-glow block text-sm leading-tight">Upgrade to Pro</span>
-      <span className="pro-name-glow mt-0.5 block text-[11px] leading-tight">Unlock more</span>
+    <span className="pointer-events-none relative z-[1] flex min-w-0 flex-col items-start">
+      <span className="text-sm font-semibold leading-tight">
+        Upgrade to <span className="pro-name-glow">Pro</span>
+      </span>
+      <span className="mt-0.5 block w-full text-[11px] font-medium leading-tight text-ink-soft">
+        Unlock more
+      </span>
     </span>
   );
 
@@ -473,7 +482,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <TVMBrand />
           </button>
           {entitlement.plan === "pro" ? (
-            <span className="pro-name-glow text-sm uppercase">Pro</span>
+            <span className="text-sm uppercase">
+              <ProGlowText>Pro</ProGlowText>
+            </span>
           ) : (
             <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold uppercase text-white">
               {entitlement.plan}

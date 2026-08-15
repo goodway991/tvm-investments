@@ -6,6 +6,7 @@ import { OverlaySheet } from "@/components/OverlaySheet";
 import { PlanComparisonTable } from "@/components/PlanComparisonTable";
 import { useTour } from "@/components/TourProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
+import { ProGlowText } from "@/components/ProGlowText";
 
 export function GiftedProModal() {
   const { giftPending, acknowledgeGift } = useAuth();
@@ -35,17 +36,19 @@ export function GiftedProModal() {
       header={
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-            Complimentary Pro
+            <ProGlowText>Complimentary Pro</ProGlowText>
           </p>
           <h2
             id="gifted-pro-title"
             className="mt-2 font-display text-3xl font-bold text-ink sm:text-4xl"
           >
-            You have been gifted Pro by ADMIN!
+            <ProGlowText>You have been gifted Pro by ADMIN!</ProGlowText>
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">
-            Your account now includes the full Pro desk. Here is what that
-            unlocks:
+            <ProGlowText>
+              Your account now includes the full Pro desk. Here is what that
+              unlocks:
+            </ProGlowText>
           </p>
         </div>
       }

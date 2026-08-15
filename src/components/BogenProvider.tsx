@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { BOGEN_TIPS, type BogenId } from "@/lib/bogen";
+import { ProGlowText } from "@/components/ProGlowText";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 const STORAGE_KEY = "tvm-bogen-mode";
@@ -105,16 +106,20 @@ export function BogenProvider({ children }: { children: ReactNode }) {
                   id="bogen-tip-title"
                   className="mt-2 font-display text-2xl font-bold text-ink"
                 >
-                  {tip.title}
+                  <ProGlowText>{tip.title}</ProGlowText>
                 </h2>
                 <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-ink-soft">
                   What it is
                 </p>
-                <p className="mt-1 text-sm leading-relaxed text-ink">{tip.what}</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink">
+                  <ProGlowText>{tip.what}</ProGlowText>
+                </p>
                 <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-ink-soft">
                   How to use it
                 </p>
-                <p className="mt-1 text-sm leading-relaxed text-ink">{tip.how}</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink">
+                  <ProGlowText>{tip.how}</ProGlowText>
+                </p>
                 <div className="mt-5 flex justify-end">
                   <button
                     type="button"

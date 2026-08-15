@@ -251,7 +251,7 @@ function MenuScene() {
           </div>
           <div className="tour-mini-bottom">
             <span className="tour-mini-chip tour-mini-chip-warn">Maint.</span>
-            <span className="tour-mini-chip tour-mini-chip-pro">Pro</span>
+            <span className="tour-mini-chip tour-mini-chip-pro pro-name-glow">Pro</span>
             <span className="tour-mini-chip">Account</span>
           </div>
         </aside>

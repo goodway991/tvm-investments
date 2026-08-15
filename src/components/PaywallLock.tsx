@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { TVMIcon } from "@/components/TVMBrand";
+import { ProGlowText } from "@/components/ProGlowText";
 import { useUpgrade } from "@/components/UpgradeProvider";
 
 function LockedSkeleton() {
@@ -64,7 +65,7 @@ export function PaywallLock({
           onClick={() => openUpgrade()}
           className="glass-violet rounded-full px-5 py-2.5 text-sm font-semibold text-white"
         >
-          {cta}
+          <ProGlowText>{cta}</ProGlowText>
         </button>
       </div>
     </div>

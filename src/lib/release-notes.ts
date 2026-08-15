@@ -1,6 +1,7 @@
-export const CURRENT_RELEASE_ID = "beta-2.2";
+export const CURRENT_RELEASE_ID = "beta-2.1";
+export const RELEASE_ACK_ID = "beta-2.1-score";
 
-export type ReleaseFeatureVisualId = "bogen" | "events";
+export type ReleaseFeatureVisualId = "bogen" | "events" | "account-score";
 
 export type ReleaseFeature = {
   title: string;
@@ -51,7 +52,7 @@ export const RELEASES: ReleaseNote[] = [
     id: "beta-2.1",
     version: "Beta v2.1",
     title: "Bogen mode",
-    date: "August 15th, 2026",
+    date: "August 14th, 2026",
     summary:
       "A question mark next to each feature, with a short how-to when you tap it. Turn it on or off in Settings.",
     features: [
@@ -66,21 +67,12 @@ export const RELEASES: ReleaseNote[] = [
         body: "On Daily Brief, tap a market-moving event card to expand it. The card gets longer with the fuller note and any extra info — then tap again to collapse back to the headline.",
       },
       {
+        title: "Account score on Daily Brief — your watchlist and book",
+        visual: "account-score",
+      },
+      {
         title: "UI updates",
       },
-    ],
-  },
-  {
-    id: "beta-2.2",
-    version: "Beta v2.2",
-    title: "After maintenance",
-    date: "August 14th, 2026",
-    summary:
-      "The site is back open. Account score, a clearer Pro row, and Archive Calendar now rewind the product to that day.",
-    items: [
-      "Account score on Daily Brief — your watchlist and book, not a composite average",
-      "Pro sits under your name with the traveling glow; Free gets a clear Upgrade to Pro chip with the same glow",
-      "Archive Calendar rewinds the whole product to that day’s era, not just the numbers",
     ],
   },
 ];

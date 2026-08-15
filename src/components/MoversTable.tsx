@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { sessionMove } from "@/lib/chart-series";
 import { FREE_MOVER_LIMIT, PRO_MOVER_LIMIT } from "@/lib/plans";
 import { BogenHeading } from "@/components/BogenProvider";
+import { ProGlowText } from "@/components/ProGlowText";
 
 interface MoversTableProps {
   movers: MarketMover[];
@@ -73,7 +74,14 @@ export function MoversTable({ movers }: MoversTableProps) {
       <p className="text-ink-soft text-sm mb-6">
         Largest moves versus the previous close across the daily scan of about
         1,500 liquid US names.
-        {isPro ? " Pro shows the top 20." : " Free shows the top 10."}
+        {isPro ? (
+          <>
+            {" "}
+            <ProGlowText>Pro shows the top 20.</ProGlowText>
+          </>
+        ) : (
+          " Free shows the top 10."
+        )}
       </p>
       <MoverRows movers={visible} />
       {locked.length > 0 && (

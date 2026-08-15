@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading } from "@/components/BogenProvider";
+import { ProGlowText } from "@/components/ProGlowText";
 
 type PlanSource = "comp" | "paid" | "none";
 
@@ -108,11 +109,15 @@ export function AdminAccountsPanel() {
         Admin
       </p>
       <h2 className="mt-2 font-display text-2xl font-bold text-ink">
-        <BogenHeading id="admin-gifting">Complimentary Pro</BogenHeading>
+        <BogenHeading id="admin-gifting">
+          <ProGlowText>Complimentary Pro</ProGlowText>
+        </BogenHeading>
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Every signed-up account is listed here. Give friends Pro without charging
-        them. Paid Pro boxes glow blue — leave those alone.
+        <ProGlowText>
+          Every signed-up account is listed here. Give friends Pro without charging
+          them. Paid Pro boxes glow blue — leave those alone.
+        </ProGlowText>
       </p>
 
       {loading ? (
@@ -145,9 +150,9 @@ export function AdminAccountsPanel() {
                         {!plansLoaded
                           ? "Plan unknown"
                           : paid
-                            ? "Paid Pro"
+                            ? <ProGlowText>Paid Pro</ProGlowText>
                             : row.plan === "pro"
-                              ? "Complimentary Pro"
+                              ? <ProGlowText>Complimentary Pro</ProGlowText>
                               : "Free"}
                       </p>
                     </div>
@@ -172,7 +177,7 @@ export function AdminAccountsPanel() {
                           onClick={() => void gift(row, true)}
                           className="glass-violet rounded-full px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                         >
-                          {busyUid === row.uid ? "Saving…" : "Give Pro"}
+                          {busyUid === row.uid ? "Saving…" : <ProGlowText>Give Pro</ProGlowText>}
                         </button>
                       )}
                     </div>

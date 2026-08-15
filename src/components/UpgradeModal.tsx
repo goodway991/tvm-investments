@@ -7,6 +7,7 @@ import { OverlaySheet } from "@/components/OverlaySheet";
 import { PlanComparisonTable } from "@/components/PlanComparisonTable";
 import { TVMIcon } from "@/components/TVMBrand";
 import { PLAN_PRICES, yearlySavingsPercent, type BillingInterval } from "@/lib/plans";
+import { ProGlowText } from "@/components/ProGlowText";
 
 export function UpgradeModal({ onClose }: { onClose: () => void }) {
   const { user, entitlement } = useAuth();
@@ -57,11 +58,13 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
                 Your plan
               </p>
               <h2 id="upgrade-title" className="mt-1 font-display text-3xl font-bold text-ink">
-                {alreadyPro ? "Your plan" : "Free vs Pro"}
+                {alreadyPro ? "Your plan" : <ProGlowText>Free vs Pro</ProGlowText>}
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
-                Pro unlocks separate short-term and long-term lists, richer culture
-                write-ups, larger watchlists, and full backtests.
+                <ProGlowText>
+                  Pro unlocks separate short-term and long-term lists, richer culture
+                  write-ups, larger watchlists, and full backtests.
+                </ProGlowText>
               </p>
             </div>
             <button
@@ -116,7 +119,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
 
             {alreadyPro ? (
               <p className="glass-violet rounded-full px-6 py-3 text-center text-sm font-semibold text-white">
-                Currently on Pro
+                Currently on <span className="pro-name-glow">Pro</span>
               </p>
             ) : user ? (
               <button
@@ -125,7 +128,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
                 disabled={loading}
                 className="glass-violet rounded-full px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
               >
-                {loading ? "Opening Stripe…" : "Upgrade to Pro"}
+                {loading ? "Opening Stripe…" : <ProGlowText>Upgrade to Pro</ProGlowText>}
               </button>
             ) : (
               <Link

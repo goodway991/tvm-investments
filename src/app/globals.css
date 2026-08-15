@@ -1054,6 +1054,7 @@ html.dark .plan-current-pane {
 
 .pro-name-glow {
   display: inline-block;
+  vertical-align: baseline;
   font-weight: 800;
   line-height: 1.15;
   background-color: transparent !important;

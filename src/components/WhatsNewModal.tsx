@@ -2,6 +2,7 @@
 
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
+import { ProGlowText } from "@/components/ProGlowText";
 import { useAuth } from "@/components/AuthProvider";
 import { useMaintenance } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
@@ -43,10 +44,10 @@ export function WhatsNewModal() {
             id="whats-new-title"
             className="mt-2 font-display text-3xl font-bold text-ink sm:text-4xl"
           >
-            {CURRENT_RELEASE.title}
+            <ProGlowText>{CURRENT_RELEASE.title}</ProGlowText>
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">
-            {CURRENT_RELEASE.summary}
+            <ProGlowText>{CURRENT_RELEASE.summary}</ProGlowText>
           </p>
         </div>
       }
@@ -74,11 +75,11 @@ export function WhatsNewModal() {
                   feature.visual ? "mt-3" : ""
                 }`}
               >
-                {feature.title}
+                <ProGlowText>{feature.title}</ProGlowText>
               </h3>
               {feature.body ? (
                 <p className="mt-1 font-display text-sm font-semibold leading-relaxed text-ink">
-                  {feature.body}
+                  <ProGlowText>{feature.body}</ProGlowText>
                 </p>
               ) : null}
             </div>
@@ -92,7 +93,7 @@ export function WhatsNewModal() {
               key={item}
               className="font-display text-base font-bold text-ink"
             >
-              {item}
+              <ProGlowText>{item}</ProGlowText>
             </li>
           ))}
         </ul>

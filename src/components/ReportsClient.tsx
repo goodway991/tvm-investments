@@ -5,6 +5,7 @@ import { PaywallLock } from "@/components/PaywallLock";
 import { TopPicks } from "@/components/TopPicks";
 import { useAuth } from "@/components/AuthProvider";
 import { BogenHeading } from "@/components/BogenProvider";
+import { ProGlowText } from "@/components/ProGlowText";
 import type { DailySnapshot } from "@/types";
 
 export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
@@ -49,7 +50,9 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
             </BogenHeading>
           </h2>
           <p className="mt-1 text-sm text-ink-soft">
-            Pro splits the screen into two ranked lists with scores and outlook notes.
+            <ProGlowText>
+              Pro splits the screen into two ranked lists with scores and outlook notes.
+            </ProGlowText>
           </p>
           <div className="mt-4">
             <PaywallLock locked intensity="soft" cta="Upgrade to Pro">
@@ -65,7 +68,9 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
         <section>
           <h2 className="font-display text-2xl font-bold text-ink">Full backtest track record</h2>
           <p className="mt-1 text-sm text-ink-soft">
-            Pro shows logged pick returns versus the S&amp;P 500 across this desk.
+            <ProGlowText>
+              Pro shows logged pick returns versus the S&P 500 across this desk.
+            </ProGlowText>
           </p>
           <div className="mt-4">
             <PaywallLock locked intensity="soft" cta="Upgrade to Pro">

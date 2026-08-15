@@ -5,6 +5,7 @@ import type { CompanyReport, StockCandidate, StrategyId } from "@/types";
 import { STRATEGY_NAMES } from "@/types";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import { BogenHeading } from "@/components/BogenProvider";
+import { ProGlowText } from "@/components/ProGlowText";
 
 interface TopPicksProps {
   picks: StockCandidate[];
@@ -94,7 +95,9 @@ export function TopPicks({
       <h2 className="font-display text-2xl font-bold text-ink">
         <BogenHeading id={compact ? "reports-horizon" : "reports"}>{title}</BogenHeading>
       </h2>
-      <p className="mt-1 text-sm text-ink-soft">{subtitle}</p>
+      <p className="mt-1 text-sm text-ink-soft">
+        <ProGlowText>{subtitle}</ProGlowText>
+      </p>
 
       <div className="mt-6 grid gap-5">
         {[0, 1, 2].map((idx) => {
@@ -331,7 +334,7 @@ function NoteWidget({
           tone === "gain" ? "text-gain" : tone === "loss" ? "text-loss" : "text-violet"
         }`}
       >
-        {title}
+        <ProGlowText>{title}</ProGlowText>
       </p>
       {children}
     </div>

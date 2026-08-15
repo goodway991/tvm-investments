@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MiniChart } from "@/components/MiniChart";
 import { PublicShell } from "@/components/PublicShell";
 import { TVMIcon } from "@/components/TVMBrand";
+import { ProGlowText } from "@/components/ProGlowText";
 
 const founders = [
   { initials: "TO", name: "Taiki Okada", role: "Strategy & Research", timing: "6s", delay: "0s" },
@@ -250,8 +251,8 @@ export function LandingPage() {
             </h2>
             <p className="mx-auto mt-3 max-w-md text-white/[0.85]">
               Create a free account to open today’s screen, movers, and research
-              notes. Pro unlocks deeper lookbacks and higher limits when you
-              need them.
+              notes. <ProGlowText>Pro unlocks deeper lookbacks and higher limits when you
+              need them.</ProGlowText>
             </p>
             <div className="mt-7 flex justify-center gap-3">
               <Link

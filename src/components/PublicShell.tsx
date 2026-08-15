@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
 import { LegalFooter } from "@/components/LegalFooter";
+import { ProGlowText } from "@/components/ProGlowText";
 import { useUpgrade } from "@/components/UpgradeProvider";
 
 const primaryLinks = [
@@ -224,7 +225,9 @@ export function PublicShell({
         </div>
 
         <div className="glass mt-auto rounded-2xl p-4">
-          <p className="font-display text-sm font-semibold text-ink">Go Pro</p>
+          <p className="font-display text-sm font-semibold text-ink">
+            <ProGlowText>Go Pro</ProGlowText>
+          </p>
           <p className="mt-1 text-xs leading-relaxed text-ink-soft">
             Unlock live-time screening and full backtests.
           </p>

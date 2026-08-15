@@ -1,6 +1,7 @@
 "use client";
 
 import { PLAN_FEATURES } from "@/lib/plans";
+import { ProGlowText } from "@/components/ProGlowText";
 
 function PlanMark({ included }: { included: boolean }) {
   if (included) {
@@ -61,7 +62,7 @@ export function PlanComparisonTable({
         ) : null}
       </div>
       <div className="plan-compare-h text-violet">
-        Pro
+        <ProGlowText>Pro</ProGlowText>
         {alreadyPro ? (
           <span className="mt-1 block text-[10px] font-semibold uppercase tracking-widest text-violet">
             Current

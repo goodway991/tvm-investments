@@ -14,6 +14,7 @@ import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { NewBadge } from "@/components/NewBadge";
+import { ProGlowText } from "@/components/ProGlowText";
 import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
@@ -326,7 +327,9 @@ function VersionCard({
       </button>
       {open ? (
         <div className="border-t border-ink/[0.06] px-4 py-3">
-          <p className="text-sm text-ink">{release.summary}</p>
+          <p className="text-sm text-ink">
+            <ProGlowText>{release.summary}</ProGlowText>
+          </p>
           {release.features?.length ? (
             <div className="mt-3 space-y-4">
               {release.features.map((feature) => (
@@ -339,11 +342,11 @@ function VersionCard({
                       feature.visual ? "mt-2" : ""
                     }`}
                   >
-                    {feature.title}
+                    <ProGlowText>{feature.title}</ProGlowText>
                   </h3>
                   {feature.body ? (
                     <p className="mt-1 font-display text-sm font-semibold leading-relaxed text-ink">
-                      {feature.body}
+                      <ProGlowText>{feature.body}</ProGlowText>
                     </p>
                   ) : null}
                 </div>
@@ -354,7 +357,7 @@ function VersionCard({
             <ul className="mt-2 space-y-1 text-sm">
               {release.items.map((item) => (
                 <li key={item} className="font-display font-bold text-ink">
-                  {item}
+                  <ProGlowText>{item}</ProGlowText>
                 </li>
               ))}
             </ul>
@@ -502,7 +505,7 @@ export function SettingsPanel() {
             <span className="pro-name-glow text-sm">Pro</span>
           ) : (
             <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white">
-              Pro
+              <ProGlowText>Pro</ProGlowText>
             </span>
           )
         ) : (

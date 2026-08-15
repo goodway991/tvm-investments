@@ -42,7 +42,7 @@ import {
   splitPersonName,
 } from "@/lib/person-name";
 import { parseTicker } from "@/lib/ticker";
-import { CURRENT_RELEASE_ID } from "@/lib/release-notes";
+import { RELEASE_ACK_ID } from "@/lib/release-notes";
 import { CURRENT_TOUR_ID } from "@/lib/virtual-tour";
 import {
   isNewBadgeActive,
@@ -447,7 +447,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const seen =
                 (typeof data.seenRelease === "string" && data.seenRelease) ||
                 readReleaseSeen(nextUser.uid);
-              setReleasePending(!tourIsPending && seen !== CURRENT_RELEASE_ID);
+              setReleasePending(!tourIsPending && seen !== RELEASE_ACK_ID);
             },
             () => {
               setProfile(profileFromAuth(nextUser));
@@ -613,7 +613,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     writeTourSeen(user.uid, CURRENT_TOUR_ID);
     setTourPending(false);
     const seenRelease = readReleaseSeen(user.uid);
-    setReleasePending(seenRelease !== CURRENT_RELEASE_ID);
+    setReleasePending(seenRelease !== RELEASE_ACK_ID);
     if (!db) return;
     try {
       await updateDoc(doc(db, "users", user.uid), {
@@ -629,12 +629,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const acknowledgeRelease = useCallback(async () => {
     const db = getClientFirestore();
     if (!user) return;
-    writeReleaseSeen(user.uid, CURRENT_RELEASE_ID);
+    writeReleaseSeen(user.uid, RELEASE_ACK_ID);
     setReleasePending(false);
     if (!db) return;
     try {
       await updateDoc(doc(db, "users", user.uid), {
-        seenRelease: CURRENT_RELEASE_ID,
+        seenRelease: RELEASE_ACK_ID,
         updatedAt: serverTimestamp(),
       });
     } catch (releaseError) {

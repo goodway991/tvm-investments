@@ -10,6 +10,7 @@ import type { ChartPoint, ChartRange } from "@/lib/chart-series";
 import type { HorizonStats } from "@/lib/horizon-forecast";
 import { compactCompanyName } from "@/components/StockDetailModal";
 import { BogenHeading } from "@/components/BogenProvider";
+import { ProGlowText } from "@/components/ProGlowText";
 import type { DailySnapshot, OHLCVBar, StockCandidate } from "@/types";
 
 const rangeCopy: Record<ChartRange, string> = {
@@ -307,7 +308,13 @@ export function MarketPulse({
               : "bg-violet text-white hover:bg-violet/90"
           }`}
         >
-          {predicting ? "Hide prediction" : isPro ? "Short term predict" : "Short term predict · Pro"}
+          {predicting ? (
+            "Hide prediction"
+          ) : isPro ? (
+            "Short term predict"
+          ) : (
+            <ProGlowText>Short term predict · Pro</ProGlowText>
+          )}
         </button>
       </div>
 

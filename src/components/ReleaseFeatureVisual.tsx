@@ -145,9 +145,64 @@ function EventsVisual() {
   );
 }
 
+function AccountScoreVisual() {
+  const cards = [
+    { label: "Top pick · NVDA", value: "+2.41%", badge: "" },
+    { label: "Names screened", value: "1,487", badge: "universe" },
+    { label: "Daily movers", value: "86", badge: "ranked" },
+    { label: "Account score", value: "74 / 100", badge: "12 names", highlight: true },
+  ];
+
+  return (
+    <MiniWindow title="Daily Brief · Account score">
+      <div className="bg-surface p-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {cards.map((card) => (
+            <article
+              key={card.label}
+              className={`rounded-[18px] p-3 ${
+                card.highlight
+                  ? "glass-violet text-white shadow-[0_12px_24px_-14px_rgba(47,98,255,0.7)]"
+                  : "border border-ink/[0.06] bg-white"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-1">
+                <span
+                  className={`text-[10px] leading-tight ${
+                    card.highlight ? "text-white/80" : "text-ink-soft"
+                  }`}
+                >
+                  {card.label}
+                </span>
+                {card.badge ? (
+                  <span
+                    className={`shrink-0 text-[9px] font-semibold ${
+                      card.highlight ? "text-emerald-200" : "text-emerald-600"
+                    }`}
+                  >
+                    {card.badge}
+                  </span>
+                ) : null}
+              </div>
+              <p
+                className={`mt-1 font-display text-lg font-bold leading-tight ${
+                  card.highlight ? "text-white" : "text-ink"
+                }`}
+              >
+                {card.value}
+              </p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </MiniWindow>
+  );
+}
+
 const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   bogen: BogenVisual,
   events: EventsVisual,
+  "account-score": AccountScoreVisual,
 };
 
 export function ReleaseFeatureVisual({ id }: { id: ReleaseFeatureVisualId }) {
