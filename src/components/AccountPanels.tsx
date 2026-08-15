@@ -577,8 +577,8 @@ export function SettingsPanel() {
               }
               className="field w-full appearance-none rounded-2xl px-4 py-3 text-sm font-semibold text-ink"
             >
-              <option value="light">Light</option>
               <option value="dark">Dark</option>
+              <option value="light">Light</option>
               <option value="system">Match system</option>
             </select>
           </label>

@@ -23,10 +23,10 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function readStoredAppearance(): Appearance {
-  if (typeof window === "undefined") return "light";
+  if (typeof window === "undefined") return "dark";
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (stored === "dark" || stored === "light" || stored === "system") return stored;
-  return "light";
+  return "dark";
 }
 
 function systemPrefersDark() {
@@ -46,7 +46,7 @@ function applyTheme(resolved: "light" | "dark") {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { era, rewind } = useSiteEra();
-  const [appearance, setAppearanceState] = useState<Appearance>("light");
+  const [appearance, setAppearanceState] = useState<Appearance>("dark");
   const [ready, setReady] = useState(false);
   const lockLight = rewind && !era.features.darkMode;
 
