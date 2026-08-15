@@ -3,16 +3,26 @@
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
 import { useAuth } from "@/components/AuthProvider";
+import { useMaintenance } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { CURRENT_RELEASE } from "@/lib/release-notes";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 export function WhatsNewModal() {
-  const { releasePending, acknowledgeRelease } = useAuth();
+  const { giftPending, releasePending, acknowledgeRelease } = useAuth();
+  const { lock: maintenanceLock } = useMaintenance();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
 
-  if (!releasePending || tourOpen || rewind) return null;
+  if (
+    !releasePending ||
+    tourOpen ||
+    rewind ||
+    maintenanceLock ||
+    giftPending
+  ) {
+    return null;
+  }
 
   return (
     <OverlaySheet
@@ -23,7 +33,10 @@ export function WhatsNewModal() {
       zIndexClass="z-[108]"
       header={
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-violet">
+          <p className="text-[11px] leading-snug text-ink-soft">
+            You can see this message in Settings again.
+          </p>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-violet">
             {CURRENT_RELEASE.version} · {CURRENT_RELEASE.date}
           </p>
           <h2
@@ -33,7 +46,7 @@ export function WhatsNewModal() {
             {CURRENT_RELEASE.title}
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-soft">
-            {CURRENT_RELEASE.summary} Every Beta note stays in Settings.
+            {CURRENT_RELEASE.summary}
           </p>
         </div>
       }

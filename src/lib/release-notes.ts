@@ -1,4 +1,4 @@
-export const CURRENT_RELEASE_ID = "beta-2.1";
+export const CURRENT_RELEASE_ID = "beta-2.2";
 
 export type ReleaseFeatureVisualId = "bogen" | "events";
 
@@ -68,6 +68,19 @@ export const RELEASES: ReleaseNote[] = [
       {
         title: "UI updates",
       },
+    ],
+  },
+  {
+    id: "beta-2.2",
+    version: "Beta v2.2",
+    title: "After maintenance",
+    date: "August 14th, 2026",
+    summary:
+      "The site is back open. Account score, a clearer Pro row, and Archive Calendar now rewind the product to that day.",
+    items: [
+      "Account score on Daily Brief — your watchlist and book, not a composite average",
+      "Pro sits under your name with the traveling glow; Free gets a clear Upgrade to Pro chip with the same glow",
+      "Archive Calendar rewinds the whole product to that day’s era, not just the numbers",
     ],
   },
 ];

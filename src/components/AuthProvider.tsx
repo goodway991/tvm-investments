@@ -611,15 +611,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const db = getClientFirestore();
     if (!user) return;
     writeTourSeen(user.uid, CURRENT_TOUR_ID);
-    writeReleaseSeen(user.uid, CURRENT_RELEASE_ID);
     setTourPending(false);
-    setReleasePending(false);
+    const seenRelease = readReleaseSeen(user.uid);
+    setReleasePending(seenRelease !== CURRENT_RELEASE_ID);
     if (!db) return;
     try {
       await updateDoc(doc(db, "users", user.uid), {
         tourCompletedAt: serverTimestamp(),
         seenTour: CURRENT_TOUR_ID,
-        seenRelease: CURRENT_RELEASE_ID,
         updatedAt: serverTimestamp(),
       });
     } catch (tourError) {
