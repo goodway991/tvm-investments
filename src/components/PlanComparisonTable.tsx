@@ -49,11 +49,13 @@ export function PlanComparisonTable({
   const features = [...PLAN_FEATURES]
     .filter(
       (feature) =>
-        showUltra || feature.name !== "Portfolio book review",
+        (showUltra || !feature.labsOnly) &&
+        (showUltra || feature.name !== "Portfolio book review"),
     )
     .sort((left, right) => Number(left.free) - Number(right.free));
 
   return (
+    <>
     <div className={`plan-compare ${showUltra ? "has-ultra" : ""}`}>
       {alreadyUltra ? null : (
         <div
@@ -102,11 +104,19 @@ export function PlanComparisonTable({
           </div>
           {showUltra ? (
             <div className="plan-compare-cell plan-compare-mark plan-compare-ultra">
-              <PlanMark included />
+              <PlanMark included={feature.ultra ?? feature.pro} />
             </div>
           ) : null}
         </div>
       ))}
     </div>
+    {showUltra ? (
+      <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">
+        *99% is an Ultra research-read target, not a guarantee. Horizon
+        prediction caps apply when that suite ships. Pro’s 5/week is reviews
+        and prediction scores combined.
+      </p>
+    ) : null}
+    </>
   );
 }

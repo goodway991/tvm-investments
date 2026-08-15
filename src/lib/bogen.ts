@@ -222,8 +222,8 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "portfolio-score": {
     title: "Overall score",
-    what: "A 0–100 snapshot of the saved book. After Predict score, it becomes a possible score if you added the considering names.",
-    how: "Add names under Considering, then tap Predict score. The chip next to the number is possible minus the current book.",
+    what: "A 0–100 snapshot of the saved book. Predict score, under Considering, opens a second bar for the mix if those names were added.",
+    how: "Tap Analyze book for the current score. Fill Considering, then Predict score. The chip is possible minus the current book.",
   },
   "portfolio-predict": {
     title: "Predict score",

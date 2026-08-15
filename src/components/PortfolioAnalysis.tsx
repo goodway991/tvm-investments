@@ -69,6 +69,67 @@ function AspectCard({
   );
 }
 
+function ScoreBar({
+  title,
+  bogenId,
+  review,
+  caption,
+  delta = null,
+}: {
+  title: string;
+  bogenId: BogenId;
+  review: PortfolioReview;
+  caption: string;
+  delta?: number | null;
+}) {
+  return (
+    <article className="relative glass rounded-[22px] p-5">
+      <p className="text-xs font-semibold uppercase tracking-widest text-violet">
+        <BogenHeading id={bogenId}>{title}</BogenHeading>
+      </p>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <p className="font-display text-4xl font-bold text-ink">
+            {review.overall == null ? "—" : review.overall}
+            <span className="ml-2 text-lg font-semibold text-ink-soft">/ 100</span>
+          </p>
+          {delta != null ? (
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1 text-sm font-bold ${
+                delta > 0
+                  ? "bg-emerald-400/20 text-emerald-600"
+                  : delta < 0
+                    ? "bg-coral/20 text-coral"
+                    : "bg-ink/10 text-ink-soft"
+              }`}
+            >
+              {delta > 0 ? `+${delta}` : `${delta}`}
+            </button>
+          ) : null}
+        </div>
+        <p className="text-sm font-semibold text-ink">{review.strength}</p>
+      </div>
+      <div className="book-strength mt-4">
+        <div className="book-strength-track" aria-hidden>
+          <span
+            className="book-strength-dot"
+            style={{
+              left: `${review.overall == null ? 0 : review.overall}%`,
+            }}
+          />
+        </div>
+        <div className="mt-2 flex justify-between text-[11px] font-semibold text-ink-soft">
+          <span>Fragile</span>
+          <span>Mixed</span>
+          <span>Strong</span>
+        </div>
+      </div>
+      <p className="mt-3 text-sm leading-relaxed text-ink-soft">{caption}</p>
+    </article>
+  );
+}
+
 export function BookScoreCard({
   stocks,
   screened = [],
@@ -133,7 +194,7 @@ export function BookScoreCard({
   }, [consideringKey, cash, positions]);
 
   const showingPossible = predicted && considering.some((row) => row.shares > 0);
-  const review: PortfolioReview = showingPossible ? possible : current;
+  const added = considering.filter((row) => row.shares > 0).length;
   const delta =
     current.overall != null && possible.overall != null
       ? possible.overall - current.overall
@@ -148,60 +209,8 @@ export function BookScoreCard({
   }
 
   return (
-    <article className="relative glass-strong rounded-[24px] p-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-        <BogenHeading id="portfolio-score">
-          {showingPossible ? "Possible score" : "Overall score"}
-        </BogenHeading>
-      </p>
-      <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <p className="font-display text-4xl font-bold text-ink">
-            {review.overall == null ? "—" : review.overall}
-            <span className="ml-2 text-lg font-semibold text-ink-soft">/ 100</span>
-          </p>
-          {showingPossible && delta != null ? (
-            <button
-              type="button"
-              className={`rounded-full px-3 py-1 text-sm font-bold ${
-                delta > 0
-                  ? "bg-emerald-400/20 text-emerald-600"
-                  : delta < 0
-                    ? "bg-coral/20 text-coral"
-                    : "bg-ink/10 text-ink-soft"
-              }`}
-            >
-              {delta > 0 ? `+${delta}` : `${delta}`}
-            </button>
-          ) : null}
-        </div>
-        <p className="text-sm font-semibold text-ink">{review.strength}</p>
-      </div>
-      <div className="book-strength mt-4">
-        <div className="book-strength-track" aria-hidden>
-          <span
-            className="book-strength-dot"
-            style={{
-              left: `${review.overall == null ? 0 : review.overall}%`,
-            }}
-          />
-        </div>
-        <div className="mt-2 flex justify-between text-[11px] font-semibold text-ink-soft">
-          <span>Fragile</span>
-          <span>Mixed</span>
-          <span>Strong</span>
-        </div>
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-        {showingPossible
-          ? `If you added ${considering.filter((row) => row.shares > 0).length} considering name${
-              considering.filter((row) => row.shares > 0).length === 1 ? "" : "s"
-            } to the book. Current book is ${current.overall ?? "—"}. Educational snapshot — not advice.`
-          : review.counted
-            ? `Built from ${review.counted} holding${review.counted === 1 ? "" : "s"} plus cash. Educational snapshot — not advice.`
-            : "Save at least one holding, or add considering names and tap Predict score."}
-      </p>
-      <div className="mt-5 flex items-center justify-center gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center justify-center gap-2">
         <button
           type="button"
           onClick={onPredict}
@@ -212,7 +221,16 @@ export function BookScoreCard({
         </button>
         <BogenTip id="portfolio-predict" />
       </div>
-    </article>
+      {showingPossible ? (
+        <ScoreBar
+          title="Possible score"
+          bogenId="portfolio-score"
+          review={possible}
+          delta={delta}
+          caption={`If you added ${added} considering name${added === 1 ? "" : "s"} to the book. Current book is ${current.overall ?? "—"}. Educational snapshot — not advice.`}
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -309,6 +327,17 @@ export function PortfolioAnalysis({
 
       {open && isPro ? (
         <div className="mt-6 space-y-4">
+          <ScoreBar
+            title="Overall score"
+            bogenId="portfolio-score"
+            review={review}
+            caption={
+              review.counted
+                ? `Built from ${review.counted} holding${review.counted === 1 ? "" : "s"} plus cash. Educational snapshot — not advice.`
+                : "Save at least one holding to fill the overall score."
+            }
+          />
+
           {review.aspects.length ? (
             <div className="grid gap-3 lg:grid-cols-2">
               {review.aspects.map((aspect) => (

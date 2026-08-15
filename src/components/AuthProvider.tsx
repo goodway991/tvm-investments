@@ -42,7 +42,7 @@ import {
   splitPersonName,
 } from "@/lib/person-name";
 import { parseTicker } from "@/lib/ticker";
-import { overlayLabsPlan, planHasPro, type PlanId } from "@/lib/plans";
+import { overlayLabsPlan, planHasPro, watchlistLimitForPlan, type PlanId } from "@/lib/plans";
 import { RELEASE_ACK_ID } from "@/lib/release-notes";
 import { CURRENT_TOUR_ID } from "@/lib/virtual-tour";
 import {
@@ -409,10 +409,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setProfile(profileFromAuth(nextUser));
       if (nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        const plan = overlayLabsPlan("admin", "pro");
         setEntitlement({
           role: "admin",
-          plan: overlayLabsPlan("admin", "pro"),
-          watchlistLimit: 100,
+          plan,
+          watchlistLimit: watchlistLimitForPlan(plan),
           cooldownDays: 0,
         });
       }
@@ -464,10 +465,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
                 ? "admin"
                 : "client";
+            const plan = overlayLabsPlan(
+              role,
+              typeof data.plan === "string" ? data.plan : undefined,
+            );
             setEntitlement({
               role,
-              plan: overlayLabsPlan(role, typeof data.plan === "string" ? data.plan : undefined),
-              watchlistLimit: Number(data.watchlistLimit) || 10,
+              plan,
+              watchlistLimit: watchlistLimitForPlan(plan),
               cooldownDays: Number(data.cooldownDays) || 0,
             });
             const grantId = grantIdFrom(data);
