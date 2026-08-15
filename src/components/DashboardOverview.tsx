@@ -18,6 +18,7 @@ import {
 import { computeAccountScore } from "@/lib/account-score";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
+import { ProGlowPhrase } from "@/components/ProGlowText";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 function signedPercent(value: number) {
@@ -141,13 +142,13 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
           <h1 className="font-display text-3xl font-bold text-ink">
             Welcome,{" "}
             {glowName ? (
-              <span className="pro-name-glow">
+              <ProGlowPhrase>
                 {resolveAccountName({
                   profileName: profile?.displayName,
                   authName: user?.displayName,
                   email: user?.email,
                 })}
-              </span>
+              </ProGlowPhrase>
             ) : (
               resolveAccountName({
                 profileName: profile?.displayName,

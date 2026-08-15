@@ -1,5 +1,19 @@
 import { Fragment } from "react";
 
+export function ProGlowPhrase({
+  children,
+  className = "",
+}: {
+  children: string;
+  className?: string;
+}) {
+  return (
+    <span className={`pro-glow-wrap ${className}`.trim()}>
+      <span className="pro-name-glow">{children}</span>
+    </span>
+  );
+}
+
 export function ProGlowText({
   children,
 }: {
@@ -11,9 +25,7 @@ export function ProGlowText({
     <>
       {parts.map((part, index) =>
         part === "Pro" ? (
-          <span key={index} className="pro-name-glow">
-            Pro
-          </span>
+          <ProGlowPhrase key={index}>Pro</ProGlowPhrase>
         ) : part ? (
           <Fragment key={index}>{part}</Fragment>
         ) : null,

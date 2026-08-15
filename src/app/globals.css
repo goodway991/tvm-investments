@@ -1052,11 +1052,19 @@ html.dark .plan-current-pane {
   place-items: center;
 }
 
+.pro-glow-wrap {
+  display: inline;
+  filter:
+    drop-shadow(0 0 5px rgba(228, 212, 255, 0.82))
+    drop-shadow(0 0 9px rgba(255, 210, 176, 0.4));
+}
+
 .pro-name-glow {
-  display: inline-block;
+  display: inline;
   vertical-align: baseline;
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.05;
+  padding: 0;
   background-color: transparent !important;
   background-image: linear-gradient(
     90deg,
@@ -1074,11 +1082,8 @@ html.dark .plan-current-pane {
   color: transparent;
   -webkit-text-fill-color: transparent;
   box-shadow: none !important;
+  filter: none;
   animation: pro-border-flow 3.8s linear infinite;
-  filter:
-    drop-shadow(0 0 6px rgba(228, 212, 255, 0.95))
-    drop-shadow(0 0 12px rgba(255, 210, 176, 0.5))
-    drop-shadow(0 0 16px rgba(201, 215, 255, 0.42));
 }
 
 @keyframes pro-border-flow {
@@ -1125,11 +1130,6 @@ html.dark .upgrade-pro-glow {
     0 0 0 1px rgba(255, 210, 176, 0.28),
     0 0 18px rgba(228, 212, 255, 0.48),
     0 0 32px rgba(201, 215, 255, 0.32);
-}
-
-.upgrade-pro-glow .pro-name-glow {
-  display: block;
-  width: 100%;
 }
 
 .bogen-tip {

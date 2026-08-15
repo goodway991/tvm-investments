@@ -14,7 +14,7 @@ import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { NewBadge } from "@/components/NewBadge";
-import { ProGlowText } from "@/components/ProGlowText";
+import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
@@ -502,7 +502,7 @@ export function SettingsPanel() {
         </div>
         {entitlement.plan === "pro" ? (
           era.features.proProfileStack ? (
-            <span className="pro-name-glow text-sm">Pro</span>
+            <ProGlowPhrase className="text-sm">Pro</ProGlowPhrase>
           ) : (
             <span className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white">
               <ProGlowText>Pro</ProGlowText>

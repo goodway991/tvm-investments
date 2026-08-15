@@ -119,7 +119,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
 
             {alreadyPro ? (
               <p className="glass-violet rounded-full px-6 py-3 text-center text-sm font-semibold text-white">
-                Currently on <span className="pro-name-glow">Pro</span>
+                Currently on <ProGlowText>Pro</ProGlowText>
               </p>
             ) : user ? (
               <button

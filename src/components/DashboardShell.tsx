@@ -17,7 +17,7 @@ import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
-import { ProGlowText } from "@/components/ProGlowText";
+import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
 export const dashboardNav = [
@@ -97,12 +97,12 @@ function ProfileNavLink({
               pro ? "text-lg" : "text-[15px] font-medium"
             }`}
           >
-            {pro ? <span className="pro-name-glow">{name}</span> : name}
+            {pro ? <ProGlowPhrase>{name}</ProGlowPhrase> : name}
           </span>
           {pro ? (
-            <span className="mt-1 block text-sm leading-tight">
-              <ProGlowText>Pro account</ProGlowText>
-            </span>
+            <ProGlowPhrase className="mt-1 block text-sm leading-tight">
+              Pro account
+            </ProGlowPhrase>
           ) : null}
         </span>
       )}
@@ -137,7 +137,7 @@ function UpgradeNavCard({
     ) : (
       <span className="pointer-events-none relative z-[1] min-w-0">
         <span className="block text-sm font-semibold leading-tight">
-          <ProGlowText>Pro account</ProGlowText>
+          <ProGlowPhrase>Pro account</ProGlowPhrase>
         </span>
         <span className="block text-[11px] font-medium leading-tight text-white/80">
           Unlocked
@@ -145,15 +145,13 @@ function UpgradeNavCard({
       </span>
     )
   ) : compact ? (
-    <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
-      <span className="pro-name-glow">Pro</span>
-    </span>
+      <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
+        <ProGlowPhrase>Pro</ProGlowPhrase>
+      </span>
   ) : (
     <span className="pointer-events-none relative z-[1] flex min-w-0 flex-col items-start">
-      <span className="pro-name-glow block text-sm leading-tight">Upgrade to Pro</span>
-      <span className="pro-name-glow mt-0.5 block text-[11px] leading-tight">
-        Unlock more
-      </span>
+      <ProGlowPhrase className="text-sm leading-tight">Upgrade to Pro</ProGlowPhrase>
+      <ProGlowPhrase className="mt-0.5 text-[11px] leading-tight">Unlock more</ProGlowPhrase>
     </span>
   );
 
