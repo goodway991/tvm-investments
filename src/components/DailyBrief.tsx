@@ -5,11 +5,12 @@ import { TechSector } from "@/components/TechSector";
 import { useAuth } from "@/components/AuthProvider";
 import { BogenHeading } from "@/components/BogenProvider";
 import { formatSessionLabel } from "@/lib/archive-window";
+import { planHasPro } from "@/lib/plans";
 import type { DailySnapshot } from "@/types";
 
 export function DailyBrief({ snapshot }: { snapshot: DailySnapshot }) {
   const { entitlement } = useAuth();
-  const isPro = entitlement.plan === "pro";
+  const isPro = planHasPro(entitlement.plan);
   const sessionLabel = formatSessionLabel(snapshot.date);
 
   return (

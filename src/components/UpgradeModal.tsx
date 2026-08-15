@@ -8,6 +8,7 @@ import { PlanComparisonTable } from "@/components/PlanComparisonTable";
 import { TVMIcon } from "@/components/TVMBrand";
 import { PLAN_PRICES, yearlySavingsPercent, type BillingInterval } from "@/lib/plans";
 import { ProGlowText } from "@/components/ProGlowText";
+import { UltraShinePhrase } from "@/components/UltraText";
 
 export function UpgradeModal({ onClose }: { onClose: () => void }) {
   const { user, entitlement } = useAuth();
@@ -16,6 +17,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState("");
   const price = PLAN_PRICES[billing];
   const alreadyPro = entitlement.plan === "pro";
+  const alreadyUltra = entitlement.plan === "ultra";
   const savePercent = yearlySavingsPercent();
 
   async function startCheckout() {
@@ -58,7 +60,13 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
                 Your plan
               </p>
               <h2 id="upgrade-title" className="mt-1 font-display text-3xl font-bold text-ink">
-                {alreadyPro ? "Your plan" : <ProGlowText>Free vs Pro</ProGlowText>}
+                {alreadyUltra ? (
+                  <UltraShinePhrase>Your plan</UltraShinePhrase>
+                ) : alreadyPro ? (
+                  "Your plan"
+                ) : (
+                  <ProGlowText>Free vs Pro</ProGlowText>
+                )}
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
                 <ProGlowText>
@@ -117,7 +125,11 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
               </p>
             </div>
 
-            {alreadyPro ? (
+            {alreadyUltra ? (
+              <p className="ultra-profile-glow rounded-full px-6 py-3 text-center text-sm font-semibold">
+                Currently on <UltraShinePhrase>Ultra</UltraShinePhrase>
+              </p>
+            ) : alreadyPro ? (
               <p className="pro-profile-glow rounded-full bg-transparent px-6 py-3 text-center text-sm font-semibold">
                 Currently on <ProGlowText>Pro</ProGlowText>
               </p>

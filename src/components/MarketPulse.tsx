@@ -11,6 +11,7 @@ import type { HorizonStats } from "@/lib/horizon-forecast";
 import { compactCompanyName } from "@/components/StockDetailModal";
 import { BogenHeading } from "@/components/BogenProvider";
 import { ProGlowText } from "@/components/ProGlowText";
+import { planHasPro } from "@/lib/plans";
 import type { DailySnapshot, OHLCVBar, StockCandidate } from "@/types";
 
 const rangeCopy: Record<ChartRange, string> = {
@@ -111,7 +112,7 @@ export function MarketPulse({
 }) {
   const { entitlement, watchlist, portfolio } = useAuth();
   const { openUpgrade } = useUpgrade();
-  const isPro = entitlement.plan === "pro";
+  const isPro = planHasPro(entitlement.plan);
   const [index, setIndex] = useState(0);
   const [range, setRange] = useState<ChartRange>("month");
   const [predicting, setPredicting] = useState(false);

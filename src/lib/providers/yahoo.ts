@@ -94,6 +94,34 @@ export async function fetchYahooHistory(
   }));
 }
 
+export async function fetchYahooCloseOnDate(symbol: string, ymd: string) {
+  const yahooFinance = getYahoo();
+  const [year, month, day] = ymd.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const target = new Date(Date.UTC(year, month - 1, day));
+  const period1 = new Date(target);
+  period1.setUTCDate(period1.getUTCDate() - 12);
+  const period2 = new Date(target);
+  period2.setUTCDate(period2.getUTCDate() + 2);
+
+  const result = await yahooFinance.historical(symbol.toUpperCase(), {
+    period1,
+    period2,
+    interval: "1d",
+  });
+
+  const bars = result
+    .map((bar) => ({
+      date: bar.date.toISOString().slice(0, 10),
+      close: bar.close,
+    }))
+    .filter((bar) => bar.date <= ymd && Number.isFinite(bar.close))
+    .sort((left, right) => left.date.localeCompare(right.date));
+  const match = bars.find((bar) => bar.date === ymd) ?? bars.at(-1);
+  if (!match) return null;
+  return { date: match.date, close: Number(match.close.toFixed(4)) };
+}
+
 export async function fetchYahooNews(
   symbol: string,
   count = 6,

@@ -19,6 +19,7 @@ import { computeAccountScore } from "@/lib/account-score";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
 import { ProGlowPhrase } from "@/components/ProGlowText";
+import { UltraShinePhrase } from "@/components/UltraText";
 import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 
@@ -47,6 +48,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         snapshot.topPicks.length
       : 0;
   const glowName = entitlement.plan === "pro" && era.features.proProfileStack;
+  const ultraName = entitlement.plan === "ultra" && era.features.proProfileStack;
   const accountScore = useMemo(
     () =>
       computeAccountScore({
@@ -151,7 +153,15 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
             {clean ? "Today at a glance" : (
               <>
                 Welcome,{" "}
-                {glowName ? (
+                {ultraName ? (
+                  <UltraShinePhrase>
+                    {resolveAccountName({
+                      profileName: profile?.displayName,
+                      authName: user?.displayName,
+                      email: user?.email,
+                    })}
+                  </UltraShinePhrase>
+                ) : glowName ? (
                   <ProGlowPhrase>
                     {resolveAccountName({
                       profileName: profile?.displayName,

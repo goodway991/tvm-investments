@@ -1,8 +1,9 @@
 "use client";
 
-import { PLAN_FEATURES } from "@/lib/plans";
+import { PLAN_FEATURES, type PlanId } from "@/lib/plans";
 import { showBeta3Labs } from "@/lib/beta-labs";
 import { ProGlowText } from "@/components/ProGlowText";
+import { UltraShinePhrase } from "@/components/UltraText";
 
 function PlanMark({ included }: { included: boolean }) {
   if (included) {
@@ -40,26 +41,33 @@ function PlanMark({ included }: { included: boolean }) {
 export function PlanComparisonTable({
   currentPlan,
 }: {
-  currentPlan: "free" | "pro";
+  currentPlan: PlanId;
 }) {
+  const showUltra = showBeta3Labs();
   const alreadyPro = currentPlan === "pro";
+  const alreadyUltra = currentPlan === "ultra";
   const features = [...PLAN_FEATURES]
     .filter(
       (feature) =>
-        showBeta3Labs() || feature.name !== "Portfolio book review",
+        showUltra || feature.name !== "Portfolio book review",
     )
     .sort((left, right) => Number(left.free) - Number(right.free));
 
   return (
-    <div className="plan-compare">
-      <div
-        className={`plan-current-pane ${alreadyPro ? "is-pro" : "is-free"}`}
-        aria-hidden
-      />
+    <div className={`plan-compare ${showUltra ? "has-ultra" : ""}`}>
+      {alreadyUltra ? null : (
+        <div
+          className={`plan-current-pane ${alreadyPro ? "is-pro" : "is-free"}`}
+          aria-hidden
+        />
+      )}
+      {showUltra ? (
+        <div className="plan-current-pane plan-ultra-pane" aria-hidden />
+      ) : null}
       <div className="plan-compare-h plan-compare-feature">Features</div>
       <div className="plan-compare-h">
         Free
-        {!alreadyPro ? (
+        {currentPlan === "free" ? (
           <span className="mt-1 block text-[10px] font-semibold uppercase tracking-widest text-violet">
             Current
           </span>
@@ -73,6 +81,16 @@ export function PlanComparisonTable({
           </span>
         ) : null}
       </div>
+      {showUltra ? (
+        <div className="plan-compare-h plan-compare-ultra">
+          <UltraShinePhrase>Ultra</UltraShinePhrase>
+          {alreadyUltra ? (
+            <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
+              Current
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       {features.map((feature) => (
         <div key={feature.name} className="contents">
           <div className="plan-compare-cell plan-compare-feature">{feature.name}</div>
@@ -82,6 +100,11 @@ export function PlanComparisonTable({
           <div className="plan-compare-cell plan-compare-mark">
             <PlanMark included={feature.pro} />
           </div>
+          {showUltra ? (
+            <div className="plan-compare-cell plan-compare-mark plan-compare-ultra">
+              <PlanMark included />
+            </div>
+          ) : null}
         </div>
       ))}
     </div>

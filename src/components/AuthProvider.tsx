@@ -42,6 +42,7 @@ import {
   splitPersonName,
 } from "@/lib/person-name";
 import { parseTicker } from "@/lib/ticker";
+import { overlayLabsPlan, planHasPro, type PlanId } from "@/lib/plans";
 import { RELEASE_ACK_ID } from "@/lib/release-notes";
 import { CURRENT_TOUR_ID } from "@/lib/virtual-tour";
 import {
@@ -71,7 +72,7 @@ export interface AccountProfile {
 
 export interface AccountEntitlement {
   role: "client" | "admin";
-  plan: "free" | "pro";
+  plan: PlanId;
   watchlistLimit: number;
   cooldownDays: number;
 }
@@ -410,7 +411,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         setEntitlement({
           role: "admin",
-          plan: "pro",
+          plan: overlayLabsPlan("admin", "pro"),
           watchlistLimit: 100,
           cooldownDays: 0,
         });
@@ -458,9 +459,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           onSnapshot(doc(db, "entitlements", nextUser.uid), (snapshot) => {
             if (!snapshot.exists()) return;
             const data = snapshot.data();
+            const role =
+              data.role === "admin" ||
+              nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+                ? "admin"
+                : "client";
             setEntitlement({
-              role: data.role === "admin" ? "admin" : "client",
-              plan: data.plan === "pro" ? "pro" : "free",
+              role,
+              plan: overlayLabsPlan(role, typeof data.plan === "string" ? data.plan : undefined),
               watchlistLimit: Number(data.watchlistLimit) || 10,
               cooldownDays: Number(data.cooldownDays) || 0,
             });
@@ -726,7 +732,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const now = Date.now();
       const nextChangeAt =
-        entitlement.plan === "pro"
+        planHasPro(entitlement.plan)
           ? Timestamp.fromMillis(now + 60_000)
           : Timestamp.fromMillis(now + WEEK_MS);
       const reference = doc(db, "watchlists", user.uid);

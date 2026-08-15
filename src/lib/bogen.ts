@@ -28,6 +28,20 @@ export type BogenId =
   | "movers"
   | "watchlist"
   | "portfolio"
+  | "portfolio-cash"
+  | "portfolio-holding"
+  | "portfolio-review"
+  | "portfolio-score"
+  | "portfolio-predict"
+  | "portfolio-diversity"
+  | "portfolio-concentration"
+  | "portfolio-quality"
+  | "portfolio-value"
+  | "portfolio-buffer"
+  | "portfolio-breadth"
+  | "portfolio-improve"
+  | "portfolio-next"
+  | "portfolio-considering"
   | "reports"
   | "reports-horizon"
   | "calculator"
@@ -187,9 +201,79 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     how: "Search, tap Add or Added, then Save. Compact hides the picker. Watchlist pulse on Dashboard charts what you saved.",
   },
   portfolio: {
-    title: "Portfolio",
-    what: "A manual tracker for cash and positions. It does not place trades or read a brokerage.",
-    how: "Save cash, then add a symbol, shares, and average cost. Remove a row if you no longer want it tracked.",
+    title: "Current book",
+    what: "A private log of cash and positions you already hold. It does not connect to a broker or place trades.",
+    how: "Save cash, then search a name, enter shares, and a buy price or date. Remove a row if you no longer want it tracked.",
+  },
+  "portfolio-cash": {
+    title: "Cash",
+    what: "Idle dollars on this tracker. They count toward book value and the cash-buffer score in the review.",
+    how: "Type the cash you want on the account and tap Save. It stays on this login until you change it.",
+  },
+  "portfolio-holding": {
+    title: "Add a holding",
+    what: "Search the tape or your watchlist, then save shares and a buy price or date as a real line in the book.",
+    how: "Click the search bar, pick a name, fill shares and cost, then Save holding. That row is stored — unlike Considering, which is a sketch.",
+  },
+  "portfolio-review": {
+    title: "Analyze book",
+    what: "A Pro read of mix, concentration, scan quality, valuation, cash, and breadth — plus what to try next.",
+    how: "Tap Analyze book. Each score card opens for a longer note. Pro unlocks the full review.",
+  },
+  "portfolio-score": {
+    title: "Overall score",
+    what: "A 0–100 snapshot of the saved book. After Predict score, it becomes a possible score if you added the considering names.",
+    how: "Add names under Considering, then tap Predict score. The chip next to the number is possible minus the current book.",
+  },
+  "portfolio-predict": {
+    title: "Predict score",
+    what: "Re-runs the book review as if the considering names were already holdings.",
+    how: "Fill Considering first. Tap Predict score. A green chip means the mix improved; coral means it slipped.",
+  },
+  "portfolio-diversity": {
+    title: "Sector mix",
+    what: "How spread the dollars are across sectors, not just how many tickers you listed.",
+    how: "Tap More for the note. A second unrelated sleeve usually lifts this more than adding a cousin in the same group.",
+  },
+  "portfolio-concentration": {
+    title: "Name concentration",
+    what: "How much of the book sits in the largest single holding.",
+    how: "Tap More. If one name is most of the value, size it down or grow the other lines.",
+  },
+  "portfolio-quality": {
+    title: "Scan quality",
+    what: "The weekday composite of the names you hold, weighted by position size.",
+    how: "Tap More. Lagging lines are worth opening on Reports — the write-up sits behind the score.",
+  },
+  "portfolio-value": {
+    title: "Valuation mix",
+    what: "A value-weighted P/E read of the book when the scan has multiples on file.",
+    how: "Tap More. High multiples are not a sell signal by themselves — they tell you a reset would hit this sleeve first.",
+  },
+  "portfolio-buffer": {
+    title: "Cash buffer",
+    what: "How much of the tracked book is cash vs invested names.",
+    how: "Tap More. A small sleeve of cash gives you room to add without selling a winner first.",
+  },
+  "portfolio-breadth": {
+    title: "Breadth",
+    what: "How many holdings and sectors are actually carrying the book.",
+    how: "Tap More. A few names in one sleeve scores differently than a wider set with real weight.",
+  },
+  "portfolio-improve": {
+    title: "How to improve",
+    what: "A short note on the weakest sleeves from this review, written from the scores above.",
+    how: "Read it, then use the smaller next-step cards or open Considering to model a new name before you save it.",
+  },
+  "portfolio-next": {
+    title: "Next steps",
+    what: "Concrete follow-ups tied to this book — a new sleeve, a lagging name, or a cash move.",
+    how: "Pick one card and do that first. The review updates the next time you tap Analyze book after the book changes.",
+  },
+  "portfolio-considering": {
+    title: "Names you’re considering",
+    what: "A scratch pad for extra shares on top of the saved book. It does not write to your holdings.",
+    how: "Click the search bar, pick a watchlist name, and try share counts. Refreshing the page clears this sketch.",
   },
   reports: {
     title: "Flagged pick reports",

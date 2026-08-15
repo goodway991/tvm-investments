@@ -1,3 +1,5 @@
+import { showBeta3Labs } from "@/lib/beta-labs";
+
 export const PLAN_PRICES = {
   monthly: { perMonth: 8, billed: 8, periodLabel: "billed monthly" },
   yearly: { perMonth: 5, billed: 60, periodLabel: "billed $60 yearly" },
@@ -15,6 +17,22 @@ export const FREE_MOVER_LIMIT = 10;
 export const PRO_MOVER_LIMIT = 20;
 export const FREE_ARCHIVE_LOOKBACK_DAYS = 3;
 export const ARCHIVE_KEEP_DAYS = 60;
+
+export type PlanId = "free" | "pro" | "ultra";
+
+export function planHasPro(plan: PlanId) {
+  return plan === "pro" || plan === "ultra";
+}
+
+export function overlayLabsPlan(
+  role: "client" | "admin",
+  stored: string | undefined,
+): PlanId {
+  const base: PlanId = stored === "pro" || stored === "ultra" ? stored : "free";
+  if (!showBeta3Labs()) return base === "ultra" ? "pro" : base;
+  if (role === "admin") return "ultra";
+  return base === "ultra" ? "pro" : base;
+}
 
 /** Flip these to true when a coming-soon feature ships for everyone. */
 export const PREVIEW_UNLOCK = {

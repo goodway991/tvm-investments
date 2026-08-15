@@ -5,8 +5,8 @@ import type { ScreenedStock, StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { StockSearchField, type SearchHit } from "@/components/StockSearchField";
 import { BogenHeading } from "@/components/BogenProvider";
-import { PortfolioAnalysis } from "@/components/PortfolioAnalysis";
 import { NewBadge } from "@/components/NewBadge";
+import { BookScoreCard, PortfolioAnalysis } from "@/components/PortfolioAnalysis";
 import { POPULAR_WATCHLIST } from "@/lib/watchlist-symbols";
 
 type DraftRow = {
@@ -15,7 +15,22 @@ type DraftRow = {
   shares: string;
   averageCost: string;
   purchasedAt: string;
+  priceTouched: boolean;
 };
+
+async function fetchSessionClose(symbol: string, date: string) {
+  const response = await fetch(
+    `/api/yahoo/close?symbol=${encodeURIComponent(symbol)}&date=${date}`,
+  );
+  const payload = (await response.json()) as { close?: number | null };
+  return typeof payload.close === "number" && payload.close > 0
+    ? payload.close
+    : null;
+}
+
+function formatClose(value: number) {
+  return String(Number(value.toFixed(4)));
+}
 
 function money(value: number) {
   return value.toLocaleString(undefined, {
@@ -194,6 +209,7 @@ export function PortfolioWorkbench({
       shares: "1",
       averageCost: price ? String(price) : "",
       purchasedAt: "",
+      priceTouched: false,
     });
   }
 
@@ -209,9 +225,42 @@ export function PortfolioWorkbench({
           shares: "1",
           averageCost: price ? String(price) : "",
           purchasedAt: "",
+          priceTouched: false,
         },
       ];
     });
+  }
+
+  async function applyCloseToCurrent(date: string) {
+    if (!currentDraft) return;
+    setCurrentDraft({ ...currentDraft, purchasedAt: date });
+    if (currentDraft.priceTouched || !date) return;
+    const close = await fetchSessionClose(currentDraft.symbol, date);
+    if (close == null) return;
+    setCurrentDraft((current) =>
+      current && !current.priceTouched && current.purchasedAt === date
+        ? { ...current, averageCost: formatClose(close) }
+        : current,
+    );
+  }
+
+  async function applyCloseToHypothetical(symbol: string, date: string) {
+    setHypothetical((current) =>
+      current.map((item) =>
+        item.symbol === symbol ? { ...item, purchasedAt: date } : item,
+      ),
+    );
+    const row = hypothetical.find((item) => item.symbol === symbol);
+    if (!row || row.priceTouched || !date) return;
+    const close = await fetchSessionClose(symbol, date);
+    if (close == null) return;
+    setHypothetical((current) =>
+      current.map((item) =>
+        item.symbol === symbol && !item.priceTouched && item.purchasedAt === date
+          ? { ...item, averageCost: formatClose(close) }
+          : item,
+      ),
+    );
   }
 
   return (
@@ -239,9 +288,11 @@ export function PortfolioWorkbench({
 
         <div className="mt-5 grid gap-3 lg:grid-cols-[.7fr_1.3fr]">
           <div className="rounded-2xl bg-surface p-4">
-            <label className="text-sm font-semibold text-ink" htmlFor="portfolio-cash">
-              Cash
-            </label>
+            <p className="text-sm font-semibold text-ink">
+              <BogenHeading id="portfolio-cash">
+                <label htmlFor="portfolio-cash">Cash</label>
+              </BogenHeading>
+            </p>
             <div className="mt-2 flex items-center gap-2">
               <span className="font-display text-xl font-bold text-violet">$</span>
               <input
@@ -263,7 +314,9 @@ export function PortfolioWorkbench({
             </div>
           </div>
           <div className="rounded-2xl bg-surface p-4">
-            <p className="text-sm font-semibold text-ink">Add a holding</p>
+            <p className="text-sm font-semibold text-ink">
+              <BogenHeading id="portfolio-holding">Add a holding</BogenHeading>
+            </p>
             <div className="mt-2">
               <StockSearchField
                 universe={universe}
@@ -293,6 +346,13 @@ export function PortfolioWorkbench({
                   className="field rounded-xl px-3 py-2 text-sm text-ink"
                 />
                 <input
+                  type="date"
+                  value={currentDraft.purchasedAt}
+                  onChange={(event) => void applyCloseToCurrent(event.target.value)}
+                  aria-label="Buy date"
+                  className="field rounded-xl px-3 py-2 text-sm text-ink"
+                />
+                <input
                   type="number"
                   min={0}
                   step="any"
@@ -301,22 +361,11 @@ export function PortfolioWorkbench({
                     setCurrentDraft({
                       ...currentDraft,
                       averageCost: event.target.value,
+                      priceTouched: true,
                     })
                   }
                   placeholder="Buy price"
                   aria-label="Buy price"
-                  className="field rounded-xl px-3 py-2 text-sm text-ink"
-                />
-                <input
-                  type="date"
-                  value={currentDraft.purchasedAt}
-                  onChange={(event) =>
-                    setCurrentDraft({
-                      ...currentDraft,
-                      purchasedAt: event.target.value,
-                    })
-                  }
-                  aria-label="Buy date"
                   className="field rounded-xl px-3 py-2 text-sm text-ink"
                 />
                 <button
@@ -407,7 +456,9 @@ export function PortfolioWorkbench({
               <NewBadge feature="portfolio" />
             </p>
             <h3 className="mt-1 font-display text-2xl font-bold text-ink">
-              Names you’re considering
+              <BogenHeading id="portfolio-considering">
+                Names you’re considering
+              </BogenHeading>
             </h3>
             <p className="mt-1 max-w-xl text-sm text-ink-soft">
               Try extra shares on top of the book above. This stays on this
@@ -448,8 +499,8 @@ export function PortfolioWorkbench({
                 <tr className="border-b border-ink/10 text-left text-xs text-ink-soft">
                   <th className="pb-3">Name</th>
                   <th className="pb-3">Shares</th>
-                  <th className="pb-3">Buy price</th>
                   <th className="pb-3">Buy date</th>
+                  <th className="pb-3">Buy price</th>
                   <th className="pb-3 text-right">Added value</th>
                   <th className="pb-3 text-right"> </th>
                 </tr>
@@ -483,6 +534,19 @@ export function PortfolioWorkbench({
                       </td>
                       <td className="py-3">
                         <input
+                          type="date"
+                          value={row.purchasedAt}
+                          onChange={(event) =>
+                            void applyCloseToHypothetical(
+                              row.symbol,
+                              event.target.value,
+                            )
+                          }
+                          className="field rounded-xl px-3 py-2 text-sm text-ink"
+                        />
+                      </td>
+                      <td className="py-3">
+                        <input
                           type="number"
                           min={0}
                           step="any"
@@ -491,28 +555,16 @@ export function PortfolioWorkbench({
                             setHypothetical((current) =>
                               current.map((item) =>
                                 item.symbol === row.symbol
-                                  ? { ...item, averageCost: event.target.value }
+                                  ? {
+                                      ...item,
+                                      averageCost: event.target.value,
+                                      priceTouched: true,
+                                    }
                                   : item,
                               ),
                             )
                           }
                           className="field w-28 rounded-xl px-3 py-2 text-sm text-ink"
-                        />
-                      </td>
-                      <td className="py-3">
-                        <input
-                          type="date"
-                          value={row.purchasedAt}
-                          onChange={(event) =>
-                            setHypothetical((current) =>
-                              current.map((item) =>
-                                item.symbol === row.symbol
-                                  ? { ...item, purchasedAt: event.target.value }
-                                  : item,
-                              ),
-                            )
-                          }
-                          className="field rounded-xl px-3 py-2 text-sm text-ink"
                         />
                       </td>
                       <td className="py-3 text-right font-semibold text-ink">
@@ -539,6 +591,18 @@ export function PortfolioWorkbench({
           )}
         </div>
       </section>
+
+      <BookScoreCard
+        stocks={stocks}
+        screened={screened}
+        cash={cashValue}
+        considering={hypoRows.map((row) => ({
+          symbol: row.symbol,
+          shares: row.shares,
+          averageCost: row.cost,
+          currentPrice: row.price,
+        }))}
+      />
     </div>
   );
 }

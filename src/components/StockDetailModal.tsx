@@ -9,6 +9,7 @@ import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import { TVMIcon } from "@/components/TVMBrand";
 import { BogenHeading } from "@/components/BogenProvider";
 import { sparklineValues, type ChartRange } from "@/lib/chart-series";
+import { planHasPro } from "@/lib/plans";
 
 function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -34,7 +35,7 @@ export function StockDetailModal({
   sessionDate?: string;
 }) {
   const { entitlement } = useAuth();
-  const isPro = entitlement.plan === "pro";
+  const isPro = planHasPro(entitlement.plan);
   const [news, setNews] = useState<NewsHeadline[]>(stock.headlines);
   const [newsStatus, setNewsStatus] = useState<"loading" | "live" | "cached">(
     "loading",

@@ -14,6 +14,41 @@ export type AnalysisPosition = {
   currentPrice: number;
 };
 
+export function withConsidering(
+  positions: AnalysisPosition[],
+  considering: AnalysisPosition[],
+): AnalysisPosition[] {
+  const next = new Map<string, AnalysisPosition>();
+  for (const row of positions) {
+    next.set(row.symbol.toUpperCase(), {
+      ...row,
+      symbol: row.symbol.toUpperCase(),
+    });
+  }
+  for (const row of considering) {
+    if (row.shares <= 0) continue;
+    const symbol = row.symbol.toUpperCase();
+    const current = next.get(symbol);
+    if (!current) {
+      next.set(symbol, { ...row, symbol });
+      continue;
+    }
+    const shares = current.shares + row.shares;
+    const averageCost =
+      shares > 0
+        ? (current.shares * current.averageCost + row.shares * row.averageCost) /
+          shares
+        : current.averageCost;
+    next.set(symbol, {
+      ...current,
+      shares,
+      averageCost,
+      currentPrice: row.currentPrice || current.currentPrice,
+    });
+  }
+  return [...next.values()];
+}
+
 export type AnalysisAspect = {
   id: string;
   title: string;

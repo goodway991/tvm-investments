@@ -4,7 +4,7 @@ import type { MarketMover } from "@/types";
 import { PaywallLock } from "@/components/PaywallLock";
 import { useAuth } from "@/components/AuthProvider";
 import { sessionMove } from "@/lib/chart-series";
-import { FREE_MOVER_LIMIT, PRO_MOVER_LIMIT } from "@/lib/plans";
+import { FREE_MOVER_LIMIT, PRO_MOVER_LIMIT, planHasPro } from "@/lib/plans";
 import { BogenHeading } from "@/components/BogenProvider";
 import { ProGlowText } from "@/components/ProGlowText";
 
@@ -58,7 +58,7 @@ function bySessionMove<T extends { price: number; change: number; ohlcv?: Array<
 
 export function MoversTable({ movers }: MoversTableProps) {
   const { entitlement } = useAuth();
-  const isPro = entitlement.plan === "pro";
+  const isPro = planHasPro(entitlement.plan);
   const ranked = [...movers].sort(bySessionMove);
   const limit = isPro ? PRO_MOVER_LIMIT : FREE_MOVER_LIMIT;
   const visible = ranked.slice(0, limit);

@@ -22,6 +22,8 @@ import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { NewBadge } from "@/components/NewBadge";
 import { LOCAL_EXPERIMENT, useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
+import { UltraShinePhrase } from "@/components/UltraText";
+import { planHasPro, type PlanId } from "@/lib/plans";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
@@ -68,6 +70,7 @@ function ProfileNavLink({
   href,
   onNavigate,
   pro = false,
+  ultra = false,
   glow = false,
   outline = true,
 }: {
@@ -77,27 +80,29 @@ function ProfileNavLink({
   href: string;
   onNavigate?: () => void;
   pro?: boolean;
+  ultra?: boolean;
   glow?: boolean;
   outline?: boolean;
 }) {
+  const chrome = ultra
+    ? "ultra-profile-glow bg-transparent"
+    : pro && glow
+      ? "pro-profile-glow bg-transparent"
+      : navItemClass(active, outline);
   return (
     <BogenHit
       id="nav-account"
       compact={compact}
       className={`rounded-2xl text-left ${
         compact ? "h-14 justify-center px-2" : "min-h-[72px] gap-3.5 px-3.5 py-3.5"
-      } ${
-        pro && glow
-          ? "pro-profile-glow bg-transparent"
-          : navItemClass(active, outline)
-      }`}
+      } ${chrome}`}
     >
       <Link
         href={href}
         onClick={onNavigate}
         title={compact ? name : undefined}
         className="absolute inset-0 z-0 rounded-2xl"
-        aria-label={pro ? `${name}, Pro account` : name}
+        aria-label={ultra ? `${name}, Ultra account` : pro ? `${name}, Pro account` : name}
       />
       <span
         className={`pointer-events-none relative z-[1] grid shrink-0 place-items-center rounded-full bg-ink/[0.08] ${
@@ -115,14 +120,25 @@ function ProfileNavLink({
         <span className="pointer-events-none relative z-[1] min-w-0 overflow-visible bg-transparent">
           <span
             className={
-              pro
+              pro || ultra
                 ? "font-display text-lg font-bold leading-tight"
                 : "block truncate text-[15px] font-medium leading-tight"
             }
           >
-            {pro ? <ProGlowPhrase>{name}</ProGlowPhrase> : name}
+            {ultra ? (
+              <UltraShinePhrase>{name}</UltraShinePhrase>
+            ) : pro ? (
+              <ProGlowPhrase>{name}</ProGlowPhrase>
+            ) : (
+              name
+            )}
           </span>
-          {pro ? (
+          {ultra ? (
+            <span className="mt-1 flex items-center gap-2 font-display text-sm font-bold leading-tight">
+              <UltraShinePhrase>Ultra account</UltraShinePhrase>
+              <NewBadge feature="settings" />
+            </span>
+          ) : pro ? (
             <span className="mt-1 flex items-center gap-2 font-display text-sm font-bold leading-tight">
               <ProGlowPhrase>Pro account</ProGlowPhrase>
               <NewBadge feature="settings" />
@@ -151,12 +167,29 @@ function UpgradeNavCard({
   vintage = false,
 }: {
   compact?: boolean;
-  plan: "free" | "pro";
+  plan: PlanId;
   onUpgrade: () => void;
   vintage?: boolean;
 }) {
+  const ultraChip = plan === "ultra";
   const proChip = plan === "pro";
-  const body = proChip ? (
+  const locked = ultraChip || proChip || vintage;
+  const body = ultraChip ? (
+    compact ? (
+      <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
+        <UltraShinePhrase>Ultra</UltraShinePhrase>
+      </span>
+    ) : (
+      <span className="pointer-events-none relative z-[1] min-w-0">
+        <span className="block font-display text-sm font-bold leading-tight">
+          <UltraShinePhrase>Ultra account</UltraShinePhrase>
+        </span>
+        <span className="block text-[11px] font-medium leading-tight text-white/55">
+          Unlocked
+        </span>
+      </span>
+    )
+  ) : proChip ? (
     compact ? (
       <span className="pointer-events-none relative z-[1] text-[11px] font-bold uppercase">
         <ProGlowText>Pro</ProGlowText>
@@ -190,10 +223,12 @@ function UpgradeNavCard({
     <BogenHit
       id="nav-upgrade"
       compact={compact}
-      className={`rounded-2xl ${widgetBox(compact)} pro-profile-glow bg-transparent`}
+      className={`rounded-2xl ${widgetBox(compact)} ${
+        ultraChip ? "ultra-profile-glow" : "pro-profile-glow"
+      } bg-transparent`}
     >
-      {proChip || vintage ? (
-        <span className="absolute inset-0 z-0 rounded-2xl" title="Pro account" />
+      {locked ? (
+        <span className="absolute inset-0 z-0 rounded-2xl" title={ultraChip ? "Ultra account" : "Pro account"} />
       ) : (
         <button
           type="button"
@@ -323,8 +358,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const archive = searchParams.get("archive");
-  const stackPro = entitlement.plan === "pro" && era.features.proProfileStack;
-  const showPlanChip = entitlement.plan === "free" || !stackPro;
+  const stackPaid = planHasPro(entitlement.plan) && era.features.proProfileStack;
+  const showPlanChip = entitlement.plan === "free" || !stackPaid;
+  const onUltra = entitlement.plan === "ultra";
+  const onPro = entitlement.plan === "pro";
   const [sidebarMode, setSidebarMode] = useState<
     "expanded" | "collapsed" | "hidden"
   >("expanded");
@@ -513,7 +550,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               compact={sidebarMode !== "expanded"}
               plan={entitlement.plan}
               onUpgrade={openUpgrade}
-              vintage={entitlement.plan === "pro"}
+              vintage={onPro || onUltra}
             />
           ) : null}
           <ProfileNavLink
@@ -521,7 +558,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             name={accountLabel(profile, user)}
             active={navIsActive(pathname, "/dashboard/settings")}
             href={withArchiveQuery("/dashboard/settings", archive)}
-            pro={stackPro}
+            pro={stackPaid && onPro}
+            ultra={onUltra}
             glow={era.features.proProfileGlow}
             outline={outline}
           />
@@ -538,7 +576,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           >
             <TVMBrand />
           </button>
-          {entitlement.plan === "pro" ? (
+          {onUltra ? (
+            <span className="ultra-profile-glow rounded-full px-4 py-2 text-sm font-semibold">
+              <UltraShinePhrase>Ultra</UltraShinePhrase>
+            </span>
+          ) : onPro ? (
             <span className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold">
               <ProGlowText>Pro</ProGlowText>
             </span>
@@ -635,7 +677,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       setMobileMenuOpen(false);
                       openUpgrade();
                     }}
-                    vintage={entitlement.plan === "pro"}
+                    vintage={onPro || onUltra}
                   />
                 ) : null}
                 <ProfileNavLink
@@ -643,7 +685,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   active={navIsActive(pathname, "/dashboard/settings")}
                   href={withArchiveQuery("/dashboard/settings", archive)}
                   onNavigate={() => setMobileMenuOpen(false)}
-                  pro={stackPro}
+                  pro={stackPaid && onPro}
+                  ultra={onUltra}
                   glow={era.features.proProfileGlow}
                   outline={outline}
                 />

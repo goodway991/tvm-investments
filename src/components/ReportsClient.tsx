@@ -6,11 +6,12 @@ import { TopPicks } from "@/components/TopPicks";
 import { useAuth } from "@/components/AuthProvider";
 import { BogenHeading } from "@/components/BogenProvider";
 import { ProGlowText } from "@/components/ProGlowText";
+import { planHasPro } from "@/lib/plans";
 import type { DailySnapshot } from "@/types";
 
 export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
   const { entitlement } = useAuth();
-  const isPro = entitlement.plan === "pro";
+  const isPro = planHasPro(entitlement.plan);
 
   return (
     <div className="dashboard-research space-y-8">

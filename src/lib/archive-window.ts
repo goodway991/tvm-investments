@@ -1,4 +1,4 @@
-import { FREE_ARCHIVE_LOOKBACK_DAYS } from "@/lib/plans";
+import { FREE_ARCHIVE_LOOKBACK_DAYS, type PlanId, planHasPro } from "@/lib/plans";
 
 export function etDateString(date = new Date()) {
   return date.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -64,7 +64,7 @@ export function formatSessionLabel(ymd: string) {
 }
 
 export function archiveWindow(
-  plan: "free" | "pro",
+  plan: PlanId,
   joinedOn?: string | Date | null,
   role?: "client" | "admin",
 ) {
@@ -72,7 +72,7 @@ export function archiveWindow(
   if (role === "admin") {
     return { from: "2000-01-01", to: today };
   }
-  if (plan === "pro") {
+  if (planHasPro(plan)) {
     const joined =
       joinedOn instanceof Date
         ? etDateString(joinedOn)

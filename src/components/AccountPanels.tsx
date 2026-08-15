@@ -18,6 +18,7 @@ import { BogenHeading, useBogen } from "@/components/BogenProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
+import { UltraShinePhrase } from "@/components/UltraText";
 import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
@@ -370,6 +371,7 @@ export function SettingsPanel() {
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const { era, rewind, archiveDate } = useSiteEra();
   const glowName = entitlement.plan === "pro" && era.features.proProfileStack;
+  const ultraName = entitlement.plan === "ultra" && era.features.proProfileStack;
   const [loggingOut, setLoggingOut] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -469,7 +471,15 @@ export function SettingsPanel() {
           ) : (
             <div className="flex items-center gap-2">
               <h2 className="font-display text-2xl font-bold text-ink">
-                {glowName ? (
+                {ultraName ? (
+                  <UltraShinePhrase>
+                    {resolveAccountName({
+                      profileName: profile?.displayName,
+                      authName: user?.displayName,
+                      email: user?.email,
+                    })}
+                  </UltraShinePhrase>
+                ) : glowName ? (
                   <ProGlowPhrase>
                     {resolveAccountName({
                       profileName: profile?.displayName,
@@ -497,7 +507,11 @@ export function SettingsPanel() {
           )}
           <p className="mt-1 text-sm text-ink-soft">{user?.email}</p>
         </div>
-        {entitlement.plan === "pro" ? (
+        {entitlement.plan === "ultra" ? (
+          <span className="ultra-profile-glow rounded-full px-4 py-2 text-sm font-semibold">
+            <UltraShinePhrase>Ultra</UltraShinePhrase>
+          </span>
+        ) : entitlement.plan === "pro" ? (
           <span className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold">
             <ProGlowText>Pro</ProGlowText>
           </span>
@@ -532,7 +546,13 @@ export function SettingsPanel() {
       <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
         <p className="font-semibold text-ink">Plan</p>
         <p className="mt-1">
-          You are on <span className="font-semibold capitalize text-ink">{entitlement.plan}</span>.
+          You are on{" "}
+          {entitlement.plan === "ultra" ? (
+            <UltraShinePhrase>Ultra</UltraShinePhrase>
+          ) : (
+            <span className="font-semibold capitalize text-ink">{entitlement.plan}</span>
+          )}
+          .
         </p>
         <button
           type="button"

@@ -988,9 +988,17 @@ button:not(:disabled):hover .archive-flow-node {
   border: 1px solid rgb(var(--violet) / 0.15);
 }
 
+.plan-compare.has-ultra {
+  grid-template-columns: minmax(0, 1fr) 5.5rem 5.5rem 5.5rem;
+}
+
 @media (min-width: 640px) {
   .plan-compare {
     grid-template-columns: minmax(0, 1fr) 7.75rem 7.75rem;
+  }
+
+  .plan-compare.has-ultra {
+    grid-template-columns: minmax(0, 1fr) 6.75rem 6.75rem 6.75rem;
   }
 }
 
@@ -1019,12 +1027,68 @@ button:not(:disabled):hover .archive-flow-node {
   grid-column: 3;
 }
 
+.plan-current-pane.plan-ultra-pane {
+  grid-column: 4;
+  background: #050505;
+  box-shadow: none;
+  border-radius: 18px;
+  background-image:
+    linear-gradient(#050505, #050505),
+    radial-gradient(
+      130% 55% at 50% -8%,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.72) 12%,
+      rgba(90, 90, 90, 0.55) 32%,
+      #111 58%,
+      #000 100%
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border: 1px solid transparent;
+}
+
+html.dark .plan-current-pane.plan-ultra-pane {
+  background-color: #050505;
+  box-shadow: none;
+  background-image:
+    linear-gradient(#050505, #050505),
+    radial-gradient(
+      130% 55% at 50% -8%,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.7) 12%,
+      rgba(90, 90, 90, 0.5) 32%,
+      #111 58%,
+      #000 100%
+    );
+}
+
+.plan-compare-h.plan-compare-ultra,
+.plan-compare-cell.plan-compare-ultra {
+  background: transparent;
+  color: #f4f4f5;
+}
+
 html.dark .plan-current-pane {
   background: rgba(96, 165, 250, 0.08);
   box-shadow:
     0 0 0 1.5px rgba(147, 197, 253, 0.5),
     0 8px 32px -14px rgba(59, 130, 246, 0.55),
     0 0 22px rgba(59, 130, 246, 0.2);
+}
+
+html.dark .plan-current-pane.plan-ultra-pane {
+  background-color: #050505;
+  box-shadow: none;
+  background-image:
+    linear-gradient(#050505, #050505),
+    radial-gradient(
+      130% 55% at 50% -8%,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.7) 12%,
+      rgba(90, 90, 90, 0.5) 32%,
+      #111 58%,
+      #000 100%
+    );
 }
 
 .plan-compare-h,
@@ -1053,6 +1117,11 @@ html.dark .plan-current-pane {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgb(var(--ink-soft));
+}
+
+.plan-compare-h.plan-compare-ultra {
+  background: transparent;
+  color: #f4f4f5;
 }
 
 .plan-compare-cell {
@@ -1141,6 +1210,67 @@ html.dark .plan-current-pane {
     0 0 28px rgba(228, 212, 255, 0.28);
 }
 
+/*
+  Internal chrome names only — do not put these labels on the site:
+  Pro Peach static, Pro Peach, Ultra Black static, Ultra Black
+*/
+
+.ultra-profile-glow {
+  color: #f4f4f5;
+  background:
+    linear-gradient(#050505, #050505) padding-box,
+    radial-gradient(
+      120% 80% at 50% -18%,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.78) 16%,
+      rgba(70, 70, 70, 0.7) 42%,
+      #0a0a0a 72%,
+      #000 100%
+    )
+    border-box;
+  border: 1px solid transparent;
+  box-shadow:
+    0 -12px 22px -14px rgba(255, 255, 255, 0.55),
+    0 0 18px rgba(255, 255, 255, 0.08);
+}
+
+.ultra-name-shine {
+  display: inline;
+  font-weight: 800;
+  line-height: 1.05;
+  background-image: linear-gradient(
+    105deg,
+    #000 0%,
+    #000 38%,
+    #fff 50%,
+    #000 62%,
+    #000 100%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.28));
+  animation: ultra-shine-sweep 2.8s ease-in-out infinite;
+}
+
+@keyframes ultra-shine-sweep {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ultra-name-shine {
+    animation: none;
+    background-position: 50% 0;
+  }
+}
+
 html.dark .pro-profile-glow {
   border-color: rgba(255, 210, 176, 0.5);
   box-shadow:
@@ -1180,6 +1310,9 @@ html.dark .nav-window-active {
   color: rgb(var(--ink-soft));
   background: rgb(var(--surface) / 0.85);
   cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
 }
 
 .bogen-tip:hover {
@@ -2187,6 +2320,7 @@ html.motion-paused .loop-motion *::after,
 html.motion-paused .plan-mark-yes,
 html.motion-paused .plan-mark-no,
 html.motion-paused .pro-name-glow,
+html.motion-paused .ultra-name-shine,
 html.motion-paused .book-strength-dot {
   animation-play-state: paused !important;
 }
