@@ -1,22 +1,16 @@
 import "server-only";
 import { cache } from "react";
-import { after } from "next/server";
 
 import type { DailySnapshot, StockCandidate } from "@/types";
-import { isDemoMode, runDailyAnalysis, runFallbackSnapshot } from "@/lib/analysis-pipeline";
-import { lastCompletedSessionDate } from "@/lib/archive-window";
+import { runFallbackSnapshot } from "@/lib/analysis-pipeline";
 import { getLatestSnapshot, getSnapshotByDate } from "@/lib/firebase/admin";
 import { buildArchiveDemoSnapshot, isArchiveDemoDate } from "@/lib/archive-demo";
 import { hydrateSectorDives } from "@/lib/sector-dives";
-import { hasNewsLlm } from "@/lib/scoring";
-import {
-  newerLive,
-  persistSnapshot,
-  readDiskSnapshot,
-} from "@/lib/snapshot-cache";
+import { readDiskSnapshot } from "@/lib/snapshot-cache";
 
-let inflightLiveSnapshot: Promise<DailySnapshot> | null = null;
-const SNAPSHOT_MEMORY_TTL_MS = 5 * 60_000;
+const SNAPSHOT_MEMORY_TTL_MS = 15 * 60_000;
+const FIRESTORE_WAIT_MS = 2500;
+const DISK_WAIT_MS = 400;
 let latestMemory: { at: number; snapshot: DailySnapshot } | null = null;
 
 function rememberLatest(snapshot: DailySnapshot) {
@@ -24,35 +18,21 @@ function rememberLatest(snapshot: DailySnapshot) {
   return snapshot;
 }
 
-function coversCompletedSession(snapshot: DailySnapshot) {
-  return snapshot.date >= lastCompletedSessionDate();
-}
-
-function queueSessionRebuild() {
-  if (isDemoMode()) return;
-  const run = () =>
-    buildAndSaveLiveSnapshot().catch((error) => {
-      console.error("Background session snapshot failed:", error);
-    });
+async function firstSettled<T>(
+  promise: Promise<T | null>,
+  ms: number,
+): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    after(run);
-  } catch {
-    void run();
+    return await Promise.race([
+      promise.catch(() => null),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-}
-
-async function buildAndSaveLiveSnapshot(): Promise<DailySnapshot> {
-  if (!inflightLiveSnapshot) {
-    inflightLiveSnapshot = runDailyAnalysis(hasNewsLlm())
-      .then(async (snapshot) => {
-        await persistSnapshot(snapshot);
-        return snapshot;
-      })
-      .finally(() => {
-        inflightLiveSnapshot = null;
-      });
-  }
-  return inflightLiveSnapshot;
 }
 
 function stocksForDiveHydration(
@@ -85,17 +65,6 @@ function stocksForDiveHydration(
     bySymbol.set(stock.symbol, stock);
   }
   return [...bySymbol.values()];
-}
-
-function divesNeedRebuild(snapshot: DailySnapshot) {
-  const dives = snapshot.sectorDives ?? [];
-  if (dives.length < 2) return true;
-  return dives.every(
-    (dive) =>
-      !dive.body.trim() ||
-      /no .+ names printed/i.test(dive.body) ||
-      /\*\*Relative strength leaders:\*\*\s*—/.test(dive.body),
-  );
 }
 
 export function normalizeSnapshot(
@@ -160,69 +129,24 @@ export const getDashboardSnapshot = cache(async function getDashboardSnapshot(
   archiveDate?: string | null,
 ): Promise<DailySnapshot> {
   const date = parseArchiveDate(archiveDate);
-  try {
-    if (date) {
-      if (isArchiveDemoDate(date)) {
-        return normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true });
-      }
-      const archived = await getSnapshotByDate(date);
-      if (archived) return normalizeSnapshot(archived, { freeze: true });
+  if (date) {
+    if (isArchiveDemoDate(date)) {
       return normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true });
     }
-    if (
-      latestMemory &&
-      Date.now() - latestMemory.at < SNAPSHOT_MEMORY_TTL_MS &&
-      coversCompletedSession(latestMemory.snapshot)
-    ) {
-      if (divesNeedRebuild(latestMemory.snapshot)) queueSessionRebuild();
-      return normalizeSnapshot(latestMemory.snapshot);
-    }
-
-    const disk = await readDiskSnapshot();
-    if (disk && coversCompletedSession(disk)) {
-      if (divesNeedRebuild(disk)) queueSessionRebuild();
-      return normalizeSnapshot(rememberLatest(disk));
-    }
-
-    const cached = await getLatestSnapshot();
-    const live = newerLive(cached, disk);
-    if (live && coversCompletedSession(live)) {
-      if (divesNeedRebuild(live)) queueSessionRebuild();
-      return normalizeSnapshot(rememberLatest(live));
-    }
-    if (live && !coversCompletedSession(live)) {
-      queueSessionRebuild();
-      return normalizeSnapshot(rememberLatest(live));
-    }
-    if (cached && isDemoMode()) return normalizeSnapshot(rememberLatest(cached));
-
-    if (!isDemoMode()) {
-      try {
-        return normalizeSnapshot(
-          rememberLatest(await buildAndSaveLiveSnapshot()),
-        );
-      } catch (error) {
-        console.error("Live Yahoo snapshot failed:", error);
-        if (cached) return normalizeSnapshot(rememberLatest(cached));
-      }
-    } else if (cached) {
-      return normalizeSnapshot(rememberLatest(cached));
-    }
-  } catch {
-    // Firebase is optional; the analysis pipeline supplies a snapshot as a fallback.
-  }
-
-  if (!isDemoMode()) {
-    try {
-      return normalizeSnapshot(rememberLatest(await buildAndSaveLiveSnapshot()));
-    } catch (error) {
-      console.error("Live Yahoo snapshot failed:", error);
-    }
-  }
-
-  if (date) {
+    const archived = await firstSettled(getSnapshotByDate(date), FIRESTORE_WAIT_MS);
+    if (archived) return normalizeSnapshot(archived, { freeze: true });
     return normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true });
   }
 
-  return normalizeSnapshot(await runFallbackSnapshot());
+  if (latestMemory && Date.now() - latestMemory.at < SNAPSHOT_MEMORY_TTL_MS) {
+    return normalizeSnapshot(latestMemory.snapshot);
+  }
+
+  const disk = await firstSettled(readDiskSnapshot(), DISK_WAIT_MS);
+  if (disk) return normalizeSnapshot(rememberLatest(disk));
+
+  const cached = await firstSettled(getLatestSnapshot(), FIRESTORE_WAIT_MS);
+  if (cached) return normalizeSnapshot(rememberLatest(cached));
+
+  return normalizeSnapshot(rememberLatest(await runFallbackSnapshot()));
 });

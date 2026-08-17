@@ -79,6 +79,11 @@ export interface MarketMover extends StockCandidate {
   direction: "gainer" | "loser";
 }
 
+export type BriefArticleBlock =
+  | { type: "heading"; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "list"; items: string[] };
+
 export interface MarketEvent {
   title: string;
   region: "US" | "Global" | "Tech";
@@ -89,6 +94,12 @@ export interface MarketEvent {
   url?: string;
   tickers?: string[];
   detail?: string;
+  author?: string;
+  category?: string;
+  imageUrl?: string;
+  imageCaption?: string;
+  readMinutes?: number;
+  blocks?: BriefArticleBlock[];
 }
 
 export interface CompanyReport {

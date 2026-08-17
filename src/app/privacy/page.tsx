@@ -54,7 +54,7 @@ export default function PrivacyPage() {
       </ul>
       <p>
         It does not apply to third-party websites or services that we do not
-        control, including Yahoo Finance, Google Firebase, Stripe, or news
+        control, including Yahoo Finance, Morning Brew, Google Firebase, Stripe, or news
         publishers linked from the Service. Their policies govern their processing.
       </p>
 

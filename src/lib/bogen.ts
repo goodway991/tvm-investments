@@ -66,8 +66,8 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "nav-brief": {
     title: "Daily Brief",
-    what: "The session write-up: market headlines and sector notes rebuilt from today’s scan of about 1,500 liquid US names.",
-    how: "Open Daily Brief in the sidebar. Flip through headline and sector cards. Pro unlocks extra sector dives.",
+    what: "The session write-up: market headlines and sector notes from today’s scan of about 1,500 liquid US names.",
+    how: "Open Daily Brief in the sidebar. Tap a headline to open its sheet. Flip sector cards for the rest. Pro unlocks extra sector dives.",
   },
   "nav-screener": {
     title: "Screener",
@@ -162,12 +162,12 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   brief: {
     title: "Daily Brief",
     what: "Headlines and sector notes for this session, not leftover copy from a prior day.",
-    how: "Read the event cards, then flip sector dives. Pro unlocks additional sectors.",
+    how: "Tap a headline card to open the full article sheet, like a stock sheet. Then flip sector dives. Pro unlocks additional sectors.",
   },
   "market-events": {
     title: "Market-moving events",
-    what: "Four headline slots from this session’s scan — US, global, and mixed tape.",
-    how: "Tap a card to expand the fuller note, source, and any tickers. Empty slots mean the snapshot did not fill that row.",
+    what: "Four headline slots from this session.",
+    how: "Tap a card to open the article: stats, photo, and the full write-up. Empty slots mean no source filled that row.",
   },
   "sector-dives": {
     title: "Sector dives",

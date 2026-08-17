@@ -1,10 +1,29 @@
 import type { Metadata } from "next";
 import { DailyBrief } from "@/components/DailyBrief";
 import { getDashboardSnapshot } from "@/lib/snapshot";
+import {
+  fetchMorningBrewMarketEvents,
+  mergeNewsSources,
+} from "@/lib/providers/morning-brew";
+import type { MarketEvent } from "@/types";
 
 export const metadata: Metadata = {
   title: "Daily Brief — TVM Investments",
 };
+
+async function brewHeadlines(): Promise<MarketEvent[]> {
+  try {
+    return await fetchMorningBrewMarketEvents(6);
+  } catch {
+    return [];
+  }
+}
+
+function emptyHeadlines(ms: number): Promise<MarketEvent[]> {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve([]), ms);
+  });
+}
 
 export default async function BriefPage({
   searchParams,
@@ -12,6 +31,24 @@ export default async function BriefPage({
   searchParams: Promise<{ archive?: string }>;
 }) {
   const { archive } = await searchParams;
-  const snapshot = await getDashboardSnapshot(archive);
-  return <DailyBrief snapshot={snapshot} />;
+  if (archive) {
+    const snapshot = await getDashboardSnapshot(archive);
+    return <DailyBrief snapshot={snapshot} />;
+  }
+
+  const [snapshot, brewEvents] = await Promise.all([
+    getDashboardSnapshot(),
+    Promise.race([brewHeadlines(), emptyHeadlines(2000)]),
+  ]);
+
+  return (
+    <DailyBrief
+      snapshot={{
+        ...snapshot,
+        marketEvents: brewEvents.length
+          ? mergeNewsSources(brewEvents, snapshot.marketEvents, 6)
+          : snapshot.marketEvents,
+      }}
+    />
+  );
 }

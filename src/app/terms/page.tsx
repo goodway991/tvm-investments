@@ -211,6 +211,13 @@ export default function TermsPage() {
         TVM.
       </p>
       <p>
+        Daily Brief and similar news cards may show titles and short excerpts
+        from third-party publishers, including Morning Brew, Yahoo Finance, and
+        other wires we may use. That material stays the publisher’s. TVM is not
+        affiliated with, sponsored by, or endorsed by Morning Brew Inc. or those
+        other publishers. We do not claim their articles as our own.
+      </p>
+      <p>
         “TVM,” “TVM Investments,” and related marks are identifiers we use for
         the Service. You may not use them in a way that implies sponsorship or
         endorsement.
@@ -220,8 +227,8 @@ export default function TermsPage() {
       <p>
         The Service depends on third parties, including Google Firebase for
         authentication and database hosting, our website host, Stripe for
-        payments, and market-data and news sources such as Yahoo Finance and
-        other vendors we may use. Their availability, accuracy, and terms are
+        payments, and market-data and news sources such as Yahoo Finance, Morning
+        Brew, and other vendors we may use. Their availability, accuracy, and terms are
         outside our control.
       </p>
       <p>

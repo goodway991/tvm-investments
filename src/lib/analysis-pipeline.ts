@@ -19,6 +19,10 @@ import {
 import { fillDiveHeadlines, writeDailySectorDives } from "./sector-dives";
 import { etDateString } from "./archive-window";
 import { DOW_30, SP500 } from "./indices/constituents";
+import {
+  fetchMorningBrewMarketEvents,
+  mergeNewsSources,
+} from "./providers/morning-brew";
 
 const SECTOR_CHANGES: Record<string, number> = {
   Technology: -3.2,
@@ -216,11 +220,13 @@ async function runLiveAnalysis(useLLM: boolean): Promise<DailySnapshot> {
     }));
 
   const sessionDate = etDateString();
-  const [marketEvents, techSectorAnalysis, sectorDives] = await Promise.all([
+  const [brewEvents, wireEvents, techSectorAnalysis, sectorDives] = await Promise.all([
+    fetchMorningBrewMarketEvents(6),
     finnhub ? finnhub.fetchMarketEvents() : yahoo.fetchYahooMarketEvents(),
     finnhub ? finnhub.fetchTechAnalysis() : yahoo.fetchYahooTechAnalysis(),
     writeDailySectorDives(ranked, sessionDate, useLLM),
   ]);
+  const marketEvents = mergeNewsSources(brewEvents, wireEvents, 6);
 
   return {
     id: sessionDate,
