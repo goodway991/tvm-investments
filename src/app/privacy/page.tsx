@@ -54,8 +54,9 @@ export default function PrivacyPage() {
       </ul>
       <p>
         It does not apply to third-party websites or services that we do not
-        control, including Yahoo Finance, Morning Brew, Google Firebase, Stripe, or news
-        publishers linked from the Service. Their policies govern their processing.
+        control, including Yahoo Finance, Morning Brew, Google Firebase, Google
+        Analytics, Stripe, or news publishers linked from the Service. Their
+        policies govern their processing.
       </p>
 
       <h2>3. Categories of information we collect</h2>
@@ -101,6 +102,11 @@ export default function PrivacyPage() {
           <strong>Session data:</strong> authentication cookies or tokens needed
           to keep you signed in, plus local or session storage used for legal
           acceptance, the virtual tour, and interface state.
+        </li>
+        <li>
+          <strong>Usage data:</strong> page views, referring URL, device and
+          browser type, and approximate location, collected by Google Analytics
+          so we can measure traffic to the Service.
         </li>
       </ul>
 
@@ -200,11 +206,17 @@ export default function PrivacyPage() {
           <strong>Functional:</strong> local or session storage for legal
           acceptance version and interface state (for example, a collapsed menu).
         </li>
+        <li>
+          <strong>Analytics:</strong> Google Analytics 4 (via Google Tag) to
+          count visits and which pages are used. Advertising signals and ads
+          personalization are turned off. Google’s own privacy notice applies to
+          that processing.
+        </li>
       </ul>
       <p>
-        We do not currently use third-party advertising cookies, cross-site
-        behavioral advertising pixels, or a marketing tag manager. If that
-        changes, we will update this Policy and, where required, request consent.
+        We do not use third-party advertising cookies, cross-site behavioral
+        advertising pixels, or a marketing tag manager. If that changes, we will
+        update this Policy and, where required, request consent.
       </p>
       <p>
         You can block cookies in your browser. If you block necessary cookies,
@@ -242,9 +254,10 @@ export default function PrivacyPage() {
       <ul>
         <li>
           <strong>Processors:</strong> Google (Firebase Authentication, Cloud
-          Firestore, and related Google Cloud hosting), our website host (for
-          example Vercel), email delivery providers if configured, and Stripe
-          for payments. They may process data only to provide services to us.
+          Firestore, Google Analytics, and related Google Cloud hosting), our
+          website host (for example Vercel), email delivery providers if
+          configured, and Stripe for payments. They may process data only to
+          provide services to us.
         </li>
         <li>
           <strong>Market-data providers:</strong> ticker symbols and technical
