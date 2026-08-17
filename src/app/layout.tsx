@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     template: "%s",
   },
   description:
-    "A daily research desk for self-directed investors. Eight-signal screens, movers, and notes — educational, not investment advice.",
+    "A daily research desk for self-directed investors. Eight-signal screens, movers, and notes.",
   applicationName: "TVM Investments",
   appleWebApp: {
     capable: true,

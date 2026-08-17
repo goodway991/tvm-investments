@@ -55,7 +55,7 @@ function report(date: string, symbol: string, name: string, note: string): Compa
     ],
     upsideDrivers: ["Mean-reversion after the session’s tape", "Large-cap liquidity"],
     downsideRisks: ["Macro headline risk", "This day is sample research, not a live close"],
-    cultureAndLongTerm: "Educational sample write-up for the archive calendar.",
+    cultureAndLongTerm: "Sample write-up for the archive calendar.",
     fullReport: `${name} (${symbol}) was flagged on the ${label} 2026 research tape. ${note} This is seeded archive data so an admin can rewind the site when no prior live snapshot exists.`,
   };
 }

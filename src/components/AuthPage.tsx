@@ -420,8 +420,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                       <Link href="/disclaimer" className="font-semibold text-violet hover:underline">
                         Risk Disclaimer
                       </Link>
-                      . I understand this is educational research, not investment advice,
-                      and that TVM Investments is not accountable for my investment losses.
+                      .
                     </span>
                   </label>
                 )}
@@ -477,8 +476,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
 
               {!isLogin && (
               <p className="mt-6 text-center text-[11px] leading-relaxed text-ink-soft/70">
-                Educational research only — not a broker, adviser, or fiduciary. You can lose
-                money. See our{" "}
+                You can lose money. See our{" "}
                 <Link href="/disclaimer" className="text-violet hover:underline">
                   Risk Disclaimer
                 </Link>

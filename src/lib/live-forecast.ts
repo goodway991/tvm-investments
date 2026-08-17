@@ -67,7 +67,7 @@ async function geminiShortTermDrift(input: {
   const news =
     input.headlines.slice(0, 6).map((line) => `- ${line}`).join("\n") ||
     "- No recent headlines";
-  const prompt = `Estimate an educational 10-trading-day price drift from live market data. Not advice. JSON only:
+  const prompt = `Estimate a 10-trading-day price drift from live market data. JSON only:
 {"dailyDrift": number, "note": "one sentence"}
 dailyDrift is the expected daily log return for the next 10 trading days, between -0.03 and 0.03.
 

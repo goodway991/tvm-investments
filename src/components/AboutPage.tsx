@@ -4,7 +4,7 @@ import { PublicShell } from "@/components/PublicShell";
 const statements = [
   {
     title: "Who it’s for",
-    text: "Self-directed investors who already do homework and want one place to see what moved, what flagged, and why — without treating a website as a broker or a guru.",
+    text: "Self-directed investors who already do homework and want one place to see what moved, what flagged, and why.",
   },
   {
     title: "What it does",
@@ -12,14 +12,14 @@ const statements = [
   },
   {
     title: "What it is not",
-    text: "It is not a hot-tip feed, not a brokerage, and not personalized advice. Scores and notes are general research. You still decide whether anything is worth a real-world trade.",
+    text: "It is a weekday research desk, not a live trading terminal. Scores and notes come from the session scan so you can reread the tape in one place.",
   },
 ];
 
 const values = [
   ["Transparent", "Every score shows which signals fired"],
   ["Repeatable", "The same desk, refreshed after each session"],
-  ["Educational", "Research first. Never a recommendation."],
+  ["Direct", "The reasoning stays on the page"],
 ];
 
 const founders = [
@@ -45,8 +45,7 @@ export function AboutPage() {
               Most investors do not need another opinion. They need a calmer way
               to start: a shortlist, the reasoning behind it, the day’s tape,
               and a place to keep what they are watching. That is TVM — built
-              for individuals who research before they trade, and honest that
-              the trade is still theirs.
+              for individuals who research before they trade.
             </p>
           </section>
 

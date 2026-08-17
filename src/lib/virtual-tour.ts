@@ -24,7 +24,7 @@ export const TOUR_SLIDES: TourSlide[] = [
   {
     id: "welcome",
     name: "Welcome in",
-    how: "After you sign in, Dashboard is home. Numbers refresh on weekday closes — this is educational research, not advice.",
+    how: "After you sign in, Dashboard is home. Numbers refresh on weekday closes.",
   },
   {
     id: "dashboard",

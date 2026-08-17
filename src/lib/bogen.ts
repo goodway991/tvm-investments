@@ -281,7 +281,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   calculator: {
     title: "Hypothetical calculator",
-    what: "Illustrative math on a ticker using a live quote when available. You can lose money; this is not advice.",
+    what: "Illustrative math on a ticker using a live quote when available.",
     how: "Enter a symbol and dollar amount, then run a preset or custom percent. Results are scenarios, not forecasts.",
   },
   "stock-sheet": {

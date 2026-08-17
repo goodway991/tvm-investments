@@ -227,7 +227,7 @@ export function BookScoreCard({
           bogenId="portfolio-score"
           review={possible}
           delta={delta}
-          caption={`If you added ${added} considering name${added === 1 ? "" : "s"} to the book. Current book is ${current.overall ?? "—"}. Educational snapshot — not advice.`}
+          caption={`If you added ${added} considering name${added === 1 ? "" : "s"} to the book. Current book is ${current.overall ?? "—"}.`}
         />
       ) : null}
     </div>
@@ -333,7 +333,7 @@ export function PortfolioAnalysis({
             review={review}
             caption={
               review.counted
-                ? `Built from ${review.counted} holding${review.counted === 1 ? "" : "s"} plus cash. Educational snapshot — not advice.`
+                ? `Built from ${review.counted} holding${review.counted === 1 ? "" : "s"} plus cash.`
                 : "Save at least one holding to fill the overall score."
             }
           />

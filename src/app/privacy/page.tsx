@@ -33,7 +33,7 @@ export default function PrivacyPage() {
 
       <h2>1. Who we are</h2>
       <p>
-        {LEGAL_ENTITY} operates an educational market-research website. We are
+        {LEGAL_ENTITY} operates a market-research website. We are
         not a bank, broker-dealer, registered investment adviser, commodity
         trading advisor, or other licensed financial intermediary. We do not
         custody client assets and we do not execute trades.
@@ -411,9 +411,9 @@ export default function PrivacyPage() {
       <h2>14. Automated processing and models</h2>
       <p>
         The Service uses quantitative rules and, in some cases, third-party
-        language models to classify headlines or draft educational write-ups.
+        language models to classify headlines or draft write-ups.
         Those outputs are not credit, employment, insurance, or housing
-        decisions, and they are not personalized investment advice. You can
+        decisions. You can
         choose not to rely on them. Model providers process the text we send
         them under their terms; we do not send them your password or payment
         card number.

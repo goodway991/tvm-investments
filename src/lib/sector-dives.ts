@@ -331,9 +331,9 @@ function sessionNoteFromHeadlines(sector: string, headlines: string[]) {
     return `No fresh headlines printed in this ${sector.toLowerCase()} sleeve. Scores still use this session’s closes — treat a drop as noise only if volume is not a breakdown.`;
   }
   if (headlines.length === 1) {
-    return `This session’s news: ${headlines[0]}. Educational only — not a recommendation.`;
+    return `This session’s news: ${headlines[0]}.`;
   }
-  return `This session’s news: ${headlines[0]} Also ${headlines[1]}. Educational only — not a recommendation.`;
+  return `This session’s news: ${headlines[0]} Also ${headlines[1]}.`;
 }
 
 function diveFromStocks(
@@ -456,8 +456,8 @@ async function llmSessionNotes(
   if (!geminiKey && !openaiKey) return null;
 
   const payload = divePromptPayload(dives, stocks, sessionDate);
-  const prompt = `Write one educational session note per US equity sector for ${formatSessionLabel(sessionDate)}.
-Not investment advice. Use ONLY the facts in the JSON. Do not invent prices, tickers, or headlines.
+  const prompt = `Write one session note per US equity sector for ${formatSessionLabel(sessionDate)}.
+Use ONLY the facts in the JSON. Do not invent prices, tickers, or headlines.
 JSON only: {"notes":{"tech":"2-3 sentences","financials":"...","healthcare":"...","consumer":"...","industrials":"...","energy":"..."}}
 
 ${JSON.stringify(payload)}`;
@@ -520,7 +520,7 @@ ${JSON.stringify(payload)}`;
         messages: [
           {
             role: "system",
-            content: "Educational market notes only. JSON as specified. No advice.",
+            content: "Session market notes only. JSON as specified.",
           },
           { role: "user", content: prompt },
         ],

@@ -31,10 +31,7 @@ export function LegalFooter() {
           *“Up to 99% accuracy” is a best-case figure for quoted prices and session
           data under normal market conditions. It is not a guarantee, a typical
           result, or a measure of investment performance. Quotes can be delayed,
-          incomplete, or wrong. TVM Investments provides educational research only
-          — not investment, tax, or legal advice — and is not liable for trading
-          losses or decisions made from this site. See our Terms of Service and
-          Risk Disclaimer.
+          incomplete, or wrong. See our Terms of Service.
         </p>
       )}
     </footer>

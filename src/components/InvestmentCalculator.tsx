@@ -73,8 +73,7 @@ export function InvestmentCalculator({ defaultSymbol }: InvestmentCalculatorProp
         <BogenHeading id="calculator">Hypothetical scenario calculator</BogenHeading>
       </h2>
       <p className="text-ink-soft text-sm mb-6">
-        Illustrative math only — not a recommendation to buy or sell. You can lose
-        money. Uses live market quotes when available.
+        Scenario math on a live quote when one is available.
       </p>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">

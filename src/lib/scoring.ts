@@ -539,7 +539,7 @@ export async function generateProCulture(
         {
           role: "system",
           content:
-            "You write educational equity research, not investment advice. Reply with 3-5 sentences only.",
+            "You write equity research notes. Reply with 3-5 sentences only.",
         },
         {
           role: "user",

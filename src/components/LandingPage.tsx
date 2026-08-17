@@ -47,8 +47,7 @@ export function LandingPage() {
                 TVM Investments is for individuals who want a repeatable process —
                 not a hot tip. Each weekday we screen liquid large-caps, flag
                 names that hit multiple historically-motivated setups, and hand
-                you the notes. Education first. Never a recommendation to buy
-                or sell.
+                you the notes.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
@@ -210,10 +209,8 @@ export function LandingPage() {
                 what you are watching — updated after the US cash close.
               </p>
               <p className="mt-4 leading-relaxed text-ink-soft">
-                It is not a signal service, not a broker, and not a promise of
-                returns. It is a structured reading of liquid large-cap names
-                so you can do your own homework faster, with the reasoning in
-                front of you instead of buried in a black box.
+                It is a structured reading of liquid large-cap names, with the
+                reasoning in front of you instead of buried in a black box.
               </p>
               <Link
                 href="/about"
