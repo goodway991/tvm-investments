@@ -3,6 +3,7 @@ import { WatchlistPanel } from "@/components/WatchlistPanel";
 import { uniqueStocks } from "@/lib/chart-series";
 import { POPULAR_WATCHLIST } from "@/lib/watchlist-symbols";
 import { getDashboardSnapshot } from "@/lib/snapshot";
+import { slimCandidate } from "@/lib/snapshot-view";
 
 export const metadata: Metadata = {
   title: "Watchlist — TVM Investments",
@@ -30,8 +31,9 @@ export default async function WatchlistPage({
     <div className="dashboard-research">
       <WatchlistPanel
         stocks={stocks}
-        quoted={uniqueStocks([...snapshot.topMovers, ...snapshot.topPicks])}
-        screened={snapshot.screenedStocks}
+        quoted={uniqueStocks([...snapshot.topMovers, ...snapshot.topPicks]).map(
+          slimCandidate,
+        )}
         reports={snapshot.reports}
         sessionDate={snapshot.date}
         externalQuery={q ?? ""}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DashboardOverview } from "@/components/DashboardOverview";
 import { getDashboardSnapshot } from "@/lib/snapshot";
+import { dashboardView } from "@/lib/snapshot-view";
 
 export const metadata: Metadata = {
   title: "Dashboard — TVM Investments",
@@ -14,5 +15,5 @@ export default async function DashboardPage({
 }) {
   const { archive } = await searchParams;
   const snapshot = await getDashboardSnapshot(archive);
-  return <DashboardOverview snapshot={snapshot} />;
+  return <DashboardOverview snapshot={dashboardView(snapshot)} />;
 }

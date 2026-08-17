@@ -2,11 +2,12 @@ import "server-only";
 import { cache } from "react";
 
 import type { DailySnapshot, StockCandidate } from "@/types";
-import { runFallbackSnapshot } from "@/lib/analysis-pipeline";
 import { getLatestSnapshot, getSnapshotByDate } from "@/lib/firebase/admin";
 import { buildArchiveDemoSnapshot, isArchiveDemoDate } from "@/lib/archive-demo";
+import { etDateString } from "@/lib/archive-window";
 import { hydrateSectorDives } from "@/lib/sector-dives";
 import { readDiskSnapshot } from "@/lib/snapshot-cache";
+import { slimSnapshot } from "@/lib/snapshot-view";
 
 const SNAPSHOT_MEMORY_TTL_MS = 15 * 60_000;
 const FIRESTORE_WAIT_MS = 2500;
@@ -16,6 +17,13 @@ let latestMemory: { at: number; snapshot: DailySnapshot } | null = null;
 function rememberLatest(snapshot: DailySnapshot) {
   latestMemory = { at: Date.now(), snapshot };
   return snapshot;
+}
+
+function serveSnapshot(
+  snapshot: DailySnapshot,
+  options: { freeze?: boolean } = {},
+) {
+  return rememberLatest(slimSnapshot(normalizeSnapshot(snapshot, options)));
 }
 
 async function firstSettled<T>(
@@ -131,22 +139,24 @@ export const getDashboardSnapshot = cache(async function getDashboardSnapshot(
   const date = parseArchiveDate(archiveDate);
   if (date) {
     if (isArchiveDemoDate(date)) {
-      return normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true });
+      return slimSnapshot(normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true }));
     }
     const archived = await firstSettled(getSnapshotByDate(date), FIRESTORE_WAIT_MS);
-    if (archived) return normalizeSnapshot(archived, { freeze: true });
-    return normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true });
+    if (archived) {
+      return slimSnapshot(normalizeSnapshot(archived, { freeze: true }));
+    }
+    return slimSnapshot(normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true }));
   }
 
   if (latestMemory && Date.now() - latestMemory.at < SNAPSHOT_MEMORY_TTL_MS) {
-    return normalizeSnapshot(latestMemory.snapshot);
+    return latestMemory.snapshot;
   }
 
   const disk = await firstSettled(readDiskSnapshot(), DISK_WAIT_MS);
-  if (disk) return normalizeSnapshot(rememberLatest(disk));
+  if (disk) return serveSnapshot(disk);
 
   const cached = await firstSettled(getLatestSnapshot(), FIRESTORE_WAIT_MS);
-  if (cached) return normalizeSnapshot(rememberLatest(cached));
+  if (cached) return serveSnapshot(cached);
 
-  return normalizeSnapshot(rememberLatest(await runFallbackSnapshot()));
+  return serveSnapshot(buildArchiveDemoSnapshot(etDateString()), { freeze: true });
 });

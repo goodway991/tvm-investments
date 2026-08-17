@@ -103,12 +103,32 @@ export function WatchlistPanel({
   );
 
   function detailFor(symbol: string) {
-    return (
-      quotedBySymbol.get(symbol) ??
-      (screenedBySymbol.has(symbol)
-        ? screenedToCandidate(screenedBySymbol.get(symbol)!)
-        : null)
-    );
+    const quoted = quotedBySymbol.get(symbol);
+    if (quoted) return quoted;
+    if (screenedBySymbol.has(symbol)) {
+      return screenedToCandidate(screenedBySymbol.get(symbol)!);
+    }
+    const named = stocks.find((stock) => stock.symbol === symbol);
+    return screenedToCandidate({
+      symbol,
+      name: named?.name ?? symbol,
+      sector: "",
+      industry: "",
+      price: 0,
+      changePercent: 0,
+      volume: 0,
+      compositeScore: 0,
+      shortTermScore: 0,
+      longTermScore: 0,
+      fundamentals: {
+        peRatio: null,
+        beta: null,
+        eps: null,
+        marketCap: null,
+        avgVolume: null,
+        shortInterestPct: null,
+      },
+    });
   }
 
   const results = useMemo(() => {

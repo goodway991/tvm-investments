@@ -6,7 +6,8 @@ import { BogenHeading } from "@/components/BogenProvider";
 import { pageSlice, StockPager } from "@/components/StockPager";
 
 interface FilterPanelProps {
-  initialStocks: ScreenedStock[];
+  initialStocks?: ScreenedStock[];
+  archiveDate?: string;
 }
 
 interface FilterState {
@@ -48,12 +49,13 @@ function toRow(stock: ScreenedStock) {
   };
 }
 
-export function FilterPanel({ initialStocks }: FilterPanelProps) {
+export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
-  const [results, setResults] = useState(initialStocks.map(toRow));
+  const [catalog, setCatalog] = useState(() => initialStocks.map(toRow));
+  const [results, setResults] = useState(() => initialStocks.map(toRow));
   const [find, setFind] = useState("");
   const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(initialStocks.length === 0);
   const visible = results.filter((stock) => {
     const needle = find.trim().toLowerCase();
     if (!needle) return true;
@@ -63,6 +65,30 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
     );
   });
   const paged = pageSlice(visible, page);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams();
+    if (archiveDate) params.set("date", archiveDate);
+    const query = params.toString();
+    setLoading(true);
+    fetch(`/api/filter${query ? `?${query}` : ""}`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((data: { stocks?: ReturnType<typeof toRow>[] }) => {
+        const rows = Array.isArray(data.stocks) ? data.stocks : [];
+        setCatalog(rows);
+        setResults(rows);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setResults([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [archiveDate]);
 
   useEffect(() => {
     setPage(0);
@@ -82,7 +108,7 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
 
   function reset() {
     setFilters(emptyFilters);
-    setResults(initialStocks.map(toRow));
+    setResults(catalog);
   }
 
   const fields: Array<{ key: keyof FilterState; label: string; placeholder: string }> = [
@@ -148,7 +174,9 @@ export function FilterPanel({ initialStocks }: FilterPanelProps) {
       </div>
 
       <p className="text-sm text-ink-soft mb-4">
-        {visible.length} stocks match · 10 per page
+        {loading && results.length === 0
+          ? "Loading today’s scan…"
+          : `${visible.length} stocks match · 10 per page`}
       </p>
 
       <div className="overflow-x-auto">

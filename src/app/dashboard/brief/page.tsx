@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DailyBrief } from "@/components/DailyBrief";
 import { getDashboardSnapshot } from "@/lib/snapshot";
+import { briefView } from "@/lib/snapshot-view";
 import {
   fetchMorningBrewMarketEvents,
   mergeNewsSources,
@@ -33,7 +34,7 @@ export default async function BriefPage({
   const { archive } = await searchParams;
   if (archive) {
     const snapshot = await getDashboardSnapshot(archive);
-    return <DailyBrief snapshot={snapshot} />;
+    return <DailyBrief snapshot={briefView(snapshot)} />;
   }
 
   const [snapshot, brewEvents] = await Promise.all([
@@ -43,12 +44,12 @@ export default async function BriefPage({
 
   return (
     <DailyBrief
-      snapshot={{
+      snapshot={briefView({
         ...snapshot,
         marketEvents: brewEvents.length
           ? mergeNewsSources(brewEvents, snapshot.marketEvents, 6)
           : snapshot.marketEvents,
-      }}
+      })}
     />
   );
 }
