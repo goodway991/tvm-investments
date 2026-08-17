@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DailyBrief } from "@/components/DailyBrief";
+import { showTvm10Labs } from "@/lib/beta-labs";
 import { getDashboardSnapshot } from "@/lib/snapshot";
 import { briefView } from "@/lib/snapshot-view";
 import {
@@ -32,7 +33,7 @@ export default async function BriefPage({
   searchParams: Promise<{ archive?: string }>;
 }) {
   const { archive } = await searchParams;
-  if (archive) {
+  if (archive || !showTvm10Labs()) {
     const snapshot = await getDashboardSnapshot(archive);
     return <DailyBrief snapshot={briefView(snapshot)} />;
   }
