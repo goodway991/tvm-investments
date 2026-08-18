@@ -19,6 +19,7 @@ async function main() {
   console.log(`Date: ${snapshot.date}`);
   console.log(`Mode: ${snapshot.dataMode}`);
   console.log(`Firebase saved: ${saved}`);
+  console.log(`Names screened: ${snapshot.screenedStocks.length}`);
   console.log(`Market events: ${snapshot.marketEvents.length}`);
   console.log("Sector dives:");
   for (const dive of snapshot.sectorDives) {

@@ -44,6 +44,7 @@ async function getAdminDb(): Promise<FirebaseFirestore.Firestore | null> {
           });
 
     adminDb = getFirestore(app, databaseId);
+    adminDb.settings({ ignoreUndefinedProperties: true });
     return adminDb;
   } catch (e) {
     console.warn("Firebase Admin init failed:", e);

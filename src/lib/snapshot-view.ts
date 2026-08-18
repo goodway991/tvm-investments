@@ -25,13 +25,15 @@ export function slimCandidate<T extends StockCandidate>(stock: T): T {
     stock.yearCloses && stock.yearCloses.length >= 2
       ? stock.yearCloses.slice(-YEAR_BARS)
       : monthEndCloses(stock.ohlcv);
-  return {
+  const next = {
     ...stock,
     ohlcv: stock.ohlcv.slice(-DAILY_BARS),
-    yearCloses: yearCloses.length ? yearCloses : undefined,
     headlines: stock.headlines.slice(0, HEADLINES),
-    businessSummary: undefined,
   };
+  delete next.businessSummary;
+  if (yearCloses.length) next.yearCloses = yearCloses;
+  else delete next.yearCloses;
+  return next;
 }
 
 function slimMovers(movers: MarketMover[]): MarketMover[] {
