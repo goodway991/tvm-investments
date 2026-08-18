@@ -23,7 +23,16 @@ export function StockPager({
 }) {
   if (pages <= 1) return null;
   return (
-    <div className="mt-4 flex items-center justify-center gap-3">
+    <div className="mt-4 flex items-center justify-center gap-2">
+      <button
+        type="button"
+        aria-label="First page"
+        disabled={page <= 0}
+        onClick={() => onPage(0)}
+        className="glass grid h-10 min-w-10 place-items-center rounded-full px-2 text-sm font-semibold text-ink disabled:opacity-40"
+      >
+        «
+      </button>
       <button
         type="button"
         aria-label="Previous page"
@@ -33,7 +42,7 @@ export function StockPager({
       >
         &lt;
       </button>
-      <p className="min-w-16 text-center text-sm font-semibold text-ink-soft">
+      <p className="min-w-20 text-center text-sm font-semibold text-ink-soft">
         {page + 1} / {pages}
       </p>
       <button
@@ -44,6 +53,15 @@ export function StockPager({
         className="glass grid h-10 w-10 place-items-center rounded-full text-lg font-semibold text-ink disabled:opacity-40"
       >
         &gt;
+      </button>
+      <button
+        type="button"
+        aria-label="Last page"
+        disabled={page >= pages - 1}
+        onClick={() => onPage(pages - 1)}
+        className="glass grid h-10 min-w-10 place-items-center rounded-full px-2 text-sm font-semibold text-ink disabled:opacity-40"
+      >
+        »
       </button>
     </div>
   );

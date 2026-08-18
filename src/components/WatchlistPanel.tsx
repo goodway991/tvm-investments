@@ -360,6 +360,11 @@ export function WatchlistPanel({
                   : `Results for “${query.trim()}”`
                 : "Available stocks"}
             </p>
+            <p className="mt-1 text-xs text-ink-soft">
+              {query.trim()
+                ? `${results.length} match${results.length === 1 ? "" : "es"} · 10 per page`
+                : `${candidates.length.toLocaleString()} names in today’s scan · 10 per page`}
+            </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {results.length ? (
                 resultsPaged.slice.map((stock) => {
