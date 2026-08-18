@@ -242,6 +242,7 @@ type YahooQuote = {
   sector?: string;
   industry?: string;
   regularMarketPrice?: unknown;
+  postMarketPrice?: unknown;
   regularMarketChange?: unknown;
   regularMarketChangePercent?: unknown;
   regularMarketPreviousClose?: unknown;
@@ -555,16 +556,34 @@ export async function fetchYahooUniverse(): Promise<StockCandidate[]> {
   }
 
   const quotes = await fetchYahooQuotesBatch(symbols);
+  return symbols
+    .map((symbol) => {
+      const quote = quotes.get(symbol);
+      const nasdaq = nasdaqMap.get(symbol);
+      if (!quote && !nasdaq) return null;
+      const price =
+        num(quote?.regularMarketPrice) ?? nasdaq?.price ?? 0;
+      if (!(price > 0)) return null;
+      return candidateFromQuote(symbol, quote, nasdaq, [], [], []);
+    })
+    .filter((candidate): candidate is StockCandidate => candidate != null);
+}
+
+export async function hydrateYahooCandidates(
+  candidates: StockCandidate[],
+  options: { news?: boolean } = {},
+): Promise<StockCandidate[]> {
   const bars = new Array<{ ohlcv: OHLCVBar[]; yearCloses: OHLCVBar[] } | null>(
-    symbols.length,
+    candidates.length,
   ).fill(null);
   let cursor = 0;
-  const workers = 16;
+  const workers = Math.min(8, Math.max(1, candidates.length));
 
   async function worker() {
-    while (cursor < symbols.length) {
+    while (cursor < candidates.length) {
       const index = cursor++;
-      const symbol = symbols[index];
+      const symbol = candidates[index]?.symbol;
+      if (!symbol) continue;
       try {
         bars[index] = await fetchYahooDailyBars(symbol);
       } catch (error) {
@@ -576,42 +595,60 @@ export async function fetchYahooUniverse(): Promise<StockCandidate[]> {
 
   await Promise.all(Array.from({ length: workers }, () => worker()));
 
-  const drafted = symbols
-    .map((symbol, index) => {
-      const series = bars[index];
-      if (!series || series.ohlcv.length < 5) return null;
-      return candidateFromQuote(
-        symbol,
-        quotes.get(symbol),
-        nasdaqMap.get(symbol),
-        series.ohlcv,
-        series.yearCloses,
-        [],
-      );
-    })
-    .filter((candidate): candidate is StockCandidate => candidate != null);
+  const withBars = candidates.map((candidate, index) => {
+    const series = bars[index];
+    if (!series || series.ohlcv.length < 5) return candidate;
+    return {
+      ...candidate,
+      ohlcv: series.ohlcv,
+      yearCloses: series.yearCloses,
+    };
+  });
+
+  if (!options.news) return withBars;
 
   const newsTargets = Array.from(
     new Set([
-      ...[...drafted]
+      ...[...withBars]
         .sort((left, right) => Math.abs(right.changePercent) - Math.abs(left.changePercent))
         .slice(0, 40)
         .map((candidate) => candidate.symbol),
-      ...sectorNewsSymbols(drafted, 4),
+      ...sectorNewsSymbols(withBars, 4),
     ]),
   );
-
   const headlinesBySymbol = new Map<string, NewsHeadline[]>();
   await Promise.all(
     newsTargets.map(async (symbol) => {
       headlinesBySymbol.set(symbol, await fetchYahooNews(symbol, 5));
     }),
   );
-
-  return drafted.map((candidate) => ({
+  return withBars.map((candidate) => ({
     ...candidate,
-    headlines: headlinesBySymbol.get(candidate.symbol) ?? [],
+    headlines: headlinesBySymbol.get(candidate.symbol) ?? candidate.headlines,
   }));
+}
+
+export function quoteCardFromYahoo(symbol: string, quote: YahooQuote | undefined) {
+  if (!quote) return null;
+  const price = num(quote.regularMarketPrice) ?? num(quote.postMarketPrice);
+  if (!(price && price > 0)) return null;
+  return {
+    symbol: symbol.toUpperCase(),
+    price,
+    change: num(quote.regularMarketChange) ?? 0,
+    changePercent: num(quote.regularMarketChangePercent) ?? 0,
+    volume: num(quote.regularMarketVolume) ?? 0,
+  };
+}
+
+export async function fetchYahooQuoteCards(symbols: string[]) {
+  const unique = Array.from(
+    new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)),
+  ).slice(0, 40);
+  const quotes = await fetchYahooQuotesBatch(unique);
+  return unique
+    .map((symbol) => quoteCardFromYahoo(symbol, quotes.get(symbol)))
+    .filter((row): row is NonNullable<typeof row> => row != null);
 }
 
 export async function fetchYahooMarketEvents(): Promise<MarketEvent[]> {

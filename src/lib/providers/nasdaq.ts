@@ -34,15 +34,15 @@ function rowFromNasdaq(row: Record<string, string>): NasdaqQuote | null {
   };
 }
 
-export async function fetchNasdaqScreener(limit = 1500): Promise<NasdaqQuote[]> {
+async function fetchNasdaqPage(limit: number, offset: number) {
   const headers = {
     Accept: "application/json,text/plain,*/*",
     "User-Agent":
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
   };
   const urls = [
-    `https://api.nasdaq.com/api/screener/stocks?limit=${limit}&offset=0`,
-    `https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=${limit}&offset=0`,
+    `https://api.nasdaq.com/api/screener/stocks?limit=${limit}&offset=${offset}`,
+    `https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=${limit}&offset=${offset}`,
   ];
   let rows: Array<Record<string, string>> = [];
   for (const url of urls) {
@@ -58,10 +58,26 @@ export async function fetchNasdaqScreener(limit = 1500): Promise<NasdaqQuote[]> 
     if (rows.some((row) => row.sector || row.industry)) break;
     if (rows.length > 0 && url === urls[urls.length - 1]) break;
   }
+  return rows;
+}
+
+export async function fetchNasdaqScreener(limit = 1500): Promise<NasdaqQuote[]> {
+  const pageSize = Math.min(250, limit);
   const quotes: NasdaqQuote[] = [];
-  for (const row of rows) {
-    const quote = rowFromNasdaq(row);
-    if (quote) quotes.push(quote);
+  const seen = new Set<string>();
+  for (let offset = 0; offset < limit && quotes.length < limit; offset += pageSize) {
+    const rows = await fetchNasdaqPage(pageSize, offset);
+    if (rows.length === 0) break;
+    let added = 0;
+    for (const row of rows) {
+      const quote = rowFromNasdaq(row);
+      if (!quote || seen.has(quote.symbol)) continue;
+      seen.add(quote.symbol);
+      quotes.push(quote);
+      added += 1;
+      if (quotes.length >= limit) break;
+    }
+    if (added === 0) break;
   }
   return quotes;
 }

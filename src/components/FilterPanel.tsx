@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ScreenedStock } from "@/types";
 import { BogenHeading } from "@/components/BogenProvider";
 import { pageSlice, StockPager } from "@/components/StockPager";
+import {
+  StockDetailModal,
+  screenedToCandidate,
+} from "@/components/StockDetailModal";
 
 interface FilterPanelProps {
   initialStocks?: ScreenedStock[];
@@ -21,6 +25,12 @@ interface FilterState {
   marketCapMax: string;
 }
 
+type ScreenRow = ReturnType<typeof toRow> & {
+  sector?: string;
+  industry?: string;
+  indexMembership?: ScreenedStock["indexMembership"];
+};
+
 const emptyFilters: FilterState = {
   peMin: "",
   peMax: "",
@@ -36,6 +46,8 @@ function toRow(stock: ScreenedStock) {
   return {
     symbol: stock.symbol,
     name: stock.name,
+    sector: stock.sector,
+    industry: stock.industry,
     price: stock.price,
     changePercent: stock.changePercent,
     compositeScore: stock.compositeScore,
@@ -46,6 +58,7 @@ function toRow(stock: ScreenedStock) {
     eps: stock.fundamentals.eps,
     marketCap: stock.fundamentals.marketCap,
     volume: stock.volume,
+    indexMembership: stock.indexMembership,
   };
 }
 
@@ -56,6 +69,13 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
   const [find, setFind] = useState("");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(initialStocks.length === 0);
+  const [selected, setSelected] = useState<ScreenRow | null>(null);
+  const [quotes, setQuotes] = useState<
+    Record<string, { price: number; changePercent: number; volume: number }>
+  >({});
+  const seenRef = useRef(new Set<string>());
+  const queueRef = useRef(new Set<string>());
+  const tableRef = useRef<HTMLTableSectionElement>(null);
   const visible = results.filter((stock) => {
     const needle = find.trim().toLowerCase();
     if (!needle) return true;
@@ -76,7 +96,7 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
       signal: controller.signal,
     })
       .then((res) => res.json())
-      .then((data: { stocks?: ReturnType<typeof toRow>[] }) => {
+      .then((data: { stocks?: ScreenRow[] }) => {
         const rows = Array.isArray(data.stocks) ? data.stocks : [];
         setCatalog(rows);
         setResults(rows);
@@ -94,9 +114,72 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
     setPage(0);
   }, [find, results]);
 
+  useEffect(() => {
+    seenRef.current = new Set();
+    queueRef.current = new Set();
+  }, [paged.page, results]);
+
+  useEffect(() => {
+    const root = tableRef.current;
+    if (!root) return;
+    let timer: number | undefined;
+
+    function flush() {
+      const symbols = [...queueRef.current];
+      queueRef.current = new Set();
+      if (symbols.length === 0) return;
+      fetch(`/api/yahoo/quotes?symbols=${encodeURIComponent(symbols.join(","))}`)
+        .then((response) => response.json())
+        .then(
+          (payload: {
+            quotes?: Array<{ symbol: string; price: number; changePercent: number; volume: number }>;
+          }) => {
+            const next = payload.quotes ?? [];
+            if (next.length === 0) return;
+            setQuotes((current) => {
+              const merged = { ...current };
+              for (const quote of next) {
+                merged[quote.symbol] = {
+                  price: quote.price,
+                  changePercent: quote.changePercent,
+                  volume: quote.volume,
+                };
+              }
+              return merged;
+            });
+          },
+        )
+        .catch(() => {});
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const symbol = (entry.target as HTMLElement).dataset.symbol;
+          if (!symbol || seenRef.current.has(symbol)) continue;
+          seenRef.current.add(symbol);
+          queueRef.current.add(symbol);
+        }
+        window.clearTimeout(timer);
+        timer = window.setTimeout(flush, 160);
+      },
+      { root: null, rootMargin: "80px 0px", threshold: 0.2 },
+    );
+
+    for (const row of root.querySelectorAll("[data-symbol]")) {
+      observer.observe(row);
+    }
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, [paged.slice]);
+
   async function applyFilters() {
     setLoading(true);
     const params = new URLSearchParams();
+    if (archiveDate) params.set("date", archiveDate);
     for (const [k, v] of Object.entries(filters)) {
       if (v) params.set(k, v);
     }
@@ -122,6 +205,30 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
     { key: "marketCapMax", label: "Market Cap Max ($)", placeholder: "e.g. 500000000000" },
   ];
 
+  const selectedStock = selected
+    ? screenedToCandidate({
+        symbol: selected.symbol,
+        name: selected.name,
+        sector: selected.sector || "Unknown",
+        industry: selected.industry || "Unknown",
+        price: quotes[selected.symbol]?.price ?? selected.price,
+        changePercent: quotes[selected.symbol]?.changePercent ?? selected.changePercent,
+        volume: quotes[selected.symbol]?.volume ?? selected.volume,
+        compositeScore: selected.compositeScore,
+        shortTermScore: selected.shortTermScore,
+        longTermScore: selected.longTermScore,
+        fundamentals: {
+          peRatio: selected.peRatio,
+          beta: selected.beta,
+          eps: selected.eps,
+          marketCap: selected.marketCap,
+          avgVolume: null,
+          shortInterestPct: null,
+        },
+        indexMembership: selected.indexMembership,
+      })
+    : null;
+
   return (
     <div className="glass rounded-2xl p-6">
       <h2 className="font-display text-2xl text-ink mb-1">
@@ -129,7 +236,8 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
       </h2>
       <p className="text-ink-soft text-sm mb-6">
         Filter today&apos;s scored scan of about 1,500 liquid US names by P/E,
-        Beta, Volume, EPS, and Market Cap.
+        Beta, Volume, EPS, and Market Cap. Quotes refresh when a name scrolls
+        into view; tap a ticker for the full sheet.
       </p>
 
       <label className="mb-5 block">
@@ -194,30 +302,56 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
               <th className="pb-2 text-right">Score</th>
             </tr>
           </thead>
-          <tbody>
-            {paged.slice.map((s) => (
-              <tr key={s.symbol} className="border-b border-ink/[0.05]">
-                <td className="py-2 pr-4 font-medium text-ink">{s.symbol}</td>
-                <td className="py-2 pr-4 text-right">{s.peRatio?.toFixed(1) ?? "—"}</td>
-                <td className="py-2 pr-4 text-right">{s.beta?.toFixed(2) ?? "—"}</td>
-                <td className="py-2 pr-4 text-right">{s.eps != null ? `$${s.eps.toFixed(2)}` : "—"}</td>
-                <td className="py-2 pr-4 text-right">{(s.volume / 1e6).toFixed(1)}M</td>
-                <td className="py-2 pr-4 text-right">
-                  {s.marketCap ? `$${(s.marketCap / 1e9).toFixed(1)}B` : "—"}
-                </td>
-                <td className="py-2 pr-4 text-right text-ink-soft">
-                  {s.shortTermScore?.toFixed(0) ?? "—"}
-                </td>
-                <td className="py-2 pr-4 text-right text-ink-soft">
-                  {s.longTermScore?.toFixed(0) ?? "—"}
-                </td>
-                <td className="py-2 text-right text-violet">{s.compositeScore.toFixed(0)}</td>
-              </tr>
-            ))}
+          <tbody ref={tableRef}>
+            {paged.slice.map((s) => {
+              const live = quotes[s.symbol];
+              const volume = live?.volume ?? s.volume;
+              return (
+                <tr
+                  key={s.symbol}
+                  data-symbol={s.symbol}
+                  className="border-b border-ink/[0.05]"
+                >
+                  <td className="py-2 pr-4 font-medium text-ink">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(s)}
+                      className="text-left font-semibold text-violet hover:underline"
+                    >
+                      {s.symbol}
+                    </button>
+                    <span className="mt-0.5 block max-w-[12rem] truncate text-[11px] font-normal text-ink-soft">
+                      {s.name}
+                    </span>
+                  </td>
+                  <td className="py-2 pr-4 text-right">{s.peRatio?.toFixed(1) ?? "—"}</td>
+                  <td className="py-2 pr-4 text-right">{s.beta?.toFixed(2) ?? "—"}</td>
+                  <td className="py-2 pr-4 text-right">{s.eps != null ? `$${s.eps.toFixed(2)}` : "—"}</td>
+                  <td className="py-2 pr-4 text-right">{(volume / 1e6).toFixed(1)}M</td>
+                  <td className="py-2 pr-4 text-right">
+                    {s.marketCap ? `$${(s.marketCap / 1e9).toFixed(1)}B` : "—"}
+                  </td>
+                  <td className="py-2 pr-4 text-right text-ink-soft">
+                    {s.shortTermScore?.toFixed(0) ?? "—"}
+                  </td>
+                  <td className="py-2 pr-4 text-right text-ink-soft">
+                    {s.longTermScore?.toFixed(0) ?? "—"}
+                  </td>
+                  <td className="py-2 text-right text-violet">{s.compositeScore.toFixed(0)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
       <StockPager page={paged.page} pages={paged.pages} onPage={setPage} />
+      {selectedStock ? (
+        <StockDetailModal
+          stock={selectedStock}
+          sessionDate={archiveDate}
+          onClose={() => setSelected(null)}
+        />
+      ) : null}
     </div>
   );
 }

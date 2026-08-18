@@ -36,6 +36,8 @@ export function StockDetailModal({
 }) {
   const { entitlement } = useAuth();
   const isPro = planHasPro(entitlement.plan);
+  const [detail, setDetail] = useState(stock);
+  const [detailReport, setDetailReport] = useState(report);
   const [news, setNews] = useState<NewsHeadline[]>(stock.headlines);
   const [newsStatus, setNewsStatus] = useState<"loading" | "live" | "cached">(
     "loading",
@@ -43,8 +45,25 @@ export function StockDetailModal({
   const [range, setRange] = useState<ChartRange>("month");
 
   useEffect(() => {
-    let cancelled = false;
+    setDetail(stock);
+    setDetailReport(report);
+    setNews(stock.headlines);
     setNewsStatus("loading");
+    let cancelled = false;
+    const params = new URLSearchParams({ symbol: stock.symbol });
+    if (isPro) params.set("pro", "1");
+    fetch(`/api/yahoo/research?${params}`)
+      .then((response) => response.json())
+      .then((payload: { stock?: StockCandidate; report?: CompanyReport }) => {
+        if (cancelled || !payload.stock) return;
+        setDetail(payload.stock);
+        if (payload.report) setDetailReport(payload.report);
+        if (payload.stock.headlines?.length) {
+          setNews(payload.stock.headlines);
+          setNewsStatus("live");
+        }
+      })
+      .catch(() => {});
     fetch(`/api/yahoo/news?symbol=${encodeURIComponent(stock.symbol)}`)
       .then((response) => response.json())
       .then((payload: { headlines?: NewsHeadline[] }) => {
@@ -53,27 +72,27 @@ export function StockDetailModal({
           setNews(payload.headlines);
           setNewsStatus("live");
         } else {
-          setNews(stock.headlines);
-          setNewsStatus("cached");
+          setNews((current) => (current.length ? current : stock.headlines));
+          setNewsStatus((current) => (current === "live" ? current : "cached"));
         }
       })
       .catch(() => {
         if (cancelled) return;
-        setNews(stock.headlines);
-        setNewsStatus("cached");
+        setNews((current) => (current.length ? current : stock.headlines));
+        setNewsStatus((current) => (current === "live" ? current : "cached"));
       });
     return () => {
       cancelled = true;
     };
-  }, [stock.headlines, stock.symbol]);
+  }, [isPro, stock.symbol]);
 
-  const activeSignals = stock.signals.filter(
+  const activeSignals = detail.signals.filter(
     (signal) => signal.triggered || signal.score > 50,
   );
 
   return (
     <OverlaySheet
-      labelledBy={`stock-dialog-${stock.symbol}`}
+      labelledBy={`stock-dialog-${detail.symbol}`}
       onClose={onClose}
       variant="card"
       panelClassName="glass-strong relative z-10 mx-auto flex max-h-[calc(100svh-2rem)] w-full max-w-[920px] flex-col overflow-hidden rounded-[32px]"
@@ -83,15 +102,15 @@ export function StockDetailModal({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-              {stock.sector} · {stock.industry}
+              {detail.sector} · {detail.industry}
             </p>
             <h2
-              id={`stock-dialog-${stock.symbol}`}
+              id={`stock-dialog-${detail.symbol}`}
               className="mt-1 font-display text-3xl font-bold text-ink"
             >
-              <BogenHeading id="stock-sheet">{stock.symbol}</BogenHeading>
+              <BogenHeading id="stock-sheet">{detail.symbol}</BogenHeading>
             </h2>
-            <p className="truncate text-sm text-ink-soft">{stock.name}</p>
+            <p className="truncate text-sm text-ink-soft">{detail.name}</p>
           </div>
           <button
             type="button"
@@ -119,41 +138,41 @@ export function StockDetailModal({
           <div className="glass rounded-2xl p-4">
             <p className="text-xs text-ink-soft">Price</p>
             <p className="font-display text-xl font-bold text-ink">
-              ${stock.price.toFixed(2)}
+              ${detail.price.toFixed(2)}
             </p>
           </div>
           <div className="glass rounded-2xl p-4">
             <p className="text-xs text-ink-soft">Today</p>
             <p
               className={`font-display text-xl font-bold ${
-                stock.changePercent >= 0 ? "text-emerald-600" : "text-coral"
+                detail.changePercent >= 0 ? "text-emerald-600" : "text-coral"
               }`}
             >
-              {signedPercent(stock.changePercent)}
+              {signedPercent(detail.changePercent)}
             </p>
           </div>
           <div className="glass rounded-2xl p-4">
             <p className="text-xs text-ink-soft">Composite</p>
             <p className="font-display text-xl font-bold text-violet">
-              {stock.compositeScore.toFixed(0)} / 100
+              {detail.compositeScore.toFixed(0)} / 100
             </p>
           </div>
           <div className="glass rounded-2xl p-4">
             <p className="text-xs text-ink-soft">Short-term</p>
             <p className="font-display text-xl font-bold text-ink">
-              {(stock.shortTermScore ?? stock.compositeScore).toFixed(0)}
+              {(detail.shortTermScore ?? detail.compositeScore).toFixed(0)}
             </p>
           </div>
           <div className="glass rounded-2xl p-4">
             <p className="text-xs text-ink-soft">Long-term</p>
             <p className="font-display text-xl font-bold text-ink">
-              {(stock.longTermScore ?? stock.compositeScore).toFixed(0)}
+              {(detail.longTermScore ?? detail.compositeScore).toFixed(0)}
             </p>
           </div>
           <div className="glass rounded-2xl p-4">
             <p className="text-xs text-ink-soft">Market cap</p>
             <p className="font-display text-xl font-bold text-ink">
-              {formatCap(stock.fundamentals.marketCap)}
+              {formatCap(detail.fundamentals.marketCap)}
             </p>
           </div>
         </div>
@@ -175,9 +194,9 @@ export function StockDetailModal({
               </select>
             </div>
             <YahooPriceChart
-              symbol={stock.symbol}
-              ohlcv={stock.ohlcv}
-              yearCloses={stock.yearCloses}
+              symbol={detail.symbol}
+              ohlcv={detail.ohlcv}
+              yearCloses={detail.yearCloses}
               range={range}
               sessionDate={sessionDate}
               height={180}
@@ -186,13 +205,13 @@ export function StockDetailModal({
 
           <div className="mt-3 grid gap-3 sm:grid-cols-4">
             {[
-              ["P/E", stock.fundamentals.peRatio?.toFixed(1) ?? "—"],
-              ["Beta", stock.fundamentals.beta?.toFixed(2) ?? "—"],
-              ["EPS", stock.fundamentals.eps != null ? `$${stock.fundamentals.eps.toFixed(2)}` : "—"],
+              ["P/E", detail.fundamentals.peRatio?.toFixed(1) ?? "—"],
+              ["Beta", detail.fundamentals.beta?.toFixed(2) ?? "—"],
+              ["EPS", detail.fundamentals.eps != null ? `$${detail.fundamentals.eps.toFixed(2)}` : "—"],
               [
                 "Volume",
-                stock.volume
-                  ? `${(stock.volume / 1_000_000).toFixed(1)}M`
+                detail.volume
+                  ? `${(detail.volume / 1_000_000).toFixed(1)}M`
                   : "—",
               ],
             ].map(([label, value]) => (
@@ -231,18 +250,18 @@ export function StockDetailModal({
           </div>
         )}
 
-        {report && (
+        {detailReport && (
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="glass rounded-2xl p-4">
               <h3 className="text-sm font-semibold text-violet">Short-term</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                {report.shortTermOutlook}
+                {detailReport.shortTermOutlook}
               </p>
             </div>
             <div className="glass rounded-2xl p-4">
               <h3 className="text-sm font-semibold text-violet">Long-term</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                {report.longTermOutlook}
+                {detailReport.longTermOutlook}
               </p>
             </div>
             <div className="glass rounded-2xl p-4 sm:col-span-2">
@@ -250,9 +269,9 @@ export function StockDetailModal({
                 Company culture & long-term fit
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                {isPro && report.cultureAndLongTermPro
-                  ? report.cultureAndLongTermPro
-                  : report.cultureAndLongTerm}
+                {isPro && detailReport.cultureAndLongTermPro
+                  ? detailReport.cultureAndLongTermPro
+                  : detailReport.cultureAndLongTerm}
               </p>
             </div>
           </div>
@@ -292,7 +311,7 @@ export function StockDetailModal({
               ))
             ) : (
               <p className="glass rounded-2xl p-4 text-sm text-ink-soft">
-                No headlines available for {stock.symbol} right now.
+                No headlines available for {detail.symbol} right now.
               </p>
             )}
           </div>

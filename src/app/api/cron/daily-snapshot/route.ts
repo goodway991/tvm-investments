@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         id: dive.id,
         filled: !/no .+ names printed/i.test(dive.body),
       })),
+      screened: snapshot.screenedStocks.length,
       topPicks: snapshot.topPicks.map((pick) => ({
         symbol: pick.symbol,
         score: pick.compositeScore,

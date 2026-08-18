@@ -185,15 +185,47 @@ async function runLiveAnalysis(useLLM: boolean): Promise<DailySnapshot> {
   for (const stock of raw) {
     const sectorChange = sectorChanges[stock.sector] ?? marketChange;
     analyzed.push(
-      await analyzeStock(addIndexMembership(stock), sectorChange, marketChange, useLLM),
+      await analyzeStock(addIndexMembership(stock), sectorChange, marketChange, false),
     );
   }
 
   let ranked = rankCandidates(analyzed);
+  const moverSeed = [...ranked]
+    .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+    .slice(0, 20);
+  const pickSeed = ranked.slice(0, 3);
+  const horizonSeed = buildHorizonViews(ranked);
+  const featured = uniquePicks([
+    ...moverSeed,
+    ...pickSeed,
+    ...horizonSeed.shortTermPicks,
+    ...horizonSeed.longTermPicks,
+  ]);
+  const hydrated = await yahoo.hydrateYahooCandidates(featured, { news: true });
+  const hydratedBySymbol = new Map(
+    (
+      await Promise.all(
+        hydrated.map(async (stock) => {
+          const sectorChange = sectorChanges[stock.sector] ?? marketChange;
+          return analyzeStock(stock, sectorChange, marketChange, useLLM);
+        }),
+      )
+    ).map((stock) => [stock.symbol, stock] as const),
+  );
+  ranked = ranked.map((stock) => hydratedBySymbol.get(stock.symbol) ?? stock);
+  ranked = rankCandidates(ranked);
   ranked = await fillDiveHeadlines(ranked);
-  const topPicks = ranked.slice(0, 3);
+  const topPicks = ranked
+    .slice(0, 3)
+    .map((stock) => hydratedBySymbol.get(stock.symbol) ?? stock);
   let reports = topPicks.map(generateCompanyReport);
   const horizonViews = buildHorizonViews(ranked);
+  horizonViews.shortTermPicks = horizonViews.shortTermPicks.map(
+    (stock) => hydratedBySymbol.get(stock.symbol) ?? stock,
+  );
+  horizonViews.longTermPicks = horizonViews.longTermPicks.map(
+    (stock) => hydratedBySymbol.get(stock.symbol) ?? stock,
+  );
   if (useLLM) {
     const unique = uniquePicks([
       ...topPicks,
@@ -214,10 +246,13 @@ async function runLiveAnalysis(useLLM: boolean): Promise<DailySnapshot> {
   const topMovers = [...ranked]
     .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
     .slice(0, 20)
-    .map((candidate) => ({
-      ...candidate,
-      direction: candidate.changePercent >= 0 ? ("gainer" as const) : ("loser" as const),
-    }));
+    .map((candidate) => {
+      const live = hydratedBySymbol.get(candidate.symbol) ?? candidate;
+      return {
+        ...live,
+        direction: live.changePercent >= 0 ? ("gainer" as const) : ("loser" as const),
+      };
+    });
 
   const sessionDate = etDateString();
   const [brewEvents, wireEvents, techSectorAnalysis, sectorDives] = await Promise.all([

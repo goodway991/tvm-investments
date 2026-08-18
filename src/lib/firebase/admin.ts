@@ -1,5 +1,6 @@
-import type { DailySnapshot, BacktestEntry, BacktestSummary } from "@/types";
+import type { DailySnapshot, BacktestEntry, BacktestSummary, ScreenedStock } from "@/types";
 import { ARCHIVE_KEEP_DAYS } from "@/lib/plans";
+import { slimSnapshot } from "@/lib/snapshot-view";
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
 const databaseId =
@@ -50,18 +51,92 @@ async function getAdminDb(): Promise<FirebaseFirestore.Firestore | null> {
   }
 }
 
+const SCREENED_CHUNK_SIZE = 250;
+
+async function writeScreenedChunks(
+  ref: FirebaseFirestore.DocumentReference,
+  stocks: ScreenedStock[],
+) {
+  const existing = await ref.collection("screened").get();
+  for (let index = 0; index < existing.docs.length; index += 400) {
+    const batch = ref.firestore.batch();
+    for (const doc of existing.docs.slice(index, index + 400)) {
+      batch.delete(doc.ref);
+    }
+    await batch.commit();
+  }
+  for (let start = 0; start < stocks.length; start += SCREENED_CHUNK_SIZE) {
+    const batch = ref.firestore.batch();
+    const slice = stocks.slice(start, start + SCREENED_CHUNK_SIZE);
+    const chunkIndex = Math.floor(start / SCREENED_CHUNK_SIZE);
+    batch.set(ref.collection("screened").doc(`chunk-${chunkIndex}`), {
+      index: chunkIndex,
+      rows: slice,
+    });
+    await batch.commit();
+  }
+}
+
+async function readScreenedChunks(
+  ref: FirebaseFirestore.DocumentReference,
+  data: DailySnapshot,
+): Promise<ScreenedStock[]> {
+  if (Array.isArray(data.screenedStocks) && data.screenedStocks.length > 0) {
+    return data.screenedStocks;
+  }
+  try {
+    const snap = await ref.collection("screened").orderBy("index").get();
+    return snap.docs.flatMap((doc) => {
+      const rows = doc.data().rows;
+      return Array.isArray(rows) ? (rows as ScreenedStock[]) : [];
+    });
+  } catch {
+    const snap = await ref.collection("screened").get();
+    return snap.docs
+      .sort(
+        (left, right) =>
+          Number(left.data().index ?? 0) - Number(right.data().index ?? 0),
+      )
+      .flatMap((doc) => {
+        const rows = doc.data().rows;
+        return Array.isArray(rows) ? (rows as ScreenedStock[]) : [];
+      });
+  }
+}
+
+async function assembleSnapshot(
+  ref: FirebaseFirestore.DocumentReference,
+  data: DailySnapshot,
+): Promise<DailySnapshot> {
+  const screenedStocks = await readScreenedChunks(ref, data);
+  return {
+    ...data,
+    screenedStocks,
+    scanUniverse: {
+      ...data.scanUniverse,
+      combined: Math.max(data.scanUniverse?.combined ?? 0, screenedStocks.length),
+    },
+  };
+}
+
 export async function saveDailySnapshot(snapshot: DailySnapshot): Promise<boolean> {
   const db = await getAdminDb();
   if (!db) return false;
 
   try {
-    const ref = db.collection("daily_snapshots").doc(snapshot.id);
+    const slim = slimSnapshot(snapshot);
+    const ref = db.collection("daily_snapshots").doc(slim.id);
     const existing = await ref.get();
     const sameStamp =
       existing.exists &&
-      String(existing.data()?.generatedAt || "") === snapshot.generatedAt;
-    await ref.set(snapshot);
-    const hadDate = await writeSnapshotIndex(db, snapshot);
+      String(existing.data()?.generatedAt || "") === slim.generatedAt;
+    await writeScreenedChunks(ref, slim.screenedStocks);
+    await ref.set({
+      ...slim,
+      screenedStocks: [],
+      screenedCount: slim.screenedStocks.length,
+    });
+    const hadDate = await writeSnapshotIndex(db, slim);
 
     if (!sameStamp && !hadDate) {
       for (const pick of snapshot.topPicks) {
@@ -135,7 +210,10 @@ export async function getLatestSnapshot(): Promise<DailySnapshot | null> {
     .get();
 
   if (snap.empty) return null;
-  return snap.docs[0].data() as DailySnapshot;
+  return assembleSnapshot(
+    snap.docs[0].ref,
+    snap.docs[0].data() as DailySnapshot,
+  );
 }
 
 export async function getSnapshotByDate(date: string): Promise<DailySnapshot | null> {
@@ -143,7 +221,7 @@ export async function getSnapshotByDate(date: string): Promise<DailySnapshot | n
   if (!db) return null;
   const doc = await db.collection("daily_snapshots").doc(date).get();
   if (!doc.exists) return null;
-  return doc.data() as DailySnapshot;
+  return assembleSnapshot(doc.ref, doc.data() as DailySnapshot);
 }
 
 export async function listSnapshotDates(limit = ARCHIVE_KEEP_DAYS): Promise<string[]> {

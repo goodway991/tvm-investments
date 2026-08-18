@@ -3,6 +3,7 @@ import path from "path";
 
 import type { DailySnapshot } from "@/types";
 import { saveDailySnapshot } from "@/lib/firebase/admin";
+import { slimSnapshot } from "@/lib/snapshot-view";
 
 const DISK_SNAPSHOT_PATH = path.join(
   process.env.VERCEL ? "/tmp" : process.cwd(),
@@ -31,10 +32,11 @@ export function newerLive(...snapshots: Array<DailySnapshot | null | undefined>)
 }
 
 export async function persistSnapshot(snapshot: DailySnapshot): Promise<boolean> {
+  const slim = slimSnapshot(snapshot);
   try {
-    await writeDiskSnapshot(snapshot);
+    await writeDiskSnapshot(slim);
   } catch (error) {
     console.warn("Local snapshot cache failed:", error);
   }
-  return saveDailySnapshot(snapshot);
+  return saveDailySnapshot(slim);
 }

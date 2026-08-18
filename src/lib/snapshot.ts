@@ -10,7 +10,7 @@ import { readDiskSnapshot } from "@/lib/snapshot-cache";
 import { slimSnapshot } from "@/lib/snapshot-view";
 
 const SNAPSHOT_MEMORY_TTL_MS = 15 * 60_000;
-const FIRESTORE_WAIT_MS = 2500;
+const FIRESTORE_WAIT_MS = 8000;
 const DISK_WAIT_MS = 400;
 let latestMemory: { at: number; snapshot: DailySnapshot } | null = null;
 

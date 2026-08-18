@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
     stocks: filtered.map((s) => ({
       symbol: s.symbol,
       name: s.name,
+      sector: s.sector,
+      industry: s.industry,
       price: s.price,
       changePercent: s.changePercent,
       compositeScore: s.compositeScore,
@@ -39,6 +41,7 @@ export async function GET(request: NextRequest) {
       eps: s.fundamentals.eps,
       marketCap: s.fundamentals.marketCap,
       volume: s.volume,
+      indexMembership: s.indexMembership,
     })),
   });
 }
