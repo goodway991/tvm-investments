@@ -288,12 +288,31 @@ export function WatchlistPanel({
                 const stock = detailFor(symbol);
                 if (stock) {
                   return (
-                    <FlaggedPickButton
-                      key={symbol}
-                      stock={stock}
-                      index={compactPaged.page * 10 + index}
-                      onOpen={() => setSelectedSymbol(symbol)}
-                    />
+                    <div key={symbol} className="relative">
+                      <FlaggedPickButton
+                        stock={stock}
+                        index={compactPaged.page * 10 + index}
+                        onOpen={() => setSelectedSymbol(symbol)}
+                      />
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          remove(symbol);
+                        }}
+                        disabled={cooldownActive}
+                        title={
+                          cooldownActive
+                            ? "Watchlist is in its seven-day lock period"
+                            : "Remove"
+                        }
+                        aria-label={`Remove ${symbol}`}
+                        className="absolute right-3 top-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-chrome/80 text-lg leading-none text-ink-soft hover:bg-coral/15 hover:text-coral disabled:opacity-60"
+                      >
+                        ×
+                      </button>
+                    </div>
                   );
                 }
                 return (
@@ -301,17 +320,29 @@ export function WatchlistPanel({
                     key={symbol}
                     className="glass flex items-center justify-between rounded-2xl p-4"
                   >
-                    <div>
-                      <p className="font-display font-bold text-violet">{symbol}</p>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSymbol(symbol)}
+                      className="text-left"
+                    >
+                      <p className="font-display font-bold text-violet hover:underline">
+                        {symbol}
+                      </p>
                       <p className="text-[11px] text-ink-soft">Watched</p>
-                    </div>
+                    </button>
                     <button
                       type="button"
                       onClick={() => remove(symbol)}
                       disabled={cooldownActive}
-                      className="text-sm font-semibold text-coral disabled:opacity-60"
+                      title={
+                        cooldownActive
+                          ? "Watchlist is in its seven-day lock period"
+                          : "Remove"
+                      }
+                      aria-label={`Remove ${symbol}`}
+                      className="grid h-7 w-7 place-items-center rounded-full text-lg leading-none text-coral disabled:opacity-60"
                     >
-                      Remove
+                      ×
                     </button>
                   </div>
                 );
@@ -334,16 +365,32 @@ export function WatchlistPanel({
           <div className="mt-5 flex min-h-14 flex-wrap gap-2 rounded-2xl bg-surface p-3">
             {draft.length ? (
               draft.map((symbol) => (
-                <button
+                <span
                   key={symbol}
-                  type="button"
-                  onClick={() => remove(symbol)}
-                  disabled={cooldownActive}
-                  className="rounded-full bg-violet/10 px-3 py-1.5 text-sm font-semibold text-violet transition-colors hover:bg-coral/10 hover:text-coral disabled:cursor-not-allowed disabled:opacity-60"
-                  title={cooldownActive ? "Watchlist is in its seven-day lock period" : "Remove"}
+                  className="inline-flex items-center rounded-full bg-violet/10 text-sm font-semibold text-violet"
                 >
-                  {symbol} ×
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSymbol(symbol)}
+                    className="rounded-l-full py-1.5 pl-3 pr-1.5 hover:underline"
+                  >
+                    {symbol}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(symbol)}
+                    disabled={cooldownActive}
+                    title={
+                      cooldownActive
+                        ? "Watchlist is in its seven-day lock period"
+                        : "Remove"
+                    }
+                    aria-label={`Remove ${symbol}`}
+                    className="rounded-r-full py-1.5 pl-1 pr-3 text-violet transition-colors hover:text-coral disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    ×
+                  </button>
+                </span>
               ))
             ) : (
               <p className="px-1 py-2 text-sm text-ink-soft">
@@ -370,31 +417,37 @@ export function WatchlistPanel({
                 resultsPaged.slice.map((stock) => {
                 const selected = draft.includes(stock.symbol);
                 return (
-                  <button
+                  <div
                     key={stock.symbol}
-                    type="button"
-                    onClick={() =>
-                      selected ? remove(stock.symbol) : add(stock)
-                    }
-                    disabled={cooldownActive}
-                    className={`flex items-center justify-between rounded-2xl border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                    className={`flex items-center justify-between rounded-2xl border p-3 ${
                       selected
                         ? "border-violet/30 bg-violet/10"
-                        : "border-ink/[0.06] bg-chrome hover:-translate-y-0.5 hover:border-violet/20"
+                        : "border-ink/[0.06] bg-chrome"
                     }`}
                   >
-                    <span>
-                      <span className="block font-display font-bold text-ink">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSymbol(stock.symbol)}
+                      className="min-w-0 text-left"
+                    >
+                      <span className="block font-display font-bold text-violet hover:underline">
                         {stock.symbol}
                       </span>
-                      <span className="block max-w-36 truncate text-xs text-ink-soft">
+                      <span className="block max-w-36 truncate text-xs text-ink-soft hover:underline">
                         {stock.name}
                       </span>
-                    </span>
-                    <span className="text-sm font-semibold text-violet">
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        selected ? remove(stock.symbol) : add(stock)
+                      }
+                      disabled={cooldownActive}
+                      className="shrink-0 text-sm font-semibold text-violet disabled:cursor-not-allowed disabled:opacity-60"
+                    >
                       {selected ? "Added" : "Add"}
-                    </span>
-                  </button>
+                    </button>
+                  </div>
                 );
               })
               ) : (
