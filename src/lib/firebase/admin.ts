@@ -508,14 +508,49 @@ export async function saveFeedback(entry: {
   kind: "bug" | "feature";
   rating: number;
   message: string;
+  emailed?: boolean;
 }): Promise<boolean> {
   const db = await getAdminDb();
   if (!db) return false;
   await db.collection("feedback").add({
     ...entry,
+    emailed: Boolean(entry.emailed),
     createdAt: new Date().toISOString(),
   });
   return true;
+}
+
+export type FeedbackRow = {
+  id: string;
+  email: string;
+  kind: "bug" | "feature";
+  rating: number;
+  message: string;
+  createdAt: string;
+  emailed: boolean;
+};
+
+export async function listFeedback(limitN = 40): Promise<FeedbackRow[]> {
+  const db = await getAdminDb();
+  if (!db) return [];
+  const snap = await db
+    .collection("feedback")
+    .orderBy("createdAt", "desc")
+    .limit(limitN)
+    .get();
+  return snap.docs.map((doc) => {
+    const data = doc.data();
+    const kind = data.kind === "feature" ? "feature" : "bug";
+    return {
+      id: doc.id,
+      email: String(data.email || "unknown"),
+      kind,
+      rating: Number(data.rating) || 0,
+      message: String(data.message || ""),
+      createdAt: String(data.createdAt || ""),
+      emailed: Boolean(data.emailed),
+    };
+  });
 }
 
 export type ApiQuotaKind = "market" | "research" | "feedback";

@@ -1,9 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/api-guard";
-import { saveFeedback } from "@/lib/firebase/admin";
+import {
+  isAdminEmail,
+  listFeedback,
+  saveFeedback,
+  verifyIdToken,
+} from "@/lib/firebase/admin";
 import { getFeedbackInbox } from "@/lib/feedback-inbox";
 
 export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length)
+    : "";
+  if (!token) {
+    return NextResponse.json({ error: "Sign in as admin." }, { status: 401 });
+  }
+  const decoded = await verifyIdToken(token);
+  if (!decoded || !isAdminEmail(decoded.email)) {
+    return NextResponse.json({ error: "Sign in as admin." }, { status: 403 });
+  }
+
+  try {
+    const rows = await listFeedback();
+    return NextResponse.json({ rows });
+  } catch (error) {
+    console.error("Feedback list failed.");
+    console.error(error instanceof Error ? error.name : "unknown");
+    return NextResponse.json({ error: "Unable to load notes." }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   const gate = await requireApiUser(request, "feedback");
@@ -35,36 +63,35 @@ export async function POST(request: NextRequest) {
   }
 
   const to = getFeedbackInbox();
+  const emailed = to
+    ? await sendFeedbackEmail({
+        to,
+        email: user.email,
+        kind,
+        rating,
+        message,
+      })
+    : false;
   if (!to) {
     console.error("Feedback inbox is not configured.");
-    return NextResponse.json(
-      { error: "Couldn't send that note. Try again in a minute." },
-      { status: 503 },
-    );
   }
 
-  const emailed = await sendFeedbackEmail({
-    to,
-    email: user.email,
-    kind,
-    rating,
-    message,
-  });
-
+  let saved = false;
   try {
-    await saveFeedback({
+    saved = await saveFeedback({
       uid: user.uid,
       email: user.email,
       kind,
       rating,
       message,
+      emailed,
     });
   } catch (error) {
     console.error("Feedback save failed.");
     console.error(error instanceof Error ? error.name : "unknown");
   }
 
-  if (!emailed) {
+  if (!saved && !emailed) {
     return NextResponse.json(
       { error: "Couldn't send that note. Try again in a minute." },
       { status: 502 },
@@ -121,9 +148,9 @@ async function sendFeedbackEmail({
     </div>
   `;
 
-  if (await sendWithResend({ to, email, subject, text, html })) return true;
   if (await sendWithSmtp({ to, email, subject, text, html })) return true;
-  return sendWithFormSubmit({ to, email, subject, text, stars, label, message });
+  if (await sendWithResend({ to, email, subject, text, html })) return true;
+  return false;
 }
 
 async function sendWithResend({
@@ -186,9 +213,9 @@ async function sendWithSmtp({
   text: string;
   html: string;
 }): Promise<boolean> {
-  const user = process.env.TVM_SMTP_USER?.trim();
+  const user = process.env.TVM_SMTP_USER?.trim() || to;
   const pass = process.env.TVM_SMTP_PASS?.trim();
-  if (!user || !pass) return false;
+  if (!pass) return false;
 
   const host = process.env.TVM_SMTP_HOST?.trim() || "smtp.gmail.com";
   const port = Number(process.env.TVM_SMTP_PORT) || 465;
@@ -212,55 +239,6 @@ async function sendWithSmtp({
     return true;
   } catch {
     console.error("Feedback email failed (SMTP).");
-    return false;
-  }
-}
-
-async function sendWithFormSubmit({
-  to,
-  email,
-  subject,
-  text,
-  stars,
-  label,
-  message,
-}: {
-  to: string;
-  email: string;
-  subject: string;
-  text: string;
-  stars: string;
-  label: string;
-  message: string;
-}): Promise<boolean> {
-  try {
-    const response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(to)}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        _subject: subject,
-        _template: "box",
-        email: email !== "unknown" ? email : "noreply@tvm-investments.vercel.app",
-        type: label,
-        rating: stars,
-        message: text,
-        details: message,
-      }),
-    });
-    const payload = (await response.json().catch(() => null)) as
-      | { success?: boolean | string }
-      | null;
-    const success = payload?.success === true || payload?.success === "true";
-    if (!response.ok || !success) {
-      console.error("Feedback email failed (backup).");
-      return false;
-    }
-    return true;
-  } catch {
-    console.error("Feedback email failed (backup).");
     return false;
   }
 }
