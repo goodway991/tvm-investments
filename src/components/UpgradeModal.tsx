@@ -15,6 +15,7 @@ import {
 } from "@/lib/plans";
 import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
+import { authedFetch } from "@/lib/authed-fetch";
 
 export function UpgradeModal({ onClose }: { onClose: () => void }) {
   const { user, entitlement } = useAuth();
@@ -36,7 +37,7 @@ export function UpgradeModal({ onClose }: { onClose: () => void }) {
     setError("");
     setLoading(true);
     try {
-      const response = await fetch("/api/stripe/checkout", {
+      const response = await authedFetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ interval: billing, plan: pickedPlan }),

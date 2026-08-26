@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/api-guard";
 import { applyFilters } from "@/lib/scoring";
 import { getDashboardSnapshot, parseArchiveDate } from "@/lib/snapshot";
 import type { FilterCriteria } from "@/types";
@@ -6,6 +7,9 @@ import type { FilterCriteria } from "@/types";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const gate = await requireApiUser(request, "market");
+  if (!gate.ok) return gate.response;
+
   const params = request.nextUrl.searchParams;
 
   const filters: FilterCriteria = {

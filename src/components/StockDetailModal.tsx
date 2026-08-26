@@ -9,6 +9,7 @@ import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import { TVMIcon } from "@/components/TVMBrand";
 import { BogenHeading } from "@/components/BogenProvider";
 import { sparklineValues, type ChartRange } from "@/lib/chart-series";
+import { authedFetch } from "@/lib/authed-fetch";
 import { planHasPro } from "@/lib/plans";
 
 function signedPercent(value: number) {
@@ -52,7 +53,7 @@ export function StockDetailModal({
     let cancelled = false;
     const params = new URLSearchParams({ symbol: stock.symbol });
     if (isPro) params.set("pro", "1");
-    fetch(`/api/yahoo/research?${params}`)
+    authedFetch(`/api/yahoo/research?${params}`)
       .then((response) => response.json())
       .then((payload: { stock?: StockCandidate; report?: CompanyReport }) => {
         if (cancelled || !payload.stock) return;
@@ -64,7 +65,7 @@ export function StockDetailModal({
         }
       })
       .catch(() => {});
-    fetch(`/api/yahoo/news?symbol=${encodeURIComponent(stock.symbol)}`)
+    authedFetch(`/api/yahoo/news?symbol=${encodeURIComponent(stock.symbol)}`)
       .then((response) => response.json())
       .then((payload: { headlines?: NewsHeadline[] }) => {
         if (cancelled) return;

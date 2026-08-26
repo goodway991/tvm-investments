@@ -18,6 +18,7 @@ import {
   type ChartPoint,
   type ChartRange,
 } from "@/lib/chart-series";
+import { authedFetch } from "@/lib/authed-fetch";
 
 export function TimeSeriesChart({
   data,
@@ -135,7 +136,7 @@ export function YahooPriceChart({
     const params = new URLSearchParams({ symbol, range });
     if (sessionDate) params.set("date", sessionDate);
 
-    fetch(`/api/yahoo/chart?${params}`)
+    authedFetch(`/api/yahoo/chart?${params}`)
       .then((response) => response.json())
       .then((payload: { points?: ChartPoint[] }) => {
         if (!cancelled && payload.points?.length) {

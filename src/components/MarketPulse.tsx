@@ -12,6 +12,7 @@ import { compactCompanyName } from "@/components/StockDetailModal";
 import { BogenHeading } from "@/components/BogenProvider";
 import { ProGlowText } from "@/components/ProGlowText";
 import { planHasPro } from "@/lib/plans";
+import { authedFetch } from "@/lib/authed-fetch";
 import type { DailySnapshot, OHLCVBar, StockCandidate } from "@/types";
 
 const rangeCopy: Record<ChartRange, string> = {
@@ -165,7 +166,7 @@ export function MarketPulse({
     try {
       const params = new URLSearchParams({ symbol });
       if (snapshot.date) params.set("date", snapshot.date);
-      const response = await fetch(`/api/forecast?${params}`);
+      const response = await authedFetch(`/api/forecast?${params}`);
       const payload = (await response.json()) as {
         history?: ChartPoint[];
         last?: number;

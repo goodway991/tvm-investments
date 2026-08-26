@@ -17,6 +17,10 @@ service cloud.firestore {
     //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
     //   createdAt: timestamp (immutable), updatedAt: timestamp
     //
+    // api_usage/{uid}
+    //   uid, date (YYYY-MM-DD ET), market, research, feedback, updatedAt
+    //   Admin SDK only — daily counters for Yahoo/Gemini proxy limits
+    //
     // entitlements/{uid}
     //   uid: string, role: "client"|"admin", plan: "free"|"pro"
     //   watchlistLimit: int, cooldownDays: int
@@ -669,6 +673,11 @@ service cloud.firestore {
           && request.resource.data.updatedAt == request.time;
         allow delete: if isOwner(uid);
       }
+    }
+
+    // Daily API proxy counters. Admin SDK only — clients must not read or write.
+    match /api_usage/{uid} {
+      allow read, write: if false;
     }
 
     match /site/maintenance {

@@ -1,23 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/api-guard";
 import { saveFeedback } from "@/lib/firebase/admin";
 import { getFeedbackInbox } from "@/lib/feedback-inbox";
-import { verifyUserToken } from "@/lib/verify-user-token";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : "";
-  if (!token) {
-    return NextResponse.json({ error: "Sign in to send feedback." }, { status: 401 });
-  }
-
-  const user = await verifyUserToken(token);
-  if (!user) {
-    return NextResponse.json({ error: "Sign in to send feedback." }, { status: 401 });
-  }
+  const gate = await requireApiUser(request, "feedback");
+  if (!gate.ok) return gate.response;
+  const user = { uid: gate.uid, email: gate.email };
 
   let body: { kind?: string; rating?: number; message?: string };
   try {

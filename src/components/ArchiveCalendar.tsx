@@ -10,6 +10,7 @@ import {
   shiftYmd,
 } from "@/lib/archive-window";
 import { FREE_ARCHIVE_LOOKBACK_DAYS } from "@/lib/plans";
+import { authedFetch } from "@/lib/authed-fetch";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -57,7 +58,7 @@ export function ArchiveCalendar({ onSelect }: { onSelect?: () => void }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/snapshot/dates")
+    authedFetch("/api/snapshot/dates")
       .then((response) => response.json())
       .then((payload: { dates?: string[]; rules?: { freeLookbackDays?: number } }) => {
         if (cancelled) return;

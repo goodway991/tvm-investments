@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStockQuote } from "@/lib/analysis-pipeline";
+import { requireApiUser } from "@/lib/api-guard";
 import { parseTicker } from "@/lib/ticker";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const gate = await requireApiUser(request, "market");
+  if (!gate.ok) return gate.response;
   const symbol = parseTicker(request.nextUrl.searchParams.get("symbol"));
   const amountRaw = request.nextUrl.searchParams.get("amount");
 

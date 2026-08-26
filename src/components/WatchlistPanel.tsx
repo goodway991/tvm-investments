@@ -12,6 +12,7 @@ import {
 import { TVMIcon } from "@/components/TVMBrand";
 import { BogenHeading } from "@/components/BogenProvider";
 import { pageSlice, StockPager } from "@/components/StockPager";
+import { authedFetch } from "@/lib/authed-fetch";
 
 type WatchlistStock = Pick<StockCandidate, "symbol" | "name">;
 
@@ -62,7 +63,7 @@ export function WatchlistPanel({
     const timer = window.setTimeout(async () => {
       setSearching(true);
       try {
-        const response = await fetch(
+        const response = await authedFetch(
           `/api/yahoo/search?q=${encodeURIComponent(needle)}`,
           { signal: controller.signal },
         );

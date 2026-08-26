@@ -2,7 +2,7 @@ import "server-only";
 import { createDecipheriv } from "crypto";
 
 /** AES-256-GCM blob. Decrypts only on the server with TVM_FEEDBACK_UNLOCK. */
-const INBOX_BLOB = "NSPcw+V42O9n5AxclPlvpLtfsqQb6NFXCIcNWrjLVQEDJ0VlsM1ALdezdLiOTKYUTso=";
+const INBOX_BLOB = "+/1NZWkuqj7MtCid00Dgo/jp6dVHH5ef6vlI9aOvLomNXCgaaVqgK1Sclqhj1JOGqpUFug==";
 
 export function getFeedbackInbox(): string | null {
   const override = process.env.TVM_CONTACT_EMAIL?.trim();

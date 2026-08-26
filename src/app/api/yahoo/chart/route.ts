@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ChartRange } from "@/lib/chart-series";
+import { requireApiUser } from "@/lib/api-guard";
 import { fetchYahooChartSeries } from "@/lib/providers/yahoo";
 import { parseTicker } from "@/lib/ticker";
 
@@ -8,6 +9,9 @@ export const dynamic = "force-dynamic";
 const RANGES = new Set<ChartRange>(["day", "month", "year"]);
 
 export async function GET(request: NextRequest) {
+  const gate = await requireApiUser(request, "market");
+  if (!gate.ok) return gate.response;
+
   const symbol = parseTicker(request.nextUrl.searchParams.get("symbol"));
   if (!symbol) {
     return NextResponse.json({ error: "Valid ticker required" }, { status: 400 });

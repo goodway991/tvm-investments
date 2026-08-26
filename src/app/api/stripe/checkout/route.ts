@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireSignedIn } from "@/lib/api-guard";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const gate = await requireSignedIn(request);
+  if (!gate.ok) return gate.response;
   let interval = "monthly";
   try {
     const body = (await request.json()) as { interval?: string };

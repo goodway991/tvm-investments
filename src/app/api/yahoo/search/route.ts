@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/api-guard";
 import { searchListedUsStocks } from "@/lib/providers/nasdaq";
 import { searchYahooSymbols } from "@/lib/providers/yahoo";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const gate = await requireApiUser(request, "market");
+  if (!gate.ok) return gate.response;
+
+  const query = request.nextUrl.searchParams.get("q")?.trim().slice(0, 40) ?? "";
   if (query.length < 1) {
     return NextResponse.json({ results: [] });
   }

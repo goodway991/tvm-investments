@@ -8,6 +8,7 @@ import {
   StockDetailModal,
   screenedToCandidate,
 } from "@/components/StockDetailModal";
+import { authedFetch } from "@/lib/authed-fetch";
 
 interface FilterPanelProps {
   initialStocks?: ScreenedStock[];
@@ -92,7 +93,7 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
     if (archiveDate) params.set("date", archiveDate);
     const query = params.toString();
     setLoading(true);
-    fetch(`/api/filter${query ? `?${query}` : ""}`, {
+    authedFetch(`/api/filter${query ? `?${query}` : ""}`, {
       signal: controller.signal,
     })
       .then((res) => res.json())
@@ -128,7 +129,7 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
       const symbols = [...queueRef.current];
       queueRef.current = new Set();
       if (symbols.length === 0) return;
-      fetch(`/api/yahoo/quotes?symbols=${encodeURIComponent(symbols.join(","))}`)
+      authedFetch(`/api/yahoo/quotes?symbols=${encodeURIComponent(symbols.join(","))}`)
         .then((response) => response.json())
         .then(
           (payload: {
@@ -183,7 +184,7 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
     for (const [k, v] of Object.entries(filters)) {
       if (v) params.set(k, v);
     }
-    const res = await fetch(`/api/filter?${params}`);
+    const res = await authedFetch(`/api/filter?${params}`);
     const data = await res.json();
     setResults(data.stocks ?? []);
     setLoading(false);

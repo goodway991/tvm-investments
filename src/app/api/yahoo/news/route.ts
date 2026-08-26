@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/api-guard";
 import { fetchYahooNews } from "@/lib/providers/yahoo";
 import { parseTicker } from "@/lib/ticker";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const gate = await requireApiUser(request, "market");
+  if (!gate.ok) return gate.response;
+
   const symbol = parseTicker(request.nextUrl.searchParams.get("symbol"));
   if (!symbol) {
     return NextResponse.json({ error: "Valid ticker required" }, { status: 400 });

@@ -8,6 +8,7 @@ import { BogenHeading } from "@/components/BogenProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { BookScoreCard, PortfolioAnalysis } from "@/components/PortfolioAnalysis";
 import { POPULAR_WATCHLIST } from "@/lib/watchlist-symbols";
+import { authedFetch } from "@/lib/authed-fetch";
 
 type DraftRow = {
   symbol: string;
@@ -19,7 +20,7 @@ type DraftRow = {
 };
 
 async function fetchSessionClose(symbol: string, date: string) {
-  const response = await fetch(
+  const response = await authedFetch(
     `/api/yahoo/close?symbol=${encodeURIComponent(symbol)}&date=${date}`,
   );
   const payload = (await response.json()) as { close?: number | null };

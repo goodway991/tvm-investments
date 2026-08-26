@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/api-guard";
 import { getBacktestSummary } from "@/lib/firebase/admin";
 import type { BacktestSummary } from "@/types";
 
@@ -15,7 +16,10 @@ const DEMO_BACKTEST: BacktestSummary = {
   entries: [],
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const gate = await requireApiUser(request, "market");
+  if (!gate.ok) return gate.response;
+
   const summary = await getBacktestSummary();
   return NextResponse.json(summary ?? DEMO_BACKTEST);
 }

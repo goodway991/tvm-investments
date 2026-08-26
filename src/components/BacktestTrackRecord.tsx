@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import type { BacktestSummary } from "@/types";
+import { authedFetch } from "@/lib/authed-fetch";
 
 export function BacktestTrackRecord() {
   const [summary, setSummary] = useState<BacktestSummary | null>(null);
 
   useEffect(() => {
-    fetch("/api/backtest")
+    authedFetch("/api/backtest")
       .then((r) => r.json())
       .then(setSummary)
       .catch(() => null);

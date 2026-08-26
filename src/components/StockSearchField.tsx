@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TVMIcon } from "@/components/TVMBrand";
+import { authedFetch } from "@/lib/authed-fetch";
 
 export type SearchHit = { symbol: string; name: string };
 
@@ -41,7 +42,7 @@ export function StockSearchField({
     const timer = window.setTimeout(async () => {
       setSearching(true);
       try {
-        const response = await fetch(
+        const response = await authedFetch(
           `/api/yahoo/search?q=${encodeURIComponent(needle)}`,
           { signal: controller.signal },
         );

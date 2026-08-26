@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BogenHeading } from "@/components/BogenProvider";
+import { authedFetch } from "@/lib/authed-fetch";
 
 interface CalculatorResult {
   symbol: string;
@@ -37,7 +38,7 @@ export function InvestmentCalculator({ defaultSymbol }: InvestmentCalculatorProp
         symbol,
         amount,
       });
-      const res = await fetch(`/api/calculator?${params}`);
+      const res = await authedFetch(`/api/calculator?${params}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 

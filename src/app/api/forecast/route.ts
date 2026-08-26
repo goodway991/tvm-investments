@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/api-guard";
 import { buildLiveForecast } from "@/lib/live-forecast";
 import { parseTicker } from "@/lib/ticker";
 
@@ -6,6 +7,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function GET(request: NextRequest) {
+  const gate = await requireApiUser(request, "research");
+  if (!gate.ok) return gate.response;
+
   const symbol = parseTicker(request.nextUrl.searchParams.get("symbol"));
   if (!symbol) {
     return NextResponse.json({ error: "Valid ticker required" }, { status: 400 });

@@ -1,5 +1,6 @@
 import type { DailySnapshot, BacktestEntry, BacktestSummary, ScreenedStock } from "@/types";
-import { ARCHIVE_KEEP_DAYS } from "@/lib/plans";
+import { etDateString } from "@/lib/archive-window";
+import { ARCHIVE_KEEP_DAYS, type PlanId } from "@/lib/plans";
 import { slimSnapshot } from "@/lib/snapshot-view";
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -515,4 +516,103 @@ export async function saveFeedback(entry: {
     createdAt: new Date().toISOString(),
   });
   return true;
+}
+
+export type ApiQuotaKind = "market" | "research" | "feedback";
+
+const API_DAILY_LIMITS: Record<PlanId, Record<ApiQuotaKind, number>> = {
+  free: { market: 500, research: 40, feedback: 15 },
+  pro: { market: 800, research: 80, feedback: 20 },
+  ultra: { market: 1200, research: 150, feedback: 30 },
+};
+
+const memoryDaily = new Map<
+  string,
+  { date: string; market: number; research: number; feedback: number }
+>();
+
+async function quotaPlanFor(uid: string, email: string): Promise<PlanId> {
+  if (isAdminEmail(email)) return "ultra";
+  const db = await getAdminDb();
+  if (!db) return "free";
+  try {
+    const snap = await db.collection("entitlements").doc(uid).get();
+    const plan = snap.data()?.plan;
+    if (plan === "ultra" || plan === "pro") return plan;
+  } catch {
+    /* treat as free */
+  }
+  return "free";
+}
+
+function takeMemoryQuota(
+  uid: string,
+  date: string,
+  kind: ApiQuotaKind,
+  limit: number,
+): { ok: true } | { ok: false; limit: number; used: number } {
+  const current = memoryDaily.get(uid);
+  const used = current?.date === date ? current[kind] : 0;
+  if (used >= limit) return { ok: false, limit, used };
+  memoryDaily.set(uid, {
+    date,
+    market: current?.date === date ? current.market : 0,
+    research: current?.date === date ? current.research : 0,
+    feedback: current?.date === date ? current.feedback : 0,
+    [kind]: used + 1,
+  });
+  return { ok: true };
+}
+
+export async function consumeApiQuota(
+  uid: string,
+  email: string,
+  kind: ApiQuotaKind,
+): Promise<{ ok: true } | { ok: false; limit: number; used: number }> {
+  const date = etDateString();
+  const plan = await quotaPlanFor(uid, email);
+  const limit = API_DAILY_LIMITS[plan][kind];
+  const db = await getAdminDb();
+  if (!db) return takeMemoryQuota(uid, date, kind, limit);
+
+  try {
+    const { FieldValue } = await import("firebase-admin/firestore");
+    return await db.runTransaction(async (tx) => {
+      const ref = db.collection("api_usage").doc(uid);
+      const snap = await tx.get(ref);
+      const data = snap.data();
+      const sameDay = data?.date === date;
+      const used = sameDay ? Number(data?.[kind] || 0) : 0;
+      if (used >= limit) {
+        return { ok: false as const, limit, used };
+      }
+      tx.set(ref, {
+        uid,
+        date,
+        market:
+          sameDay
+            ? Number(data?.market || 0) + (kind === "market" ? 1 : 0)
+            : kind === "market"
+              ? 1
+              : 0,
+        research:
+          sameDay
+            ? Number(data?.research || 0) + (kind === "research" ? 1 : 0)
+            : kind === "research"
+              ? 1
+              : 0,
+        feedback:
+          sameDay
+            ? Number(data?.feedback || 0) + (kind === "feedback" ? 1 : 0)
+            : kind === "feedback"
+              ? 1
+              : 0,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return { ok: true as const };
+    });
+  } catch (error) {
+    console.error("API quota write failed:", error);
+    return takeMemoryQuota(uid, date, kind, limit);
+  }
 }
