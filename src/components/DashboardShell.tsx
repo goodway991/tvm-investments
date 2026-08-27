@@ -28,7 +28,7 @@ import { planHasPro, type PlanId } from "@/lib/plans";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
-  { label: "Workstation", href: "/dashboard/workstation", icon: "screener" as const, bogen: "nav-workstation" as const, ultra: true },
+  { label: "Workstation", href: "/dashboard/workstation", icon: "screener" as const, bogen: "nav-screener" as const, ultra: true },
   { label: "Daily Brief", href: "/dashboard/brief", icon: "brief" as const, bogen: "nav-brief" as const },
   { label: "Screener", href: "/dashboard/screener", icon: "screener" as const, bogen: "nav-screener" as const },
   { label: "Reports", href: "/dashboard/reports", icon: "reports" as const, bogen: "nav-reports" as const },
