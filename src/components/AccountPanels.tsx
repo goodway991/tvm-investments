@@ -563,7 +563,7 @@ export function SettingsPanel() {
         </p>
         <button
           type="button"
-          onClick={openUpgrade}
+          onClick={() => openUpgrade()}
           className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
         >
           View plan
