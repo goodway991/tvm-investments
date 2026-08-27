@@ -5,6 +5,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading } from "@/components/BogenProvider";
 import { ProGlowText } from "@/components/ProGlowText";
+import type { PlanId } from "@/lib/plans";
 
 type PlanSource = "comp" | "paid" | "none";
 
@@ -13,7 +14,7 @@ type AccountRow = {
   email: string;
   displayName: string;
   role: "client" | "admin";
-  plan: "free" | "pro";
+  plan: PlanId;
   source: PlanSource;
   disabled: boolean;
 };
@@ -116,7 +117,7 @@ export function AdminAccountsPanel() {
       <p className="mt-1 text-sm text-ink-soft">
         <ProGlowText>
           Every signed-up account is listed here. Give friends Pro without charging
-          them. Paid Pro boxes glow blue — leave those alone.
+          them. Paid boxes glow blue — leave those alone.
         </ProGlowText>
       </p>
 
@@ -150,10 +151,14 @@ export function AdminAccountsPanel() {
                         {!plansLoaded
                           ? "Plan unknown"
                           : paid
-                            ? <ProGlowText>Paid Pro</ProGlowText>
+                            ? row.plan === "ultra"
+                              ? "Paid Ultra"
+                              : <ProGlowText>Paid Pro</ProGlowText>
                             : row.plan === "pro"
                               ? <ProGlowText>Complimentary Pro</ProGlowText>
-                              : "Free"}
+                              : row.plan === "ultra"
+                                ? "Ultra"
+                                : "Free"}
                       </p>
                     </div>
                     <div>

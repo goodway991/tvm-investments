@@ -1,6 +1,6 @@
 import type { DailySnapshot, BacktestEntry, BacktestSummary, ScreenedStock } from "@/types";
 import { etDateString } from "@/lib/archive-window";
-import { ARCHIVE_KEEP_DAYS, type PlanId } from "@/lib/plans";
+import { ARCHIVE_KEEP_DAYS, watchlistLimitForPlan, type PlanId } from "@/lib/plans";
 import { slimSnapshot } from "@/lib/snapshot-view";
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -347,7 +347,7 @@ export type AdminAccountRow = {
   email: string;
   displayName: string;
   role: "client" | "admin";
-  plan: "free" | "pro";
+  plan: PlanId;
   source: "comp" | "paid" | "none";
   disabled: boolean;
 };
@@ -381,7 +381,7 @@ export async function listAdminAccounts(): Promise<{
 
   const entitlements = new Map<
     string,
-    { role: "client" | "admin"; plan: "free" | "pro"; source: "comp" | "paid" | "none" }
+    { role: "client" | "admin"; plan: PlanId; source: "comp" | "paid" | "none" }
   >();
   let plansLoaded = false;
   const db = await getAdminDb();
@@ -398,7 +398,8 @@ export async function listAdminAccounts(): Promise<{
               : "none";
         entitlements.set(item.id, {
           role: data.role === "admin" ? "admin" : "client",
-          plan: data.plan === "pro" ? "pro" : "free",
+          plan:
+            data.plan === "ultra" ? "ultra" : data.plan === "pro" ? "pro" : "free",
           source,
         });
       }
@@ -441,7 +442,7 @@ export async function setComplimentaryPro(uid: string, grant: boolean) {
   const current = await ref.get();
   const data = current.data() || {};
   if (data.source === "stripe" || data.source === "paid") {
-    throw new Error("Paid Pro stays as billed. Leave that account alone.");
+    throw new Error("Paid plans stay as billed. Leave that account alone.");
   }
   if (data.role === "admin") {
     throw new Error("The admin account stays on Pro.");
@@ -566,7 +567,7 @@ const memoryDaily = new Map<
   { date: string; market: number; research: number; feedback: number }
 >();
 
-async function quotaPlanFor(uid: string, email: string): Promise<PlanId> {
+export async function getPlanForUser(uid: string, email: string): Promise<PlanId> {
   if (isAdminEmail(email)) return "ultra";
   const db = await getAdminDb();
   if (!db) return "free";
@@ -599,13 +600,95 @@ function takeMemoryQuota(
   return { ok: true };
 }
 
+export async function getEntitlementForUid(uid: string) {
+  const db = await getAdminDb();
+  if (!db) return null;
+  const snap = await db.collection("entitlements").doc(uid).get();
+  if (!snap.exists) return null;
+  const data = snap.data() || {};
+  const plan: PlanId =
+    data.plan === "ultra" ? "ultra" : data.plan === "pro" ? "pro" : "free";
+  return {
+    uid,
+    role: data.role === "admin" ? ("admin" as const) : ("client" as const),
+    plan,
+    stripeCustomerId:
+      typeof data.stripeCustomerId === "string" ? data.stripeCustomerId : "",
+    stripeSubscriptionId:
+      typeof data.stripeSubscriptionId === "string"
+        ? data.stripeSubscriptionId
+        : "",
+    stripeCancelAtPeriodEnd: data.stripeCancelAtPeriodEnd === true,
+    stripeAccessUntil:
+      typeof data.stripeAccessUntil === "number" ? data.stripeAccessUntil : 0,
+    source:
+      data.source === "stripe" || data.source === "paid"
+        ? ("stripe" as const)
+        : data.source === "comp"
+          ? ("comp" as const)
+          : ("none" as const),
+  };
+}
+
+export async function applyStripeEntitlement(input: {
+  uid: string;
+  plan: PlanId;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  cancelAtPeriodEnd?: boolean;
+  accessUntil?: number;
+}) {
+  const db = await getAdminDb();
+  const auth = await getAdminAuth();
+  if (!db) throw new Error("Admin access is not configured.");
+
+  if (auth) {
+    try {
+      const record = await auth.getUser(input.uid);
+      if (isAdminEmail(record.email)) return;
+    } catch {
+      /* continue with the entitlement doc */
+    }
+  }
+
+  const ref = db.collection("entitlements").doc(input.uid);
+  const current = await ref.get();
+  const data = current.data() || {};
+  if (data.role === "admin") return;
+
+  const { FieldValue } = await import("firebase-admin/firestore");
+  const now = new Date();
+  const paid = input.plan === "pro" || input.plan === "ultra";
+  await ref.set(
+    {
+      uid: input.uid,
+      role: "client",
+      plan: paid ? input.plan : "free",
+      watchlistLimit: watchlistLimitForPlan(paid ? input.plan : "free"),
+      cooldownDays: paid ? 0 : 7,
+      createdAt: data.createdAt || now,
+      updatedAt: now,
+      source: paid ? "stripe" : FieldValue.delete(),
+      stripeCustomerId: input.stripeCustomerId || data.stripeCustomerId || "",
+      stripeSubscriptionId: paid
+        ? input.stripeSubscriptionId || data.stripeSubscriptionId || ""
+        : FieldValue.delete(),
+      stripeCancelAtPeriodEnd:
+        paid && input.cancelAtPeriodEnd ? true : FieldValue.delete(),
+      stripeAccessUntil:
+        paid && input.accessUntil ? input.accessUntil : FieldValue.delete(),
+    },
+    { merge: true },
+  );
+}
+
 export async function consumeApiQuota(
   uid: string,
   email: string,
   kind: ApiQuotaKind,
 ): Promise<{ ok: true } | { ok: false; limit: number; used: number }> {
   const date = etDateString();
-  const plan = await quotaPlanFor(uid, email);
+  const plan = await getPlanForUser(uid, email);
   const limit = API_DAILY_LIMITS[plan][kind];
   const db = await getAdminDb();
   if (!db) return takeMemoryQuota(uid, date, kind, limit);

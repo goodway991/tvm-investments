@@ -21,6 +21,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   serverTimestamp,
   setDoc,
   Timestamp,
@@ -51,6 +52,11 @@ import {
 } from "@/lib/release-notes";
 import { CURRENT_TOUR_ID } from "@/lib/virtual-tour";
 import {
+  CURRENT_CUSTOMIZE_ID,
+  LEGACY_CUSTOMIZE_KEY,
+  customizeLocalKey,
+} from "@/lib/customize-prompt";
+import {
   isNewBadgeActive,
   missingNewSeenStamps,
   parseNewSeen,
@@ -72,6 +78,7 @@ export interface AccountProfile {
   createdAt: Date | null;
   tourCompletedAt: Date | null;
   seenRelease: string;
+  seenCustomize: string;
   newSeen: NewSeenMap;
   country: string;
   timeZone: string;
@@ -82,6 +89,10 @@ export interface AccountEntitlement {
   plan: PlanId;
   watchlistLimit: number;
   cooldownDays: number;
+  source: "none" | "comp" | "stripe";
+  stripeCustomerId: string;
+  stripeCancelAtPeriodEnd: boolean;
+  stripeAccessUntil: number;
 }
 
 export interface AccountWatchlist {
@@ -112,6 +123,7 @@ interface AuthContextValue {
   portfolio: AccountPortfolio;
   positions: PortfolioPosition[];
   loading: boolean;
+  accountReady: boolean;
   error: string;
   giftPending: boolean;
   tourPending: boolean;
@@ -120,6 +132,7 @@ interface AuthContextValue {
   acknowledgeGift: () => Promise<void>;
   completeTour: () => Promise<void>;
   acknowledgeRelease: () => Promise<void>;
+  acknowledgeCustomize: () => Promise<void>;
   isFeatureNew: (feature: NewFeatureId) => boolean;
   updateDisplayName: (firstName: string, lastName: string) => Promise<void>;
   updateLocale: (country: string, timeZone: string) => Promise<void>;
@@ -134,7 +147,43 @@ const defaultEntitlement: AccountEntitlement = {
   plan: "free",
   watchlistLimit: 10,
   cooldownDays: 7,
+  source: "none",
+  stripeCustomerId: "",
+  stripeCancelAtPeriodEnd: false,
+  stripeAccessUntil: 0,
 };
+
+function entitlementFromData(
+  data: DocumentData,
+  email: string | null,
+): AccountEntitlement {
+  const role =
+    data.role === "admin" || email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+      ? "admin"
+      : "client";
+  const plan = overlayLabsPlan(
+    role,
+    typeof data.plan === "string" ? data.plan : undefined,
+  );
+  const source =
+    data.source === "stripe" || data.source === "paid"
+      ? "stripe"
+      : data.source === "comp"
+        ? "comp"
+        : "none";
+  return {
+    role,
+    plan,
+    watchlistLimit: watchlistLimitForPlan(plan),
+    cooldownDays: Number(data.cooldownDays) || 0,
+    source,
+    stripeCustomerId:
+      typeof data.stripeCustomerId === "string" ? data.stripeCustomerId : "",
+    stripeCancelAtPeriodEnd: data.stripeCancelAtPeriodEnd === true,
+    stripeAccessUntil:
+      typeof data.stripeAccessUntil === "number" ? data.stripeAccessUntil : 0,
+  };
+}
 
 const defaultWatchlist: AccountWatchlist = {
   symbols: [],
@@ -197,6 +246,43 @@ function writeTourSeen(uid: string, tourId: string) {
   }
 }
 
+function localeKey(uid: string) {
+  return `tvm-locale:${uid}`;
+}
+
+function readStoredLocale(uid: string) {
+  try {
+    const raw = window.localStorage.getItem(localeKey(uid));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { country?: string; timeZone?: string };
+    const country = typeof parsed.country === "string" ? parsed.country : "";
+    const timeZone = typeof parsed.timeZone === "string" ? parsed.timeZone : "";
+    if (!isValidCountry(country) || !isValidTimeZone(timeZone)) return null;
+    return { country, timeZone };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredLocale(uid: string, country: string, timeZone: string) {
+  try {
+    window.localStorage.setItem(
+      localeKey(uid),
+      JSON.stringify({ country, timeZone }),
+    );
+  } catch {
+    /* private mode */
+  }
+}
+
+function withStoredLocale(uid: string, profile: AccountProfile): AccountProfile {
+  if (isValidCountry(profile.country) && isValidTimeZone(profile.timeZone)) {
+    return profile;
+  }
+  const stored = readStoredLocale(uid);
+  return stored ? { ...profile, ...stored } : profile;
+}
+
 function releaseSeenKey(uid: string) {
   return `tvm-release-seen:${uid}`;
 }
@@ -244,7 +330,7 @@ function grantIdFrom(data: DocumentData) {
 }
 
 function profileFrom(data: DocumentData): AccountProfile {
-  return {
+  const profile: AccountProfile = {
     uid: String(data.uid),
     email: String(data.email),
     displayName: String(data.displayName),
@@ -253,10 +339,12 @@ function profileFrom(data: DocumentData): AccountProfile {
     createdAt: asDate(data.createdAt),
     tourCompletedAt: asDate(data.tourCompletedAt),
     seenRelease: typeof data.seenRelease === "string" ? data.seenRelease : "",
+    seenCustomize: typeof data.seenCustomize === "string" ? data.seenCustomize : "",
     newSeen: parseNewSeen(data.newSeen),
     country: typeof data.country === "string" ? data.country : "",
     timeZone: typeof data.timeZone === "string" ? data.timeZone : "",
   };
+  return withStoredLocale(profile.uid, profile);
 }
 
 function profileFromAuth(user: User): AccountProfile {
@@ -267,7 +355,7 @@ function profileFromAuth(user: User): AccountProfile {
     authName: user.displayName,
     email: user.email,
   });
-  return {
+  return withStoredLocale(user.uid, {
     uid: user.uid,
     email: user.email || "",
     displayName,
@@ -276,10 +364,11 @@ function profileFromAuth(user: User): AccountProfile {
     createdAt: null,
     tourCompletedAt: null,
     seenRelease: "",
+    seenCustomize: "",
     newSeen: {},
     country: "",
     timeZone: "",
-  };
+  });
 }
 
 async function ensureAccountDocuments(user: User) {
@@ -393,6 +482,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accountReady, setAccountReady] = useState(false);
   const [error, setError] = useState("");
   const [giftPending, setGiftPending] = useState(false);
   const [giftGrantId, setGiftGrantId] = useState("comp");
@@ -424,10 +514,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setGiftGrantId("comp");
         setTourPending(false);
         setReleasePending(false);
+        setAccountReady(true);
         setLoading(false);
         return;
       }
 
+      setAccountReady(false);
       setProfile(profileFromAuth(nextUser));
       if (nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         const plan = overlayLabsPlan("admin", "pro");
@@ -436,6 +528,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           plan,
           watchlistLimit: watchlistLimitForPlan(plan),
           cooldownDays: 0,
+          source: "none",
+          stripeCustomerId: "",
+          stripeCancelAtPeriodEnd: false,
+          stripeAccessUntil: 0,
         });
       }
       setLoading(false);
@@ -480,21 +576,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           if (entitlementSnap.exists()) {
             const data = entitlementSnap.data();
-            const role =
-              data.role === "admin" ||
-              nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
-                ? "admin"
-                : "client";
-            const plan = overlayLabsPlan(
-              role,
-              typeof data.plan === "string" ? data.plan : undefined,
-            );
-            setEntitlement({
-              role,
-              plan,
-              watchlistLimit: watchlistLimitForPlan(plan),
-              cooldownDays: Number(data.cooldownDays) || 0,
-            });
+            setEntitlement(entitlementFromData(data, nextUser.email));
             const grantId = grantIdFrom(data);
             setGiftGrantId(grantId);
             setGiftPending(
@@ -556,6 +638,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setError(
             "Your account was authenticated, but its Firebase profile could not be loaded.",
           );
+        })
+        .finally(() => {
+          if (!cancelled) setAccountReady(true);
         });
     });
 
@@ -564,6 +649,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribeAuth();
     };
   }, []);
+
+  useEffect(() => {
+    const db = getClientFirestore();
+    if (!user || !db) return;
+    return onSnapshot(doc(db, "entitlements", user.uid), (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      setEntitlement(entitlementFromData(data, user.email));
+      const grantId = grantIdFrom(data);
+      setGiftGrantId(grantId);
+      setGiftPending(
+        data.role === "client" &&
+          data.plan === "pro" &&
+          data.source === "comp" &&
+          !data.giftAckedAt &&
+          readGiftSeen(user.uid) !== grantId,
+      );
+    });
+  }, [user]);
 
   const watchlistResetting = useRef(false);
   useEffect(() => {
@@ -692,6 +796,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [profile?.seenRelease, user]);
 
+  const acknowledgeCustomize = useCallback(async () => {
+    const db = getClientFirestore();
+    if (!user) return;
+    try {
+      window.localStorage.setItem(customizeLocalKey(user.uid), CURRENT_CUSTOMIZE_ID);
+      window.localStorage.setItem(LEGACY_CUSTOMIZE_KEY, "1");
+    } catch {
+      /* private mode */
+    }
+    setProfile((current) =>
+      current ? { ...current, seenCustomize: CURRENT_CUSTOMIZE_ID } : current,
+    );
+    if (!db) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        seenCustomize: CURRENT_CUSTOMIZE_ID,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (customizeError) {
+      console.error(customizeError);
+    }
+  }, [user]);
+
   const isFeatureNew = useCallback(
     (feature: NewFeatureId) => {
       if (!publicNewFeatureIds().includes(feature)) return false;
@@ -742,21 +869,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!isValidCountry(nextCountry) || !isValidTimeZone(nextZone)) {
         throw new Error("Pick a listed country and a valid time zone.");
       }
+      writeStoredLocale(user.uid, nextCountry, nextZone);
       setProfile((current) =>
         current
           ? { ...current, country: nextCountry, timeZone: nextZone }
           : current,
       );
-      if (db) {
-        try {
-          await updateDoc(doc(db, "users", user.uid), {
+      if (!db) return;
+      try {
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
             country: nextCountry,
             timeZone: nextZone,
             updatedAt: serverTimestamp(),
-          });
-        } catch (saveError) {
-          console.error(saveError);
-        }
+          },
+          { merge: true },
+        );
+      } catch (saveError) {
+        console.error(saveError);
       }
     },
     [user],
@@ -910,6 +1041,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       portfolio,
       positions,
       loading,
+      accountReady,
       error,
       giftPending,
       tourPending,
@@ -918,6 +1050,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       acknowledgeGift,
       completeTour,
       acknowledgeRelease,
+      acknowledgeCustomize,
       isFeatureNew,
       updateDisplayName,
       updateLocale,
@@ -933,10 +1066,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       tourPending,
       releasePending,
       loading,
+      accountReady,
       logout,
       acknowledgeGift,
       completeTour,
       acknowledgeRelease,
+      acknowledgeCustomize,
       isFeatureNew,
       updateDisplayName,
       updateLocale,

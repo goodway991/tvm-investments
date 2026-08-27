@@ -8,10 +8,11 @@ import {
   ArchiveModePulse,
   withArchiveQuery,
 } from "@/components/ArchiveBar";
-import { useAuth } from "@/components/AuthProvider";
+import { BillingNotice } from "@/components/BillingNotice";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
 import { ArchiveCalendarLock, PortfolioLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
 import { MaintenanceNavCard } from "@/components/MaintenanceGate";
+import { useAuth } from "@/components/AuthProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
@@ -27,7 +28,7 @@ import { planHasPro, type PlanId } from "@/lib/plans";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
-  { label: "Workstation", href: "/dashboard/workstation", icon: "screener" as const, bogen: "nav-screener" as const, ultra: true },
+  { label: "Workstation", href: "/dashboard/workstation", icon: "screener" as const, bogen: "nav-workstation" as const, ultra: true },
   { label: "Daily Brief", href: "/dashboard/brief", icon: "brief" as const, bogen: "nav-brief" as const },
   { label: "Screener", href: "/dashboard/screener", icon: "screener" as const, bogen: "nav-screener" as const },
   { label: "Reports", href: "/dashboard/reports", icon: "reports" as const, bogen: "nav-reports" as const },
@@ -233,7 +234,7 @@ function UpgradeNavCard({
       ) : (
         <button
           type="button"
-          onClick={onUpgrade}
+          onClick={() => onUpgrade()}
           title="Upgrade to Pro"
           className="absolute inset-0 z-0 rounded-2xl"
           aria-label="Upgrade to Pro"
@@ -591,7 +592,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ) : (
             <button
               type="button"
-              onClick={openUpgrade}
+              onClick={() => openUpgrade()}
               className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold"
             >
               <ProGlowPhrase>Pro</ProGlowPhrase>
@@ -705,6 +706,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <main className="relative mx-auto max-w-[1400px] px-5 py-8 sm:px-9">
           <ArchiveModePulse />
           <ArchiveBanner />
+          <BillingNotice />
           {children}
         </main>
       </div>

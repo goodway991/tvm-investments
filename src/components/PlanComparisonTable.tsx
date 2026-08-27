@@ -1,6 +1,6 @@
 "use client";
 
-import { PLAN_FEATURES, type PaidPlanId, type PlanId } from "@/lib/plans";
+import { PLAN_FEATURES, type PlanId } from "@/lib/plans";
 import { showTvm10Labs } from "@/lib/beta-labs";
 import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
@@ -44,8 +44,8 @@ export function PlanComparisonTable({
   onSelectPlan,
 }: {
   currentPlan: PlanId;
-  selectedPlan?: PaidPlanId;
-  onSelectPlan?: (plan: PaidPlanId) => void;
+  selectedPlan?: PlanId;
+  onSelectPlan?: (plan: PlanId) => void;
 }) {
   const showUltra = showTvm10Labs();
   const alreadyPro = currentPlan === "pro";
@@ -54,6 +54,7 @@ export function PlanComparisonTable({
     .filter(
       (feature) =>
         (showUltra || !feature.labsOnly) &&
+        (!showUltra || !feature.hideInLabs) &&
         (showUltra || feature.name !== "Portfolio book review"),
     )
     .sort((left, right) => {
@@ -78,14 +79,24 @@ export function PlanComparisonTable({
           <div className="plan-current-pane plan-ultra-pane" aria-hidden />
         ) : null}
         <div className="plan-compare-h plan-compare-feature">Features</div>
-        <div className="plan-compare-h">
+        <button
+          type="button"
+          onClick={() => onSelectPlan?.("free")}
+          className={`plan-compare-h plan-compare-pick ${
+            selectedPlan === "free" ? "is-picked" : ""
+          }`}
+        >
           Free
           {currentPlan === "free" ? (
             <span className="mt-1 block text-[10px] font-semibold uppercase tracking-widest text-violet">
               Current
             </span>
+          ) : selectedPlan === "free" ? (
+            <span className="mt-1 block text-[10px] font-semibold uppercase tracking-widest text-violet">
+              Selected
+            </span>
           ) : null}
-        </div>
+        </button>
         <button
           type="button"
           onClick={() => onSelectPlan?.("pro")}
@@ -143,9 +154,11 @@ export function PlanComparisonTable({
       </div>
       {showUltra ? (
         <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">
-          *99% is an Ultra research-read target, not a guarantee. Horizon
-          prediction caps apply when that suite ships. Pro’s 5/week is reviews
-          and prediction scores combined.
+          <ProGlowText>
+            *99% is an Ultra research-read target, not a guarantee. Horizon
+            prediction caps apply when that suite ships. Pro’s 5/week is reviews
+            and prediction scores combined.
+          </ProGlowText>
         </p>
       ) : null}
     </>

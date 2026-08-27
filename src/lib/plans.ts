@@ -15,11 +15,12 @@ export type PaidPlanId = keyof typeof PLAN_PRICES;
 export type BillingInterval = "monthly" | "yearly";
 
 export function priceFor(plan: PaidPlanId, interval: BillingInterval) {
-  return PLAN_PRICES[plan][interval];
+  const prices = PLAN_PRICES[plan] ?? PLAN_PRICES.pro;
+  return prices[interval] ?? prices.monthly;
 }
 
 export function yearlySavingsPercent(plan: PaidPlanId = "pro") {
-  const prices = PLAN_PRICES[plan];
+  const prices = PLAN_PRICES[plan] ?? PLAN_PRICES.pro;
   const monthlyAnnual = prices.monthly.perMonth * 12;
   return Math.round((1 - prices.yearly.billed / monthlyAnnual) * 100);
 }
@@ -46,6 +47,13 @@ export function watchlistLimitForPlan(plan: PlanId) {
 
 export function planHasPro(plan: PlanId) {
   return plan === "pro" || plan === "ultra";
+}
+
+export function sectorDiveLimit(plan: PlanId) {
+  if (showTvm10Labs() || planHasPro(plan)) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return FREE_SECTOR_DIVE_LIMIT;
 }
 
 export function overlayLabsPlan(
@@ -80,6 +88,7 @@ export const PLAN_FEATURES: Array<{
   pro: boolean;
   ultra?: boolean;
   labsOnly?: boolean;
+  hideInLabs?: boolean;
 }> = [
   { name: "8-signal screener", free: true, pro: true },
   { name: "Top 10 daily movers", free: true, pro: true },
@@ -87,8 +96,25 @@ export const PLAN_FEATURES: Array<{
   { name: "Archive Calendar", free: false, pro: true },
   { name: "Flagged-pick research reports", free: true, pro: true },
   { name: "Short-term and long-term scores on each pick", free: true, pro: true },
-  { name: "Two sector deep dives", free: true, pro: true },
-  { name: "Full sector deep-dive deck", free: false, pro: true },
+  {
+    name: "Two sector deep dives",
+    free: true,
+    pro: true,
+    hideInLabs: true,
+  },
+  {
+    name: "Full sector deep-dive deck",
+    free: false,
+    pro: true,
+    hideInLabs: true,
+  },
+  {
+    name: "All 6 sector deep dives",
+    free: true,
+    pro: true,
+    ultra: true,
+    labsOnly: true,
+  },
   { name: "Ticker news on watched names", free: true, pro: true },
   { name: "Portfolio (under construction)", free: true, pro: true },
   { name: "Portfolio book review", free: false, pro: true },
