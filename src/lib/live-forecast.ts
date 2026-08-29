@@ -205,7 +205,7 @@ export async function buildLiveForecast(
     throw new Error("Not enough daily closes to project this name.");
   }
 
-  let dailyDrift =
+  const dailyDrift =
     plan === "pro" ? blendDrift(stats, analyst.targetMean) : stats.dailyDrift;
   const source: LiveForecast["source"] = "yahoo";
   const note =
