@@ -5,7 +5,7 @@ import { persistSnapshot } from "@/lib/snapshot-cache";
 import { hasNewsLlm } from "@/lib/scoring";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");

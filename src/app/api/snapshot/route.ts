@@ -3,7 +3,7 @@ import { requireApiUser } from "@/lib/api-guard";
 import { getDashboardSnapshot, parseArchiveDate } from "@/lib/snapshot";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 15;
+export const maxDuration = 30;
 
 export async function GET(request: NextRequest) {
   const gate = await requireApiUser(request, "market");

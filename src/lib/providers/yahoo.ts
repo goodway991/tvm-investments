@@ -283,18 +283,27 @@ export async function fetchYahooQuotesBatch(symbols: string[]) {
   const yahooFinance = getYahoo();
   const quotes = new Map<string, YahooQuote>();
   const chunkSize = 40;
+  const concurrency = 3;
+  const chunks: string[][] = [];
   for (let index = 0; index < symbols.length; index += chunkSize) {
-    const chunk = symbols.slice(index, index + chunkSize);
-    try {
-      const result = await yahooFinance.quote(chunk.map(yahooSymbol));
-      for (const quote of asQuoteList(result)) {
-        const symbol = String(quote.symbol ?? "").toUpperCase();
-        if (symbol) quotes.set(symbol, quote);
-      }
-    } catch (error) {
-      console.warn(`Yahoo quote batch failed at ${chunk[0]}:`, error);
-    }
-    await sleep(80);
+    chunks.push(symbols.slice(index, index + chunkSize));
+  }
+  for (let index = 0; index < chunks.length; index += concurrency) {
+    const wave = chunks.slice(index, index + concurrency);
+    await Promise.all(
+      wave.map(async (chunk) => {
+        try {
+          const result = await yahooFinance.quote(chunk.map(yahooSymbol));
+          for (const quote of asQuoteList(result)) {
+            const symbol = String(quote.symbol ?? "").toUpperCase();
+            if (symbol) quotes.set(symbol, quote);
+          }
+        } catch (error) {
+          console.warn(`Yahoo quote batch failed at ${chunk[0]}:`, error);
+        }
+      }),
+    );
+    await sleep(40);
   }
   for (const requested of symbols) {
     const key = requested.trim().toUpperCase();

@@ -6,7 +6,7 @@ import { fetchYahooCompareCards, fetchYahooQuoteCards } from "@/lib/providers/ya
 import { parseTicker } from "@/lib/ticker";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 20;
+export const maxDuration = 30;
 
 const MAX_SYMBOLS = 4;
 

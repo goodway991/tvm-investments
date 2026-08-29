@@ -4,7 +4,7 @@ import { requireApiUser } from "@/lib/api-guard";
 import { parseTicker } from "@/lib/ticker";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const gate = await requireApiUser(request, "research");

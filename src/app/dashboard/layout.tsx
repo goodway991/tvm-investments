@@ -2,7 +2,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 15;
+export const maxDuration = 60;
 
 export default function DashboardLayout({
   children,

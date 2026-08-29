@@ -27,6 +27,7 @@ import { NewBadge } from "@/components/NewBadge";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
+import { DISCORD_INVITE_URL } from "@/lib/community";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -817,6 +818,22 @@ export function SettingsPanel() {
         >
           Virtual Tour
         </button>
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+        <p className="font-semibold text-ink">Discord</p>
+        <p className="mt-1">
+          General chat is open. Pro, Ultra, beta testers, bugs, and suggestions
+          get their own rooms as they open.
+        </p>
+        <a
+          href={DISCORD_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="glass-violet mt-3 inline-flex rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          Join Discord
+        </a>
       </div>
 
       <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">

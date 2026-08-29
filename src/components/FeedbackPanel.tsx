@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { BogenHeading } from "@/components/BogenProvider";
+import { DISCORD_INVITE_URL } from "@/lib/community";
 
 export function FeedbackPanel() {
   const { user } = useAuth();
@@ -72,7 +73,17 @@ export function FeedbackPanel() {
       </h2>
       <p className="mt-2 text-sm text-ink-soft">
         Sent from {user?.email ?? "your account"}. Use Support for billing,
-        refunds, and account help. Rate the note up to 5 stars.
+        refunds, and account help. Rate the note up to 5 stars. You can also
+        post in{" "}
+        <a
+          href={DISCORD_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-violet hover:underline"
+        >
+          Discord
+        </a>
+        .
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
