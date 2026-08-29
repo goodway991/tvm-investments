@@ -13,7 +13,7 @@ import {
 } from "@/lib/providers/yahoo";
 
 const CACHE_MS = 15 * 60 * 1000;
-const GEMINI_TIMEOUT_MS = 9000;
+const GEMINI_TIMEOUT_MS = 1800;
 const ANALYST_YEAR_DAYS = 252;
 
 export type LiveForecast = {
@@ -80,7 +80,8 @@ async function geminiShortTermDrift(input: {
   headlines: string[];
 }): Promise<{ dailyDrift: number; note: string } | null> {
   const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!geminiKey) return null;
+  const model = process.env.GEMINI_MODEL?.trim();
+  if (!geminiKey || !model) return null;
 
   const news =
     input.headlines.slice(0, 6).map((line) => `- ${line}`).join("\n") ||
@@ -93,67 +94,49 @@ ${input.symbol} last close ${input.last}. Short-term daily log increment ${input
 Headlines:
 ${news}`;
 
-  const models = [
-    process.env.GEMINI_MODEL,
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-001",
-    "gemini-flash-latest",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-latest",
-  ].filter((model, index, list): model is string => Boolean(model) && list.indexOf(model) === index);
-
-  for (const model of models) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": geminiKey,
-          },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.2,
-              responseMimeType: "application/json",
-            },
-          }),
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": geminiKey,
         },
-      );
-      if (!response.ok) {
-        console.warn(`Gemini ${model} returned ${response.status}`);
-        continue;
-      }
-      const payload = (await response.json()) as {
-        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-      };
-      const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!raw) continue;
-      const parsed = JSON.parse(raw) as { dailyDrift?: unknown; note?: unknown };
-      if (typeof parsed.dailyDrift !== "number" || !Number.isFinite(parsed.dailyDrift)) {
-        continue;
-      }
-      return {
-        dailyDrift: clamp(parsed.dailyDrift, -MAX_DAILY_DRIFT, MAX_DAILY_DRIFT),
-        note:
-          typeof parsed.note === "string" && parsed.note.trim()
-            ? parsed.note.trim().slice(0, 220)
-            : "Short-term path from recent closes.",
-      };
-    } catch {
-      continue;
-    } finally {
-      clearTimeout(timer);
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+          },
+        }),
+      },
+    );
+    if (!response.ok) return null;
+    const payload = (await response.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { dailyDrift?: unknown; note?: unknown };
+    if (typeof parsed.dailyDrift !== "number" || !Number.isFinite(parsed.dailyDrift)) {
+      return null;
     }
+    return {
+      dailyDrift: clamp(parsed.dailyDrift, -MAX_DAILY_DRIFT, MAX_DAILY_DRIFT),
+      note:
+        typeof parsed.note === "string" && parsed.note.trim()
+          ? parsed.note.trim().slice(0, 220)
+          : "Short-term path from recent closes.",
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
-
-  return null;
 }
 
 export async function buildLiveForecast(
@@ -164,6 +147,7 @@ export async function buildLiveForecast(
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
+  const useGemini = Boolean(process.env.GEMINI_MODEL?.trim());
   const [history, analyst, headlines] = await Promise.all([
     fetchYahooChartSeries(symbol, "month", asOf, 90),
     asOf ? Promise.resolve({
@@ -173,7 +157,7 @@ export async function buildLiveForecast(
       recommendation: null,
       analystCount: null,
     }) : fetchYahooAnalystView(symbol),
-    asOf ? Promise.resolve([]) : fetchYahooNews(symbol, 6),
+    asOf || !useGemini ? Promise.resolve([]) : fetchYahooNews(symbol, 6),
   ]);
 
   const stats = horizonStats(history.map((point) => point.value));
@@ -187,7 +171,7 @@ export async function buildLiveForecast(
         ? `Short-term path from recent closes. 12-month mean target ${analyst.targetMean.toFixed(2)}${analyst.recommendation ? ` · ${analyst.recommendation.replace(/_/g, " ")}` : ""}.`
     : "Short-term path from recent closes.";
 
-  if (!asOf) {
+  if (!asOf && useGemini) {
     try {
       const gemini = await geminiShortTermDrift({
         symbol,
