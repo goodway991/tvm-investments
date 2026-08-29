@@ -362,27 +362,36 @@ function candidateFromQuote(
 
 function barsFromChart(
   quotes: Array<{
-    date: Date;
+    date: Date | number | string;
     open: number | null;
     high: number | null;
     low: number | null;
     close: number | null;
     volume: number | null;
-  }>,
+  }> | undefined,
 ): OHLCVBar[] {
+  if (!quotes?.length) return [];
   return quotes
     .filter((bar) => bar.close != null && Number.isFinite(bar.close))
     .map((bar) => {
       const close = bar.close as number;
+      const stamp =
+        bar.date instanceof Date
+          ? bar.date
+          : new Date(typeof bar.date === "number" ? bar.date : String(bar.date));
+      const iso = Number.isFinite(stamp.getTime())
+        ? stamp.toISOString().slice(0, 10)
+        : "";
       return {
-        date: bar.date.toISOString().slice(0, 10),
+        date: iso,
         open: bar.open ?? close,
         high: bar.high ?? close,
         low: bar.low ?? close,
         close,
         volume: bar.volume ?? 0,
       };
-    });
+    })
+    .filter((bar) => /^\d{4}-\d{2}-\d{2}$/.test(bar.date));
 }
 
 export async function fetchYahooCandidate(symbol: string): Promise<StockCandidate> {
@@ -519,7 +528,7 @@ export async function fetchYahooChartSeries(
     includePrePost: false,
   });
 
-  return result.quotes
+  return (result.quotes ?? [])
     .filter((bar) => bar.close != null && Number.isFinite(bar.close))
     .map((bar) => ({
       label: bar.date.toLocaleDateString("en-US", {
@@ -546,13 +555,35 @@ export async function fetchYahooOhlcvSeries(
       : new Date();
   const start = new Date(end);
   start.setDate(start.getDate() - Math.max(40, Math.min(120, lookbackDays)));
-  const result = await yahooFinance.chart(ticker, {
-    period1: start,
-    period2: end,
-    interval: "1d",
-    includePrePost: false,
-  });
-  return barsFromChart(result.quotes);
+  let bars: OHLCVBar[] = [];
+  try {
+    const result = await yahooFinance.chart(ticker, {
+      period1: Math.floor(start.getTime() / 1000),
+      period2: Math.floor(end.getTime() / 1000),
+      interval: "1d",
+      includePrePost: false,
+    });
+    bars = barsFromChart(result.quotes);
+  } catch (error) {
+    console.warn(`Yahoo OHLCV chart failed for ${ticker}:`, error);
+  }
+  if (bars.length >= 8) return bars;
+  try {
+    const closes = await fetchYahooChartSeries(ticker, "month", asOf, lookbackDays);
+    return closes
+      .filter((point) => point.value > 0 && Number.isFinite(point.timestamp))
+      .map((point) => ({
+        date: new Date(point.timestamp).toISOString().slice(0, 10),
+        open: point.value,
+        high: point.value,
+        low: point.value,
+        close: point.value,
+        volume: 0,
+      }));
+  } catch (error) {
+    console.warn(`Yahoo OHLCV fallback failed for ${ticker}:`, error);
+    return bars;
+  }
 }
 
 export async function fetchYahooUniverse(): Promise<StockCandidate[]> {

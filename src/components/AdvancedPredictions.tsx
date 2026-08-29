@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { authedFetch } from "@/lib/authed-fetch";
+import { StockSearchField, type SearchHit } from "@/components/StockSearchField";
 import { parseTicker } from "@/lib/ticker";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
 import { HorizonForecastChart } from "@/components/HorizonForecastChart";
@@ -68,10 +69,14 @@ export function AdvancedPredictions({
   uid,
   symbol,
   onSymbol,
+  universe,
+  watchlist,
 }: {
   uid: string;
   symbol: string;
   onSymbol: (symbol: string) => void;
+  universe: SearchHit[];
+  watchlist: string[];
 }) {
   const { openUpgrade } = useUpgrade();
   const { usage, busy, consume, plan } = usePredictUsage("advanced");
@@ -121,7 +126,12 @@ export function AdvancedPredictions({
       return;
     }
     const ticker = parseTicker(draft) || parseTicker(symbol);
-    if (!ticker || horizonDays <= 0) return;
+    if (!ticker) {
+      setError("Search a name first — same search bar as Watchlist.");
+      return;
+    }
+    const days = horizonDays > 0 ? horizonDays : MAX_HORIZON_TRADING_DAYS;
+    if (horizonDays <= 0) setHorizonDays(days);
     onSymbol(ticker);
     setDraft(ticker);
     setError("");
@@ -132,7 +142,15 @@ export function AdvancedPredictions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol: ticker, settings }),
       });
-      const payload = (await response.json()) as AdvancedPayload;
+      const text = await response.text();
+      let payload: AdvancedPayload = {};
+      if (text.trim()) {
+        try {
+          payload = JSON.parse(text) as AdvancedPayload;
+        } catch {
+          throw new Error("Advanced Prediction did not return enough data.");
+        }
+      }
       if (!response.ok || !payload.history?.length || payload.last == null) {
         throw new Error(payload.error || "Advanced Prediction did not return enough data.");
       }
@@ -153,7 +171,7 @@ export function AdvancedPredictions({
         avgBlend: payload.avgBlend ?? settings.averagePath / 100,
       });
       setNote(payload.note ?? null);
-      setCommittedDays(horizonDays);
+      setCommittedDays(days);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Advanced Prediction failed.",
@@ -200,21 +218,33 @@ export function AdvancedPredictions({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,220px)_1fr]">
-        <label className="text-sm text-ink-soft">
-          Ticker
-          <input
-            className="field mt-1 w-full rounded-2xl px-4 py-2.5 text-sm text-ink"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value.toUpperCase())}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              const ticker = parseTicker(event.currentTarget.value);
-              if (ticker) onSymbol(ticker);
-            }}
-            placeholder="AAPL"
-          />
-        </label>
+      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,280px)_1fr]">
+        <div>
+          <p className="text-sm text-ink-soft">Ticker</p>
+          <div className="mt-1">
+            <StockSearchField
+              universe={universe}
+              watchlist={watchlist}
+              showSearchButton
+              placeholder="Search stocks…"
+              onPick={(hit) => {
+                onSymbol(hit.symbol);
+                setDraft(hit.symbol);
+                setError("");
+              }}
+            />
+          </div>
+          {symbol ? (
+            <p className="mt-2 text-sm font-semibold text-ink">
+              {symbol}
+              <span className="ml-2 font-normal text-ink-soft">selected</span>
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-ink-soft">
+              Search, then Advanced Predict.
+            </p>
+          )}
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Knob
             label="Noise flatten"

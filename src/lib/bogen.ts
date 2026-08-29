@@ -339,7 +339,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   "workstation-compare": {
     title: "Compare",
     what: "Up to four tickers with last quote, stock score, P/E, and analyst consensus. Bullish/bearish stance is coming. A research pick ranks the set — not a buy order.",
-    how: "Type a ticker and press Enter. Names missing from the scan still pull a last trade (including weekends). Remove drops it.",
+    how: "Search a name the same way as Watchlist, then tap it. Remove drops it.",
   },
   "workstation-notes": {
     title: "Tags & notes",
@@ -354,7 +354,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   "advanced-predict": {
     title: "Advanced Predictions",
     what: "Ultra-only 99%* reads on the workstation. You pick the name and tune the knobs, then Predict.",
-    how: "Tap a heatmap tile or type a ticker. Quiet / Balanced / Push sets a starting mix. Slide, then Advanced Predict. Hide clears the path.",
+    how: "Search a name the same way as Watchlist, or tap a heatmap tile. Quiet / Balanced / Push sets a starting mix. Slide the horizon, then Advanced Predict. Hide clears the path.",
   },
   "good-morning": {
     title: "Good morning",

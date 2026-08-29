@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TVMIcon } from "@/components/TVMBrand";
 import { authedFetch } from "@/lib/authed-fetch";
+import { parseTicker } from "@/lib/ticker";
 
 export type SearchHit = { symbol: string; name: string };
 
@@ -11,11 +12,13 @@ export function StockSearchField({
   watchlist,
   onPick,
   placeholder = "Search stocks…",
+  showSearchButton = false,
 }: {
   universe: SearchHit[];
   watchlist: string[];
   onPick: (hit: SearchHit) => void;
   placeholder?: string;
+  showSearchButton?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -98,7 +101,22 @@ export function StockSearchField({
     return ranked.slice(0, 16);
   }, [query, remote, universe, watchHits, watchlist]);
 
+  function commitFromQuery() {
+    const ticker = parseTicker(query);
+    const hit =
+      (ticker && rows.find((row) => row.symbol === ticker)) ||
+      (ticker ? { symbol: ticker, name: ticker } : rows[0]);
+    if (!hit) {
+      setOpen(true);
+      return;
+    }
+    onPick(hit);
+    setQuery("");
+    setOpen(false);
+  }
+
   return (
+    <div className="flex min-w-0 w-full items-center gap-2">
     <div ref={wrapRef} className="relative min-w-0 flex-1">
       <label className="relative block">
         <span className="sr-only">Search stocks</span>
@@ -114,6 +132,11 @@ export function StockSearchField({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            commitFromQuery();
+          }}
           placeholder={placeholder}
           className="field w-full rounded-2xl bg-white py-2.5 pl-11 pr-4 text-sm text-ink placeholder:text-ink-soft/60"
         />
@@ -159,6 +182,16 @@ export function StockSearchField({
           )}
         </div>
       ) : null}
+    </div>
+    {showSearchButton ? (
+      <button
+        type="button"
+        onClick={commitFromQuery}
+        className="glass-violet shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+      >
+        {searching ? "Searching…" : "Search"}
+      </button>
+    ) : null}
     </div>
   );
 }

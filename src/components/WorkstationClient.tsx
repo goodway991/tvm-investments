@@ -12,6 +12,7 @@ import { NewBadge } from "@/components/NewBadge";
 import { BogenTerms } from "@/components/BogenTerms";
 import { showUltraDesk } from "@/lib/beta-labs";
 import { authedFetch } from "@/lib/authed-fetch";
+import { StockSearchField, type SearchHit } from "@/components/StockSearchField";
 import { parseTicker } from "@/lib/ticker";
 import { ProGlowText } from "@/components/ProGlowText";
 import {
@@ -176,6 +177,15 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
         watchlist.symbols,
       ).slice(0, 80),
     [desk.filters, desk.weights, snapshot.screenedStocks, watchlist.symbols],
+  );
+
+  const universe = useMemo<SearchHit[]>(
+    () =>
+      snapshot.screenedStocks.map((stock) => ({
+        symbol: stock.symbol,
+        name: stock.name,
+      })),
+    [snapshot.screenedStocks],
   );
 
   const compareKey = desk.compare.join(",");
@@ -494,6 +504,8 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
         <AdvancedPredictions
           uid={user.uid}
           symbol={tapeSymbol || noteSymbol || watchlist.symbols[0] || ""}
+          universe={universe}
+          watchlist={watchlist.symbols}
           onSymbol={(next) => {
             setTapeSymbol(next);
             setNoteSymbol(next);
@@ -508,20 +520,20 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
           <h2 className="font-display text-lg font-semibold text-ink">
             <BogenHeading id="workstation-compare">Compare</BogenHeading>
           </h2>
-          <input
-            className="field mt-3 w-full rounded-2xl px-4 py-2.5 text-sm"
-            placeholder="Add ticker, Enter"
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              const symbol = parseTicker(event.currentTarget.value);
-              if (!symbol) return;
-              persist((current) => ({
-                ...current,
-                compare: Array.from(new Set([...current.compare, symbol])).slice(0, 4),
-              }));
-              event.currentTarget.value = "";
-            }}
-          />
+          <div className="mt-3">
+            <StockSearchField
+              universe={universe}
+              watchlist={watchlist.symbols}
+              showSearchButton
+              placeholder="Search stocks…"
+              onPick={(hit) =>
+                persist((current) => ({
+                  ...current,
+                  compare: Array.from(new Set([...current.compare, hit.symbol])).slice(0, 4),
+                }))
+              }
+            />
+          </div>
           {comparePick ? (
             <p className="mt-3 rounded-2xl bg-ink/[0.04] px-3 py-2 text-sm text-ink">
               Research pick: <span className="font-semibold">{comparePick.symbol}</span>
@@ -612,12 +624,24 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
           <h2 className="font-display text-lg font-semibold text-ink">
             <BogenHeading id="workstation-notes">Tags & notes</BogenHeading>
           </h2>
-          <input
-            className="field mt-3 w-full rounded-2xl px-4 py-2.5 text-sm"
-            value={noteSymbol}
-            onChange={(event) => setNoteSymbol(event.target.value.toUpperCase())}
-            placeholder="Ticker"
-          />
+          <div className="mt-3">
+            <StockSearchField
+              universe={universe}
+              watchlist={watchlist.symbols}
+              showSearchButton
+              placeholder="Search stocks…"
+              onPick={(hit) => {
+                setNoteSymbol(hit.symbol);
+                setTapeSymbol(hit.symbol);
+              }}
+            />
+          </div>
+          {noteSymbol ? (
+            <p className="mt-2 text-sm font-semibold text-ink">
+              {noteSymbol}
+              <span className="ml-2 font-normal text-ink-soft">for this note</span>
+            </p>
+          ) : null}
           <input
             className="field mt-2 w-full rounded-2xl px-4 py-2.5 text-sm"
             value={noteTag}
