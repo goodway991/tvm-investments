@@ -147,8 +147,8 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   composite: {
     title: "Account score",
-    what: "A 0–100 rating of your book: watchlist and portfolio names, using each stock’s scan score, niche, P/E, and RSI when we have them.",
-    how: "Tap to open Watchlist. Add or drop names there (and in Portfolio) to move the score. Empty books show a dash until something is on the account.",
+    what: "A 0–100 read of your watchlist and book: sector mix, name concentration, P/E, and beta, plus today’s scan score when we have it.",
+    how: "Tap to open Watchlist. Add holdings in Portfolio so dollars weight the mix. Empty books show a dash until a name is on the account.",
   },
   "ticker-search": {
     title: "Ticker search",

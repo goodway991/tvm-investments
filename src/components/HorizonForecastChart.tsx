@@ -284,7 +284,7 @@ export function HorizonForecastChart({
               />
             )}
             <Area
-              type="monotone"
+              type="linear"
               dataKey="bandBase"
               stackId="band"
               stroke="none"
@@ -295,7 +295,7 @@ export function HorizonForecastChart({
               tooltipType="none"
             />
             <Area
-              type="monotone"
+              type="linear"
               dataKey="bandSize"
               stackId="band"
               stroke="none"
@@ -306,7 +306,7 @@ export function HorizonForecastChart({
               tooltipType="none"
             />
             <Area
-              type="monotone"
+              type="linear"
               dataKey="predicted"
               stroke="none"
               fill={`url(#${fillId})`}
@@ -316,7 +316,7 @@ export function HorizonForecastChart({
               tooltipType="none"
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="high"
               stroke={bandStroke}
               strokeDasharray="4 5"
@@ -327,7 +327,7 @@ export function HorizonForecastChart({
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="low"
               stroke={bandStroke}
               strokeDasharray="4 5"
@@ -347,10 +347,10 @@ export function HorizonForecastChart({
             />
             {(ultraPath || peachPath) && pathDays > 0 ? (
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="predicted"
                 stroke={predictedStroke}
-                strokeWidth={9}
+                strokeWidth={5.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 dot={false}
@@ -362,10 +362,10 @@ export function HorizonForecastChart({
               />
             ) : null}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="predicted"
               stroke={predictedStroke}
-              strokeWidth={2.6}
+              strokeWidth={2.4}
               strokeLinecap="round"
               strokeLinejoin="round"
               dot={false}
@@ -374,36 +374,6 @@ export function HorizonForecastChart({
               className={predictedClass}
               activeDot={{ r: 4, fill: predictedDot }}
             />
-            {ultraPath && pathDays > 0 ? (
-              <Line
-                type="monotone"
-                dataKey="predicted"
-                stroke="#ffffff"
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                dot={false}
-                connectNulls
-                isAnimationActive={false}
-                className="horizon-ultra-spark"
-                legendType="none"
-                tooltipType="none"
-              />
-            ) : null}
-            {peachPath && !ultraPath && pathDays > 0 ? (
-              <Line
-                type="monotone"
-                dataKey="predicted"
-                stroke="#fff3e6"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                dot={false}
-                connectNulls
-                isAnimationActive={false}
-                className="horizon-pro-spark"
-                legendType="none"
-                tooltipType="none"
-              />
-            ) : null}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

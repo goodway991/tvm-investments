@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSignedIn } from "@/lib/api-guard";
-import { showTvm10Labs } from "@/lib/beta-labs";
 import { getEntitlementForUid } from "@/lib/firebase/admin";
 import type { BillingInterval, PaidPlanId, PlanId } from "@/lib/plans";
 import {
@@ -79,9 +78,7 @@ export async function POST(request: NextRequest) {
     if (!checkoutPlanAllowed(paid)) {
       return NextResponse.json(
         {
-          error: showTvm10Labs()
-            ? "That plan is not available."
-            : "Ultra checkout stays on localhost until TVM 1.0 ships. Pro is available now.",
+          error: "That plan is not available.",
         },
         { status: 400 },
       );

@@ -330,12 +330,12 @@ function HorizonVisual() {
             />
             <path
               className="wn-horizon-band"
-              d="M200 42 C232 36 268 24 312 18 L312 48 C268 52 232 58 200 42Z"
+              d="M200 42 C214 39 226 50 238 36 S258 22 272 30 S292 18 312 16 L312 46 C292 48 272 52 258 48 S226 58 200 42Z"
               fill="rgba(255, 210, 176, 0.28)"
             />
             <path
               className="wn-horizon-pred wn-horizon-pred-pro"
-              d="M200 42 C232 36 268 24 312 18"
+              d="M200 42 C214 39 226 50 238 36 S258 22 272 30 S292 18 312 16"
               fill="none"
               stroke="#ffd2b0"
               strokeWidth="2.6"
@@ -343,7 +343,7 @@ function HorizonVisual() {
             />
             <path
               className="wn-horizon-pred wn-horizon-pred-ultra"
-              d="M200 42 C232 36 268 24 312 18"
+              d="M200 42 C214 39 226 50 238 36 S258 22 272 30 S292 18 312 16"
               fill="none"
               stroke="#111111"
               strokeWidth="2.6"
@@ -357,7 +357,7 @@ function HorizonVisual() {
         </div>
 
         <div className="flex justify-center">
-          <span className="wn-horizon-predict pro-profile-glow inline-flex rounded-full bg-transparent px-4 py-1.5 text-[11px] font-semibold">
+          <span className="wn-horizon-predict predict-glow inline-flex rounded-full px-4 py-1.5 text-[11px] font-semibold">
             Predict
           </span>
         </div>

@@ -159,16 +159,10 @@ export function PredictButton({
         onClick={onPredict}
         disabled={busy}
         className={`${
-          ultra ? "ultra-profile-glow-move" : "pro-profile-glow"
-        } inline-flex items-center rounded-full bg-transparent px-5 py-2.5 text-sm font-semibold disabled:opacity-60`}
+          ultra ? "predict-glow predict-glow-ultra" : "predict-glow"
+        } inline-flex items-center rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-60`}
       >
-        {predicted ? (
-          hideLabel
-        ) : ultra ? (
-          <UltraShinePhrase>{predictLabel}</UltraShinePhrase>
-        ) : (
-          <ProGlowText>{predictLabel}</ProGlowText>
-        )}
+        {predicted ? hideLabel : predictLabel}
       </button>
       </BogenHit>
       {remaining != null ? (

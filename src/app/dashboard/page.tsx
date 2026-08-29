@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DashboardOverview } from "@/components/DashboardOverview";
+import { collectAccountScoreQuotes } from "@/lib/account-score";
 import { getDashboardSnapshot } from "@/lib/snapshot";
 import { dashboardView } from "@/lib/snapshot-view";
 
@@ -15,5 +16,10 @@ export default async function DashboardPage({
 }) {
   const { archive } = await searchParams;
   const snapshot = await getDashboardSnapshot(archive);
-  return <DashboardOverview snapshot={dashboardView(snapshot)} />;
+  return (
+    <DashboardOverview
+      snapshot={dashboardView(snapshot)}
+      scoreQuotes={collectAccountScoreQuotes(snapshot)}
+    />
+  );
 }

@@ -22,7 +22,7 @@ import { BogenHit } from "@/components/BogenProvider";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { NewBadge } from "@/components/NewBadge";
 import type { NewFeatureId } from "@/lib/new-badges";
-import { LOCAL_EXPERIMENT, useExperience } from "@/components/ExperienceProvider";
+import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { planHasPro, type PlanId } from "@/lib/plans";
@@ -489,12 +489,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <TVMBrand showWordmark={sidebarMode === "expanded"} />
           </span>
         </BogenHit>
-        {sidebarMode === "expanded" && !rewind && showTvm10Labs() ? (
-          <p className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
-            {LOCAL_EXPERIMENT}
-          </p>
-        ) : null}
-
         <nav className="mt-10 flex flex-col gap-1.5" aria-label="Dashboard navigation">
           {(clean
             ? dashboardNav.filter((item) => item.label !== "Screener")

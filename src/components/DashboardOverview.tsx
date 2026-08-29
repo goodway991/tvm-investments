@@ -15,7 +15,7 @@ import {
   sparklineValues,
   uniqueStocks,
 } from "@/lib/chart-series";
-import { computeAccountScore } from "@/lib/account-score";
+import { computeAccountScore, type AccountScoreQuote } from "@/lib/account-score";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
 import { ProGlowPhrase } from "@/components/ProGlowText";
@@ -82,7 +82,13 @@ function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
-export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
+export function DashboardOverview({
+  snapshot,
+  scoreQuotes = [],
+}: {
+  snapshot: DailySnapshot;
+  scoreQuotes?: AccountScoreQuote[];
+}) {
   const { profile, user, entitlement, watchlist, positions } = useAuth();
   const { era, rewind } = useSiteEra();
   const { density } = useExperience();
@@ -109,8 +115,9 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         watchlist: watchlist.symbols,
         positions,
         snapshot,
+        quotes: scoreQuotes,
       }),
-    [positions, snapshot, watchlist.symbols],
+    [positions, scoreQuotes, snapshot, watchlist.symbols],
   );
   const filteredMovers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -180,7 +187,11 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
       ? {
           label: "Account score",
           value: accountScore.score == null ? "—" : `${accountScore.score.toFixed(0)} / 100`,
-          badge: accountScore.counted ? `${accountScore.counted} names` : "your book",
+          badge: accountScore.counted
+            ? `${accountScore.counted} names`
+            : accountScore.tracked
+              ? "add to today’s scan"
+              : "your book",
           gradient: true,
           bogen: "composite" as const,
           href: "/dashboard/watchlist",

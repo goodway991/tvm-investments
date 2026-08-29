@@ -120,12 +120,17 @@ function fitAr1(series: number[]) {
   return { slope, intercept };
 }
 
+function rhoPower(rho: number, steps: number) {
+  if (rho >= 0 || Number.isInteger(steps)) return rho ** steps;
+  return Math.pow(Math.abs(rho), steps) * Math.cos(Math.PI * steps);
+}
+
 function expectedDeltaSum(lastDelta: number, meanDelta: number, rho: number, steps: number) {
   if (steps <= 0) return 0;
   if (Math.abs(rho) < 1e-6) return meanDelta * steps;
   if (Math.abs(1 - rho) < 1e-6) return lastDelta * steps;
   const pull = lastDelta - meanDelta;
-  return meanDelta * steps + pull * rho * (1 - rho ** steps) / (1 - rho);
+  return meanDelta * steps + (pull * rho * (1 - rhoPower(rho, steps))) / (1 - rho);
 }
 
 function deltaSumVariance(sigma: number, rho: number, steps: number) {
@@ -260,6 +265,50 @@ function formatDay(timestamp: number) {
   });
 }
 
+/**
+ * Tape-shaped residuals so the forward path kinks like recent closes
+ * instead of a ruler. Bridged to 0 at both ends so the tip still
+ * lands on the model mean.
+ */
+function pathWiggleSeries(
+  closes: number[],
+  horizon: number,
+  vol: number,
+  samples: number,
+): number[] {
+  const out = Array.from({ length: samples + 1 }, () => 0);
+  const series = closes.filter((price) => price > 0);
+  if (series.length < 5 || horizon <= 0 || samples < 2) return out;
+  const diffs = firstDiff(series.map(Math.log));
+  if (diffs.length < 3) return out;
+  let acc = 0;
+  const walk = [0];
+  const dt = horizon / samples;
+  for (let index = 1; index <= samples; index += 1) {
+    const src = ((index - 1) / samples) * diffs.length;
+    const i0 = Math.floor(src) % diffs.length;
+    const i1 = (i0 + 1) % diffs.length;
+    const frac = src - Math.floor(src);
+    acc += (diffs[i0] * (1 - frac) + diffs[i1] * frac) * dt;
+    walk.push(acc);
+  }
+  const end = walk[samples];
+  const phase = (series[series.length - 1] * 0.271) % 1;
+  for (let index = 0; index <= samples; index += 1) {
+    const u = index / samples;
+    const tape = walk[index] - end * u;
+    const envelope = Math.min(1, u * 18) * (1 - u);
+    const grain =
+      vol *
+      envelope *
+      (0.72 * Math.sin(2 * Math.PI * (2.15 * u + phase)) +
+        0.42 * Math.sin(2 * Math.PI * (4.6 * u + phase * 1.7)) +
+        0.22 * Math.sin(2 * Math.PI * (7.4 * u + phase * 0.4)));
+    out[index] = tape * 1.2 + grain;
+  }
+  return out;
+}
+
 export function lastPriceAtOrBefore(history: ChartPoint[], timestamp: number) {
   let price = 0;
   for (const point of history) {
@@ -355,22 +404,46 @@ export function buildHorizonChart(
 
   const pathHorizon = Math.min(axisDays, Math.max(0, tradingDaysAhead));
   const futureDays = nextTradingDays(last.timestamp, axisDays);
-  const samples = Math.max(1, Math.round(axisDays * 10));
+  const samples = Math.max(24, Math.round(axisDays * 14));
+  const wiggles =
+    stats && pathHorizon > 0
+      ? pathWiggleSeries(
+          history.slice(-HORIZON_HISTORY_BARS).map((point) => point.value),
+          pathHorizon,
+          stats.dailyVol,
+          samples,
+        )
+      : [];
 
   for (let sample = 1; sample <= samples; sample += 1) {
     const step = (sample / samples) * axisDays;
     const timestamp = timestampAtTradingDay(last.timestamp, futureDays, step);
     const onPath = Boolean(stats) && pathHorizon > 0 && step <= pathHorizon + 1e-6;
     const projection = onPath && stats ? projectPrice(stats, step) : null;
+    const u = pathHorizon > 0 ? clamp(step / pathHorizon, 0, 1) : 0;
+    const wigIndex = Math.round(u * samples);
+    const wiggle = onPath ? (wiggles[wigIndex] ?? 0) : 0;
+    const meanPrice = projection?.predicted ?? null;
+    const predicted =
+      meanPrice != null && Number.isFinite(meanPrice)
+        ? meanPrice * Math.exp(Number.isFinite(wiggle) ? wiggle : 0)
+        : null;
+    const half =
+      projection != null
+        ? Math.max(0, (projection.high - projection.low) / 2)
+        : 0;
+    const low = predicted != null ? Math.max(0.01, predicted - half) : null;
+    const high = predicted != null ? predicted + half : null;
     points.push({
       label: formatDay(timestamp),
       timestamp,
       actual: null,
-      predicted: projection?.predicted ?? null,
-      low: projection?.low ?? null,
-      high: projection?.high ?? null,
-      bandBase: projection?.low ?? null,
-      bandSize: projection ? Math.max(0, projection.high - projection.low) : null,
+      predicted,
+      low,
+      high,
+      bandBase: low,
+      bandSize:
+        predicted != null ? Math.max(0, (high ?? predicted) - (low ?? predicted)) : null,
     });
   }
 

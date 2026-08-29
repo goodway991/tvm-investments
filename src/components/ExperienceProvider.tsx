@@ -17,7 +17,6 @@ export type Density = "clean" | "normal";
 
 const DENSITY_KEY = "tvm-density";
 const CUSTOMIZE_KEY = LEGACY_CUSTOMIZE_KEY;
-export const LOCAL_EXPERIMENT = "TVM 1.0 · local";
 
 type ExperienceContextValue = {
   density: Density;

@@ -1,145 +1,244 @@
-import { computeRSI } from "@/lib/indicators";
-import type { DailySnapshot, OHLCVBar, ScreenedStock, StockCandidate } from "@/types";
+import type { DailySnapshot, ScreenedStock, StockCandidate } from "@/types";
 
-type ScoreRow = {
+export type AccountScoreQuote = {
   symbol: string;
-  composite: number;
-  peRatio: number | null;
   sector: string;
-  industry: string;
-  ohlcv: OHLCVBar[];
+  peRatio: number | null;
+  beta: number | null;
+  composite: number | null;
+};
+
+type HeldRow = {
+  symbol: string;
+  weight: number;
+  sector: string;
+  peRatio: number | null;
+  beta: number | null;
+  composite: number | null;
 };
 
 function clamp(value: number, min = 0, max = 100) {
+  if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, value));
 }
 
 function scorePe(pe: number | null): number | null {
   if (pe == null || !Number.isFinite(pe) || pe <= 0) return null;
-  if (pe < 8) return 48;
-  if (pe < 18) return 90;
-  if (pe < 28) return 78;
-  if (pe < 40) return 62;
-  if (pe < 60) return 44;
-  return 28;
-}
-
-function scoreRsi(rsi: number | null): number | null {
-  if (rsi == null || !Number.isFinite(rsi)) return null;
-  if (rsi >= 40 && rsi <= 60) return 92;
-  if (rsi >= 30 && rsi < 40) return 74;
-  if (rsi > 60 && rsi <= 70) return 70;
-  if (rsi >= 20 && rsi < 30) return 64;
-  if (rsi > 70 && rsi <= 80) return 48;
+  if (pe < 8) return 50;
+  if (pe < 14) return 84;
+  if (pe < 22) return 92;
+  if (pe < 30) return 76;
+  if (pe < 45) return 54;
   return 32;
 }
 
-function scoreNiche(
-  sector: string,
-  industry: string,
-  sectorCounts: Map<string, number>,
-  total: number,
-) {
-  const niche = `${sector} ${industry}`.trim();
-  const known = Boolean(sector) && sector !== "Other" && sector !== "—" && niche.length > 2;
-  const share = (sectorCounts.get(sector) ?? 1) / Math.max(total, 1);
-  const spread = clamp(100 - share * 55);
-  return clamp((known ? 82 : 46) * 0.62 + spread * 0.38);
+function scoreBeta(beta: number | null): number | null {
+  if (beta == null || !Number.isFinite(beta) || beta <= 0) return null;
+  if (beta >= 0.75 && beta <= 1.2) return 92;
+  if (beta >= 0.55 && beta < 0.75) return 78;
+  if (beta > 1.2 && beta <= 1.45) return 72;
+  if (beta > 1.45 && beta <= 1.8) return 52;
+  if (beta < 0.55) return 60;
+  return 34;
 }
 
-function blendStock(row: ScoreRow, sectorCounts: Map<string, number>, total: number) {
-  const rsi = scoreRsi(
-    row.ohlcv.length ? computeRSI(row.ohlcv.map((bar) => bar.close)) : null,
-  );
-  const pe = scorePe(row.peRatio);
-  const niche = scoreNiche(row.sector, row.industry, sectorCounts, total);
-  const parts = [
-    { value: clamp(row.composite), weight: 0.5 },
-    pe != null ? { value: pe, weight: 0.2 } : null,
-    rsi != null ? { value: rsi, weight: 0.15 } : null,
-    { value: niche, weight: 0.15 },
-  ].filter((part): part is { value: number; weight: number } => Boolean(part));
-  const weight = parts.reduce((sum, part) => sum + part.weight, 0);
-  return parts.reduce((sum, part) => sum + (part.value * part.weight) / weight, 0);
+function weightedMean(rows: { value: number; weight: number }[]) {
+  const total = rows.reduce((sum, row) => sum + row.weight, 0);
+  if (!(total > 0)) return null;
+  return rows.reduce((sum, row) => sum + row.value * (row.weight / total), 0);
 }
 
-function asRow(
-  symbol: string,
-  screened: ScreenedStock | undefined,
-  quoted: StockCandidate | undefined,
-): ScoreRow | null {
-  const composite = quoted?.compositeScore ?? screened?.compositeScore;
-  if (composite == null) return null;
+function quoteFromScreened(stock: ScreenedStock): AccountScoreQuote {
   return {
-    symbol,
-    composite,
-    peRatio: quoted?.fundamentals.peRatio ?? screened?.fundamentals.peRatio ?? null,
-    sector: quoted?.sector || screened?.sector || "",
-    industry: quoted?.industry || screened?.industry || "",
-    ohlcv: quoted?.ohlcv ?? [],
+    symbol: stock.symbol.toUpperCase(),
+    sector: stock.sector || "",
+    peRatio: stock.fundamentals.peRatio,
+    beta: stock.fundamentals.beta,
+    composite: stock.compositeScore,
   };
 }
 
-export function computeAccountScore({
-  watchlist,
-  positions,
-  snapshot,
-}: {
-  watchlist: string[];
-  positions: { symbol: string; shares: number; currentPrice: number; averageCost: number }[];
-  snapshot: DailySnapshot;
-}): { score: number | null; counted: number; tracked: number } {
-  const tracked = new Map<string, number>();
-  for (const symbol of watchlist) {
-    const key = symbol.trim().toUpperCase();
-    if (key) tracked.set(key, Math.max(tracked.get(key) ?? 0, 1));
-  }
-  for (const position of positions) {
-    const key = position.symbol.trim().toUpperCase();
-    if (!key) continue;
-    const value = Math.max(
-      position.shares * (position.currentPrice || 0),
-      position.shares * (position.averageCost || 0),
-      1,
-    );
-    tracked.set(key, Math.max(tracked.get(key) ?? 0, value));
-  }
+function quoteFromCandidate(stock: StockCandidate): AccountScoreQuote {
+  return {
+    symbol: stock.symbol.toUpperCase(),
+    sector: stock.sector || "",
+    peRatio: stock.fundamentals.peRatio,
+    beta: stock.fundamentals.beta,
+    composite: stock.compositeScore,
+  };
+}
 
-  const quoted = new Map<string, StockCandidate>();
+function mergeQuote(
+  map: Map<string, AccountScoreQuote>,
+  quote: AccountScoreQuote,
+) {
+  const key = quote.symbol.toUpperCase();
+  const prev = map.get(key);
+  map.set(key, {
+    symbol: key,
+    sector: quote.sector || prev?.sector || "",
+    peRatio: quote.peRatio ?? prev?.peRatio ?? null,
+    beta: quote.beta ?? prev?.beta ?? null,
+    composite: quote.composite ?? prev?.composite ?? null,
+  });
+}
+
+export function collectAccountScoreQuotes(
+  snapshot: DailySnapshot,
+): AccountScoreQuote[] {
+  const map = new Map<string, AccountScoreQuote>();
+  for (const stock of snapshot.screenedStocks) {
+    mergeQuote(map, quoteFromScreened(stock));
+  }
   for (const stock of [
     ...snapshot.topPicks,
     ...snapshot.topMovers,
     ...snapshot.shortTermPicks,
     ...snapshot.longTermPicks,
   ]) {
-    quoted.set(stock.symbol.toUpperCase(), stock);
+    mergeQuote(map, quoteFromCandidate(stock));
   }
-  const screened = new Map(
-    snapshot.screenedStocks.map((stock) => [stock.symbol.toUpperCase(), stock] as const),
+  return [...map.values()];
+}
+
+function lookupMap(
+  snapshot: DailySnapshot,
+  extra: AccountScoreQuote[] = [],
+) {
+  const map = new Map<string, AccountScoreQuote>();
+  for (const quote of collectAccountScoreQuotes(snapshot)) {
+    mergeQuote(map, quote);
+  }
+  for (const quote of extra) {
+    mergeQuote(map, quote);
+  }
+  return map;
+}
+
+export function computeAccountScore({
+  watchlist,
+  positions,
+  snapshot,
+  quotes = [],
+}: {
+  watchlist: string[];
+  positions: { symbol: string; shares: number; currentPrice: number; averageCost: number }[];
+  snapshot: DailySnapshot;
+  quotes?: AccountScoreQuote[];
+}): { score: number | null; counted: number; tracked: number } {
+  const lookup = lookupMap(snapshot, quotes);
+  const holdings = new Map<string, number>();
+
+  for (const position of positions) {
+    const key = position.symbol.trim().toUpperCase();
+    if (!key) continue;
+    const value = Math.max(
+      position.shares * (position.currentPrice || 0),
+      position.shares * (position.averageCost || 0),
+      0,
+    );
+    if (value > 0) holdings.set(key, (holdings.get(key) ?? 0) + value);
+  }
+
+  const watched: string[] = [];
+  for (const symbol of watchlist) {
+    const key = symbol.trim().toUpperCase();
+    if (key) watched.push(key);
+  }
+
+  const tracked = new Set([...holdings.keys(), ...watched]);
+  if (tracked.size === 0) {
+    return { score: null, counted: 0, tracked: 0 };
+  }
+
+  const book = [...holdings.values()].reduce((sum, value) => sum + value, 0);
+  const rows: HeldRow[] = [];
+
+  if (book > 0) {
+    for (const [symbol, value] of holdings) {
+      const quote = lookup.get(symbol);
+      rows.push({
+        symbol,
+        weight: value / book,
+        sector: quote?.sector || "Other",
+        peRatio: quote?.peRatio ?? null,
+        beta: quote?.beta ?? null,
+        composite: quote?.composite ?? null,
+      });
+    }
+  } else {
+    const unique = [...new Set(watched)];
+    const share = 1 / unique.length;
+    for (const symbol of unique) {
+      const quote = lookup.get(symbol);
+      rows.push({
+        symbol,
+        weight: share,
+        sector: quote?.sector || "Other",
+        peRatio: quote?.peRatio ?? null,
+        beta: quote?.beta ?? null,
+        composite: quote?.composite ?? null,
+      });
+    }
+  }
+
+  const sectorWeights = new Map<string, number>();
+  for (const row of rows) {
+    sectorWeights.set(row.sector, (sectorWeights.get(row.sector) ?? 0) + row.weight);
+  }
+  const diversity = clamp(
+    (1 - [...sectorWeights.values()].reduce((sum, weight) => sum + weight * weight, 0)) *
+      125,
+  );
+  const concentration = (() => {
+    const maxWeight = Math.max(...rows.map((row) => row.weight));
+    if (maxWeight <= 0.18) return 92;
+    if (maxWeight <= 0.28) return 78;
+    if (maxWeight <= 0.4) return 58;
+    return clamp(100 - maxWeight * 140);
+  })();
+  const breadth = clamp(
+    22 + Math.min(rows.length, 10) * 6 + Math.min(sectorWeights.size, 6) * 5,
+  );
+  const pe = weightedMean(
+    rows
+      .map((row) => {
+        const value = scorePe(row.peRatio);
+        return value == null ? null : { value, weight: row.weight };
+      })
+      .filter((row): row is { value: number; weight: number } => Boolean(row)),
+  );
+  const beta = weightedMean(
+    rows
+      .map((row) => {
+        const value = scoreBeta(row.beta);
+        return value == null ? null : { value, weight: row.weight };
+      })
+      .filter((row): row is { value: number; weight: number } => Boolean(row)),
+  );
+  const quality = weightedMean(
+    rows
+      .filter((row) => row.composite != null)
+      .map((row) => ({ value: clamp(row.composite as number), weight: row.weight })),
   );
 
-  const rows: { row: ScoreRow; weight: number }[] = [];
-  for (const [symbol, weight] of tracked) {
-    const row = asRow(symbol, screened.get(symbol), quoted.get(symbol));
-    if (row) rows.push({ row, weight });
-  }
-
-  const sectorCounts = new Map<string, number>();
-  for (const { row } of rows) {
-    const sector = row.sector || "Other";
-    sectorCounts.set(sector, (sectorCounts.get(sector) ?? 0) + 1);
-  }
-
-  const totalWeight = rows.reduce((sum, item) => sum + item.weight, 0);
-  if (!rows.length || totalWeight <= 0) {
+  const parts = [
+    { value: diversity, weight: 0.22 },
+    { value: concentration, weight: 0.14 },
+    { value: breadth, weight: 0.12 },
+    pe != null ? { value: pe, weight: 0.2 } : null,
+    beta != null ? { value: beta, weight: 0.18 } : null,
+    quality != null ? { value: quality, weight: 0.14 } : null,
+  ].filter((part): part is { value: number; weight: number } => Boolean(part));
+  const weight = parts.reduce((sum, part) => sum + part.weight, 0);
+  if (!(weight > 0)) {
     return { score: null, counted: 0, tracked: tracked.size };
   }
+  const score = parts.reduce((sum, part) => sum + (part.value * part.weight) / weight, 0);
 
-  const score = rows.reduce(
-    (sum, item) =>
-      sum + blendStock(item.row, sectorCounts, rows.length) * (item.weight / totalWeight),
-    0,
-  );
-
-  return { score: clamp(score), counted: rows.length, tracked: tracked.size };
+  return {
+    score: clamp(score),
+    counted: rows.length,
+    tracked: tracked.size,
+  };
 }
