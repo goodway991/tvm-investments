@@ -225,19 +225,11 @@ export function parseSiteMaintenance(
 
 export function resolveMaintenanceState(
   site: SiteMaintenance,
-  now = Date.now(),
 ): ResolvedMaintenance {
   const scheduled =
     site.startMs != null && site.endMs != null && site.endMs > site.startMs;
-  if (scheduled && site.startMs != null && site.endMs != null) {
-    return {
-      scheduled: true,
-      lock: (now >= site.startMs || site.enabled) && now < site.endMs,
-      warning: now < site.endMs,
-    };
-  }
   return {
-    scheduled: false,
+    scheduled,
     lock: site.enabled,
     warning: site.warning || site.enabled,
   };

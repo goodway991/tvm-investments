@@ -16,6 +16,7 @@ import { type FormEvent, useState } from "react";
 import { MiniChart } from "@/components/MiniChart";
 import { PublicShell } from "@/components/PublicShell";
 import { TVMBrand } from "@/components/TVMBrand";
+import { DiscordJoinButton } from "@/components/DiscordJoinButton";
 import {
   getClientAuth,
   isFirebaseConfigured,
@@ -455,6 +456,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                   {isLogin ? "Create an account here" : "Log in"}
                 </span>
               </button>
+              <DiscordJoinButton />
 
               {error && (
                 <p

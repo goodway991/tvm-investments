@@ -350,6 +350,9 @@ export type AdminAccountRow = {
   plan: PlanId;
   source: "comp" | "paid" | "none";
   disabled: boolean;
+  betaTester: boolean;
+  waitlistStatus: "none" | "pending" | "admitted";
+  discordConnected: boolean;
 };
 
 export async function listAdminAccounts(): Promise<{
@@ -383,12 +386,19 @@ export async function listAdminAccounts(): Promise<{
     string,
     { role: "client" | "admin"; plan: PlanId; source: "comp" | "paid" | "none" }
   >();
+  const beta = new Map<
+    string,
+    { betaTester: boolean; waitlistStatus: "none" | "pending" | "admitted"; discordConnected: boolean }
+  >();
   let plansLoaded = false;
   const db = await getAdminDb();
   if (db) {
     try {
-      const snap = await db.collection("entitlements").get();
-      for (const item of snap.docs) {
+      const [entitlementSnap, betaSnap] = await Promise.all([
+        db.collection("entitlements").get(),
+        db.collection("beta_status").get(),
+      ]);
+      for (const item of entitlementSnap.docs) {
         const data = item.data();
         const source =
           data.source === "stripe" || data.source === "paid"
@@ -403,6 +413,18 @@ export async function listAdminAccounts(): Promise<{
           source,
         });
       }
+      for (const item of betaSnap.docs) {
+        const data = item.data();
+        const waitlistStatus =
+          data.waitlistStatus === "pending" || data.waitlistStatus === "admitted"
+            ? data.waitlistStatus
+            : "none";
+        beta.set(item.id, {
+          waitlistStatus,
+          betaTester: data.betaTester === true || waitlistStatus === "admitted",
+          discordConnected: data.discordConnected === true,
+        });
+      }
       plansLoaded = true;
     } catch (error) {
       if (!isQuotaError(error)) throw error;
@@ -412,6 +434,7 @@ export async function listAdminAccounts(): Promise<{
   const rows = authUsers
     .map((record) => {
       const next = entitlements.get(record.uid);
+      const status = beta.get(record.uid);
       const admin = isAdminEmail(record.email) || next?.role === "admin";
       return {
         uid: record.uid,
@@ -421,6 +444,9 @@ export async function listAdminAccounts(): Promise<{
         plan: admin ? "pro" : next?.plan ?? "free",
         source: admin ? "none" : next?.source ?? "none",
         disabled: record.disabled,
+        betaTester: admin ? true : Boolean(status?.betaTester),
+        waitlistStatus: admin ? "admitted" : status?.waitlistStatus ?? "none",
+        discordConnected: Boolean(status?.discordConnected),
       } satisfies AdminAccountRow;
     })
     .sort((a, b) => a.email.localeCompare(b.email));
@@ -749,4 +775,91 @@ export async function consumeApiQuota(
     console.error("API quota write failed:", error);
     return takeMemoryQuota(uid, date, kind, limit);
   }
+}
+
+export async function getBetaStatus(uid: string) {
+  const { parseBetaStatus, EMPTY_BETA_STATUS } = await import("@/lib/beta-waitlist");
+  const db = await getAdminDb();
+  if (!db) return EMPTY_BETA_STATUS;
+  const snap = await db.collection("beta_status").doc(uid).get();
+  return parseBetaStatus(snap.data());
+}
+
+export async function joinBetaWaitlist(uid: string, email: string) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Waitlist is not available.");
+  const { FieldValue } = await import("firebase-admin/firestore");
+  const ref = db.collection("beta_status").doc(uid);
+  const current = await getBetaStatus(uid);
+  if (current.betaTester || current.waitlistStatus === "admitted") {
+    return current;
+  }
+  await ref.set(
+    {
+      uid,
+      email,
+      waitlistStatus: "pending",
+      betaTester: false,
+      waitlistAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  return { ...current, waitlistStatus: "pending" as const };
+}
+
+export async function connectDiscordStatus(uid: string, email: string) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Discord status is not available.");
+  const { FieldValue } = await import("firebase-admin/firestore");
+  await db.collection("beta_status").doc(uid).set(
+    {
+      uid,
+      email,
+      discordConnected: true,
+      discordConnectedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  return getBetaStatus(uid);
+}
+
+export async function admitBetaTester(uid: string) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Waitlist is not available.");
+  const { FieldValue } = await import("firebase-admin/firestore");
+  const auth = await getAdminAuth();
+  const record = auth ? await auth.getUser(uid).catch(() => null) : null;
+  await db.collection("beta_status").doc(uid).set(
+    {
+      uid,
+      email: record?.email || "",
+      waitlistStatus: "admitted",
+      betaTester: true,
+      admittedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  return getBetaStatus(uid);
+}
+
+export async function disableSiteMaintenance() {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Maintenance could not be updated.");
+  const { FieldValue } = await import("firebase-admin/firestore");
+  await db.collection("site").doc("maintenance").set(
+    {
+      enabled: false,
+      warning: false,
+      start: "",
+      end: "",
+      startAt: FieldValue.delete(),
+      endAt: FieldValue.delete(),
+      message: "",
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
 }

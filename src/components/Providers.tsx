@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { AuthProvider } from "@/components/AuthProvider";
+import { BetaStatusProvider } from "@/components/BetaStatusProvider";
 import { GiftedProModal } from "@/components/GiftedProModal";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
 import { MaintenanceGate } from "@/components/MaintenanceGate";
@@ -21,22 +22,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <SiteEraProvider>
         <ThemeProvider>
           <AuthProvider>
-            <ExperienceProvider>
-              <BogenProvider>
-                <UpgradeProvider>
-                  <TourProvider>
-                    <MaintenanceGate>
-                      <MotionPauseRoot />
-                      {children}
-                      <GiftedProModal />
-                      <CustomizeExperienceModal />
-                      <WhatsNewModal />
-                      <GoodMorningModal />
-                    </MaintenanceGate>
-                  </TourProvider>
-                </UpgradeProvider>
-              </BogenProvider>
-            </ExperienceProvider>
+            <BetaStatusProvider>
+              <ExperienceProvider>
+                <BogenProvider>
+                  <UpgradeProvider>
+                    <TourProvider>
+                      <MaintenanceGate>
+                        <MotionPauseRoot />
+                        {children}
+                        <GiftedProModal />
+                        <CustomizeExperienceModal />
+                        <WhatsNewModal />
+                        <GoodMorningModal />
+                      </MaintenanceGate>
+                    </TourProvider>
+                  </UpgradeProvider>
+                </BogenProvider>
+              </ExperienceProvider>
+            </BetaStatusProvider>
           </AuthProvider>
         </ThemeProvider>
       </SiteEraProvider>

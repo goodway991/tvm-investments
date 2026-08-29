@@ -174,7 +174,6 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [site, setSite] = useState<SiteMaintenance>(IDLE);
-  const [now, setNow] = useState(() => Date.now());
   const [dismissed, setDismissed] = useState("");
   const [mounted, setMounted] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
@@ -203,24 +202,7 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
-  useEffect(() => {
-    const tick = () => setNow(Date.now());
-    const upcoming = [site.startMs, site.endMs].filter(
-      (value): value is number => value != null && value > Date.now(),
-    );
-    const next = upcoming.length ? Math.min(...upcoming) : null;
-    const delay =
-      next != null
-        ? Math.max(50, Math.min(next - Date.now() + 75, 30_000))
-        : 30_000;
-    const id = window.setTimeout(tick, delay);
-    return () => window.clearTimeout(id);
-  }, [now, site.startMs, site.endMs]);
-
-  const resolved = useMemo(
-    () => resolveMaintenanceState(site, now),
-    [now, site],
-  );
+  const resolved = useMemo(() => resolveMaintenanceState(site), [site]);
 
   useEffect(() => {
     if (loading) return;

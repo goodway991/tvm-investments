@@ -18,6 +18,9 @@ type AccountRow = {
   plan: PlanId;
   source: PlanSource;
   disabled: boolean;
+  betaTester?: boolean;
+  waitlistStatus?: "none" | "pending" | "admitted";
+  discordConnected?: boolean;
 };
 
 function planLabel(row: AccountRow, plansLoaded: boolean) {
@@ -153,6 +156,12 @@ export function AdminAccountsPanel() {
                         ) : (
                           planLabel(row, plansLoaded)
                         )}
+                        {row.betaTester
+                          ? " · Beta tester"
+                          : row.waitlistStatus === "pending"
+                            ? " · Waitlist"
+                            : ""}
+                        {row.discordConnected ? " · Discord connected" : ""}
                       </p>
                     </div>
                     <div>

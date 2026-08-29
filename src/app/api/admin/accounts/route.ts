@@ -92,6 +92,9 @@ export async function POST(request: NextRequest) {
                 ...row,
                 plan,
                 source: plan === "free" ? "none" : "comp",
+                betaTester: row.betaTester,
+                waitlistStatus: row.waitlistStatus,
+                discordConnected: row.discordConnected,
               }
             : row,
         );

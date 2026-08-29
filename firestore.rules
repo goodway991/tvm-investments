@@ -56,12 +56,14 @@ service cloud.firestore {
     //   averageCost: number, currentPrice: number, updatedAt: timestamp
     //
     // site/maintenance
-    //   start, end: strings like "Friday, August 14 at 9:15 PM ET"
-    //     — the site schedules the orange banner and the lock from these times
-    //   enabled: optional early lock before start (still unlocks at end)
-    //   warning: used only if start/end cannot be parsed
-    //   message: banner copy; use {start} and {end} as placeholders
+    //   enabled: master lock. Dates only inform the banner copy.
+    //   warning: orange banner while enabled or when warning is true
     //   public read, Admin SDK / console write only
+    //
+    // beta_status/{uid}
+    //   waitlistStatus: "none"|"pending"|"admitted"
+    //   betaTester, discordConnected
+    //   Owner may read. Admin SDK only writes. Clients cannot admit themselves.
     // ===============================================================
 
     function isAuthenticated() {
@@ -760,6 +762,11 @@ service cloud.firestore {
     // Daily API proxy counters. Admin SDK only — clients must not read or write.
     match /api_usage/{uid} {
       allow read, write: if false;
+    }
+
+    match /beta_status/{uid} {
+      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow write: if false;
     }
 
     match /site/maintenance {
