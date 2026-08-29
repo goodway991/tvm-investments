@@ -7,7 +7,7 @@ import { BogenHeading } from "@/components/BogenProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { BogenTerms } from "@/components/BogenTerms";
 import { sectorDiveLimit } from "@/lib/plans";
-import { sectorStance } from "@/lib/sector-dives";
+import { sectorStance } from "@/lib/sector-catalog";
 
 type StockStat = {
   symbol: string;
