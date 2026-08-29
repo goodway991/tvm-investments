@@ -22,9 +22,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ThemeProvider>
           <AuthProvider>
             <ExperienceProvider>
-              <UpgradeProvider>
-                <TourProvider>
-                  <BogenProvider>
+              <BogenProvider>
+                <UpgradeProvider>
+                  <TourProvider>
                     <MaintenanceGate>
                       <MotionPauseRoot />
                       {children}
@@ -33,9 +33,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
                       <WhatsNewModal />
                       <GoodMorningModal />
                     </MaintenanceGate>
-                  </BogenProvider>
-                </TourProvider>
-              </UpgradeProvider>
+                  </TourProvider>
+                </UpgradeProvider>
+              </BogenProvider>
             </ExperienceProvider>
           </AuthProvider>
         </ThemeProvider>

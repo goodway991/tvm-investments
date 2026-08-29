@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useBogen } from "@/components/BogenProvider";
+import { useBogenSafe } from "@/components/BogenProvider";
 import { BOGEN_GLOSSARY } from "@/lib/bogen-glossary";
 
 function escapeRegExp(value: string) {
@@ -24,7 +24,7 @@ export function BogenTerms({
   text: string;
   className?: string;
 }) {
-  const { enabled } = useBogen();
+  const { enabled } = useBogenSafe();
   const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {

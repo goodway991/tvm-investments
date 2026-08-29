@@ -138,6 +138,19 @@ export function BogenProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const BOGEN_OFF: BogenContextValue = {
+  enabled: false,
+  setEnabled: () => {},
+  openTip: () => {},
+  closeTip: () => {},
+  activeId: null,
+};
+
+/** Prefer this in overlays so a missing provider cannot white-screen the app. */
+export function useBogenSafe() {
+  return useContext(BogenContext) ?? BOGEN_OFF;
+}
+
 export function useBogen() {
   const value = useContext(BogenContext);
   if (!value) {
