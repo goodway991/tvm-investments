@@ -52,13 +52,13 @@ async function ensurePrice(
 async function main() {
   const pro = await ensureProduct("TVM Pro", { plan: "pro" });
   const ultra = await ensureProduct("TVM Ultra", { plan: "ultra" });
-  const proMonthly = await ensurePrice(pro.id, 800, "month", { plan: "pro", interval: "monthly" });
-  const proYearly = await ensurePrice(pro.id, 6000, "year", { plan: "pro", interval: "yearly" });
-  const ultraMonthly = await ensurePrice(ultra.id, 1200, "month", {
+  const proMonthly = await ensurePrice(pro.id, 1200, "month", { plan: "pro", interval: "monthly" });
+  const proYearly = await ensurePrice(pro.id, 9600, "year", { plan: "pro", interval: "yearly" });
+  const ultraMonthly = await ensurePrice(ultra.id, 3500, "month", {
     plan: "ultra",
     interval: "monthly",
   });
-  const ultraYearly = await ensurePrice(ultra.id, 12000, "year", {
+  const ultraYearly = await ensurePrice(ultra.id, 30000, "year", {
     plan: "ultra",
     interval: "yearly",
   });

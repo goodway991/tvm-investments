@@ -2,12 +2,12 @@ import { showTvm10Labs } from "@/lib/beta-labs";
 
 export const PLAN_PRICES = {
   pro: {
-    monthly: { perMonth: 8, billed: 8 },
-    yearly: { perMonth: 5, billed: 60 },
+    monthly: { perMonth: 12, billed: 12 },
+    yearly: { perMonth: 8, billed: 96 },
   },
   ultra: {
-    monthly: { perMonth: 12, billed: 12 },
-    yearly: { perMonth: 10, billed: 120 },
+    monthly: { perMonth: 35, billed: 35 },
+    yearly: { perMonth: 25, billed: 300 },
   },
 } as const;
 
