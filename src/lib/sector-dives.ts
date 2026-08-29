@@ -2,86 +2,198 @@ import type { SectorDive, StockCandidate } from "@/types";
 import { formatSessionLabel } from "./archive-window";
 import { computeRSI } from "./indicators";
 
-const FALLBACK_DIVES: SectorDive[] = [
+export type SectorStance = "cyclical" | "defensive";
+
+export const MARKET_SECTORS: Array<{
+  id: string;
+  sector: string;
+  stance: SectorStance;
+  title: string;
+  subtitle: string;
+}> = [
   {
-    id: "tech",
-    sector: "Technology",
-    title: "Tech Sector Deep Dive",
-    subtitle: "Sector-specific analysis for technology names in this session’s screener.",
-    body: "",
+    id: "communication",
+    sector: "Communication Services",
+    stance: "cyclical",
+    title: "Communication Services Deep Dive",
+    subtitle: "Telecommunication, media, and entertainment companies.",
   },
   {
-    id: "financials",
-    sector: "Financial Services",
-    title: "Financials Deep Dive",
-    subtitle: "Banks, payments, and market-sensitive financials in this session’s scan.",
-    body: "",
+    id: "discretionary",
+    sector: "Consumer Discretionary",
+    stance: "cyclical",
+    title: "Consumer Discretionary Deep Dive",
+    subtitle: "Non-essential goods and services like apparel, cars, and luxury items.",
   },
   {
-    id: "healthcare",
-    sector: "Healthcare",
-    title: "Healthcare Deep Dive",
-    subtitle: "Pharma, devices, and managed care versus this session’s tape.",
-    body: "",
-  },
-  {
-    id: "consumer",
-    sector: "Consumer Cyclical",
-    title: "Consumer Deep Dive",
-    subtitle: "Retail, autos, and discretionary names in this session’s screener.",
-    body: "",
-  },
-  {
-    id: "industrials",
-    sector: "Industrials",
-    title: "Industrials Deep Dive",
-    subtitle: "Aerospace, machinery, and industrial cyclicals on this session’s tape.",
-    body: "",
+    id: "staples",
+    sector: "Consumer Staples",
+    stance: "defensive",
+    title: "Consumer Staples Deep Dive",
+    subtitle: "Everyday essentials like food, beverages, and household products.",
   },
   {
     id: "energy",
     sector: "Energy",
+    stance: "cyclical",
     title: "Energy Deep Dive",
-    subtitle: "Oil, gas, and energy infrastructure versus this session.",
-    body: "",
+    subtitle: "Oil, gas, and renewable energy production.",
+  },
+  {
+    id: "financials",
+    sector: "Financials",
+    stance: "cyclical",
+    title: "Financials Deep Dive",
+    subtitle: "Banks, investment funds, and insurance companies.",
+  },
+  {
+    id: "healthcare",
+    sector: "Health Care",
+    stance: "defensive",
+    title: "Health Care Deep Dive",
+    subtitle: "Biotechnology, pharmaceuticals, and medical devices.",
+  },
+  {
+    id: "industrials",
+    sector: "Industrials",
+    stance: "cyclical",
+    title: "Industrials Deep Dive",
+    subtitle: "Aerospace, defense, machinery, and transportation.",
+  },
+  {
+    id: "technology",
+    sector: "Information Technology",
+    stance: "cyclical",
+    title: "Information Technology Deep Dive",
+    subtitle: "Software, hardware, and semiconductor companies.",
+  },
+  {
+    id: "materials",
+    sector: "Materials",
+    stance: "cyclical",
+    title: "Materials Deep Dive",
+    subtitle: "Mining, chemicals, and metal production.",
+  },
+  {
+    id: "real-estate",
+    sector: "Real Estate",
+    stance: "cyclical",
+    title: "Real Estate Deep Dive",
+    subtitle: "Property developers and real estate investment trusts (REITs).",
+  },
+  {
+    id: "utilities",
+    sector: "Utilities",
+    stance: "defensive",
+    title: "Utilities Deep Dive",
+    subtitle: "Electric, gas, and water providers.",
   },
 ];
 
+const FALLBACK_DIVES: SectorDive[] = MARKET_SECTORS.map((row) => ({
+  id: row.id,
+  sector: row.sector,
+  stance: row.stance,
+  title: row.title,
+  subtitle: row.subtitle,
+  body: "",
+}));
+
 const SECTOR_ALIASES: Record<string, string[]> = {
-  Technology: [
-    "Technology",
-    "Information Technology",
+  "Communication Services": [
     "Communication Services",
+    "Communications",
     "Telecommunications",
   ],
-  "Financial Services": ["Financial Services", "Financial", "Finance", "Financials"],
-  Healthcare: ["Healthcare", "Health Care"],
-  "Consumer Cyclical": [
-    "Consumer Cyclical",
-    "Consumer Defensive",
-    "Consumer Staples",
+  "Consumer Discretionary": [
     "Consumer Discretionary",
+    "Consumer Cyclical",
   ],
-  Industrials: ["Industrials", "Industrial"],
+  "Consumer Staples": [
+    "Consumer Staples",
+    "Consumer Defensive",
+  ],
   Energy: ["Energy"],
+  Financials: ["Financials", "Financial Services", "Financial", "Finance"],
+  "Health Care": ["Health Care", "Healthcare"],
+  Industrials: ["Industrials", "Industrial"],
+  "Information Technology": [
+    "Information Technology",
+    "Technology",
+  ],
+  Materials: ["Materials", "Basic Materials"],
+  "Real Estate": ["Real Estate"],
+  Utilities: ["Utilities", "Utility"],
 };
 
-/** Map Yahoo / NASDAQ sector labels onto the six deep-dive sleeves. */
+export function sectorStance(sector: string): SectorStance {
+  const row = MARKET_SECTORS.find((item) => item.sector === sector);
+  if (row) return row.stance;
+  return "cyclical";
+}
+
+/** Map Yahoo / NASDAQ labels onto the 11 market sectors. */
 export function canonicalSector(sector: string, industry = ""): string {
   const text = `${sector} ${industry}`.toLowerCase();
   if (
-    text.includes("semiconductor") ||
-    text.includes("software") ||
-    text.includes("technology") ||
-    text.includes("information tech") ||
-    text.includes("computer") ||
-    text.includes("electronic") ||
-    text.includes("communication") ||
-    text.includes("telecom") ||
-    text.includes("internet") ||
-    text.includes("media")
+    text.includes("real estate") ||
+    text.includes("reit") ||
+    text.includes("realty")
   ) {
-    return "Technology";
+    return "Real Estate";
+  }
+  if (
+    text.includes("utilit") ||
+    text.includes("electric power") ||
+    text.includes("water works")
+  ) {
+    return "Utilities";
+  }
+  if (
+    text.includes("mining") ||
+    text.includes("chemical") ||
+    text.includes("steel") ||
+    text.includes("copper") ||
+    text.includes("gold") ||
+    text.includes("paper") ||
+    text.includes("basic material") ||
+    text.includes("materials")
+  ) {
+    return "Materials";
+  }
+  if (
+    text.includes("staple") ||
+    text.includes("consumer defensive") ||
+    text.includes("food") ||
+    text.includes("beverage") ||
+    text.includes("household product") ||
+    text.includes("tobacco") ||
+    text.includes("supermarket") ||
+    text.includes("grocery")
+  ) {
+    return "Consumer Staples";
+  }
+  if (
+    text.includes("discretionary") ||
+    text.includes("consumer cyclical") ||
+    text.includes("auto") ||
+    text.includes("apparel") ||
+    text.includes("luxury") ||
+    text.includes("restaurant") ||
+    text.includes("hotel") ||
+    text.includes("retail")
+  ) {
+    return "Consumer Discretionary";
+  }
+  if (
+    text.includes("health") ||
+    text.includes("pharma") ||
+    text.includes("biotech") ||
+    text.includes("drug") ||
+    text.includes("managed care") ||
+    text.includes("medical device")
+  ) {
+    return "Health Care";
   }
   if (
     text.includes("bank") ||
@@ -89,47 +201,54 @@ export function canonicalSector(sector: string, industry = ""): string {
     text.includes("finance") ||
     text.includes("credit") ||
     text.includes("insurance") ||
-    text.includes("capital market")
+    text.includes("capital market") ||
+    text.includes("asset manag")
   ) {
-    return "Financial Services";
-  }
-  if (
-    text.includes("health") ||
-    text.includes("pharma") ||
-    text.includes("biotech") ||
-    text.includes("drug") ||
-    text.includes("managed care")
-  ) {
-    return "Healthcare";
-  }
-  if (
-    text.includes("auto") ||
-    text.includes("retail") ||
-    text.includes("consumer") ||
-    text.includes("restaurant") ||
-    text.includes("beverage") ||
-    text.includes("household") ||
-    text.includes("apparel")
-  ) {
-    return "Consumer Cyclical";
-  }
-  if (
-    text.includes("industrial") ||
-    text.includes("aerospace") ||
-    text.includes("machinery") ||
-    text.includes("defense") ||
-    text.includes("manufactur")
-  ) {
-    return "Industrials";
+    return "Financials";
   }
   if (
     text.includes("energy") ||
     text.includes("oil") ||
     text.includes("petroleum") ||
     text.includes("natural gas") ||
-    text.includes("midstream")
+    text.includes("midstream") ||
+    text.includes("renewable")
   ) {
     return "Energy";
+  }
+  if (
+    text.includes("industrial") ||
+    text.includes("aerospace") ||
+    text.includes("machinery") ||
+    text.includes("defense") ||
+    text.includes("manufactur") ||
+    text.includes("transport") ||
+    text.includes("railroad") ||
+    text.includes("airline")
+  ) {
+    return "Industrials";
+  }
+  if (
+    text.includes("communication") ||
+    text.includes("telecom") ||
+    text.includes("media") ||
+    text.includes("entertainment") ||
+    text.includes("broadcast") ||
+    text.includes("social media")
+  ) {
+    return "Communication Services";
+  }
+  if (
+    text.includes("semiconductor") ||
+    text.includes("software") ||
+    text.includes("hardware") ||
+    text.includes("information tech") ||
+    text.includes("technology") ||
+    text.includes("computer") ||
+    text.includes("electronic") ||
+    text.includes("internet")
+  ) {
+    return "Information Technology";
   }
   return sector.trim() || "Other";
 }
@@ -160,79 +279,82 @@ function asDiveCandidate(stock: StockCandidate): StockCandidate {
 }
 
 const SYMBOL_SECTOR: Record<string, string> = {
-  AAPL: "Technology",
-  MSFT: "Technology",
-  NVDA: "Technology",
-  AVGO: "Technology",
-  AMD: "Technology",
-  INTC: "Technology",
-  CRM: "Technology",
-  ORCL: "Technology",
-  ADBE: "Technology",
-  CSCO: "Technology",
-  ACN: "Technology",
-  IBM: "Technology",
-  QCOM: "Technology",
-  TXN: "Technology",
-  AMAT: "Technology",
-  NOW: "Technology",
-  APH: "Technology",
-  KLAC: "Technology",
-  LRCX: "Technology",
-  SNPS: "Technology",
-  CDNS: "Technology",
-  ADI: "Technology",
-  MU: "Technology",
-  PANW: "Technology",
-  CRWD: "Technology",
-  PLTR: "Technology",
-  GOOGL: "Technology",
-  GOOG: "Technology",
-  META: "Technology",
-  NFLX: "Technology",
-  TSM: "Technology",
-  JPM: "Financial Services",
-  BAC: "Financial Services",
-  WFC: "Financial Services",
-  GS: "Financial Services",
-  MS: "Financial Services",
-  V: "Financial Services",
-  MA: "Financial Services",
-  AXP: "Financial Services",
-  BLK: "Financial Services",
-  C: "Financial Services",
-  SCHW: "Financial Services",
-  SPGI: "Financial Services",
-  "BRK-B": "Financial Services",
-  JNJ: "Healthcare",
-  UNH: "Healthcare",
-  LLY: "Healthcare",
-  PFE: "Healthcare",
-  MRK: "Healthcare",
-  ABBV: "Healthcare",
-  TMO: "Healthcare",
-  ABT: "Healthcare",
-  DHR: "Healthcare",
-  AMGN: "Healthcare",
-  ISRG: "Healthcare",
-  SYK: "Healthcare",
-  BSX: "Healthcare",
-  GILD: "Healthcare",
-  AMZN: "Consumer Cyclical",
-  TSLA: "Consumer Cyclical",
-  HD: "Consumer Cyclical",
-  MCD: "Consumer Cyclical",
-  NKE: "Consumer Cyclical",
-  SBUX: "Consumer Cyclical",
-  LOW: "Consumer Cyclical",
-  TJX: "Consumer Cyclical",
-  BKNG: "Consumer Cyclical",
-  WMT: "Consumer Cyclical",
-  COST: "Consumer Cyclical",
-  PG: "Consumer Cyclical",
-  KO: "Consumer Cyclical",
-  PEP: "Consumer Cyclical",
-  DIS: "Consumer Cyclical",
+  AAPL: "Information Technology",
+  MSFT: "Information Technology",
+  NVDA: "Information Technology",
+  AVGO: "Information Technology",
+  AMD: "Information Technology",
+  INTC: "Information Technology",
+  CRM: "Information Technology",
+  ORCL: "Information Technology",
+  ADBE: "Information Technology",
+  CSCO: "Information Technology",
+  ACN: "Information Technology",
+  IBM: "Information Technology",
+  QCOM: "Information Technology",
+  TXN: "Information Technology",
+  AMAT: "Information Technology",
+  NOW: "Information Technology",
+  APH: "Information Technology",
+  KLAC: "Information Technology",
+  LRCX: "Information Technology",
+  SNPS: "Information Technology",
+  CDNS: "Information Technology",
+  ADI: "Information Technology",
+  MU: "Information Technology",
+  PANW: "Information Technology",
+  CRWD: "Information Technology",
+  PLTR: "Information Technology",
+  GOOGL: "Communication Services",
+  GOOG: "Communication Services",
+  META: "Communication Services",
+  NFLX: "Communication Services",
+  T: "Communication Services",
+  VZ: "Communication Services",
+  TMUS: "Communication Services",
+  TSM: "Information Technology",
+  JPM: "Financials",
+  BAC: "Financials",
+  WFC: "Financials",
+  GS: "Financials",
+  MS: "Financials",
+  V: "Financials",
+  MA: "Financials",
+  AXP: "Financials",
+  BLK: "Financials",
+  C: "Financials",
+  SCHW: "Financials",
+  SPGI: "Financials",
+  "BRK-B": "Financials",
+  JNJ: "Health Care",
+  UNH: "Health Care",
+  LLY: "Health Care",
+  PFE: "Health Care",
+  MRK: "Health Care",
+  ABBV: "Health Care",
+  TMO: "Health Care",
+  ABT: "Health Care",
+  DHR: "Health Care",
+  AMGN: "Health Care",
+  ISRG: "Health Care",
+  SYK: "Health Care",
+  BSX: "Health Care",
+  GILD: "Health Care",
+  AMZN: "Consumer Discretionary",
+  TSLA: "Consumer Discretionary",
+  HD: "Consumer Discretionary",
+  MCD: "Consumer Discretionary",
+  NKE: "Consumer Discretionary",
+  SBUX: "Consumer Discretionary",
+  LOW: "Consumer Discretionary",
+  TJX: "Consumer Discretionary",
+  BKNG: "Consumer Discretionary",
+  WMT: "Consumer Staples",
+  COST: "Consumer Staples",
+  PG: "Consumer Staples",
+  KO: "Consumer Staples",
+  PEP: "Consumer Staples",
+  DIS: "Communication Services",
   CAT: "Industrials",
   HON: "Industrials",
   UNP: "Industrials",
@@ -256,6 +378,29 @@ const SYMBOL_SECTOR: Record<string, string> = {
   WMB: "Energy",
   KMI: "Energy",
   XLE: "Energy",
+  LIN: "Materials",
+  SHW: "Materials",
+  APD: "Materials",
+  FCX: "Materials",
+  NEM: "Materials",
+  ECL: "Materials",
+  PLD: "Real Estate",
+  AMT: "Real Estate",
+  EQIX: "Real Estate",
+  SPG: "Real Estate",
+  O: "Real Estate",
+  CCI: "Real Estate",
+  NEE: "Utilities",
+  DUK: "Utilities",
+  SO: "Utilities",
+  SRE: "Utilities",
+  AEP: "Utilities",
+  D: "Utilities",
+};
+
+const DIVE_ID_ALIASES: Record<string, string> = {
+  tech: "technology",
+  consumer: "discretionary",
 };
 
 export function hydrateSectorDives(
@@ -263,12 +408,27 @@ export function hydrateSectorDives(
   stocks: StockCandidate[],
   sessionDate: string,
 ): SectorDive[] {
-  const current =
-    dives && dives.length >= 2 ? dives : fallbackSectorDives();
-  const filled = current.filter((dive) => !diveLooksEmpty(dive)).length;
-  if (filled >= 1) return current;
-  if (stocks.length === 0) return current;
-  return buildSectorDives(stocks.map(asDiveCandidate), sessionDate);
+  const built = stocks.length
+    ? buildSectorDives(stocks.map(asDiveCandidate), sessionDate)
+    : fallbackSectorDives();
+  if (!dives?.length) return built;
+  const byId = new Map(dives.map((dive) => [dive.id, dive]));
+  return built.map((dive) => {
+    const prev =
+      byId.get(dive.id) ??
+      [...byId.entries()].find(
+        ([id]) => DIVE_ID_ALIASES[id] === dive.id,
+      )?.[1];
+    if (prev && !diveLooksEmpty(prev)) {
+      return {
+        ...dive,
+        title: prev.title || dive.title,
+        subtitle: prev.subtitle || dive.subtitle,
+        body: prev.body,
+      };
+    }
+    return dive;
+  });
 }
 
 function signed(value: number) {
@@ -345,7 +505,7 @@ function diveFromStocks(
   if (stocks.length === 0) {
     return {
       ...fallback,
-      subtitle: `${label} · no names in this sleeve.`,
+      subtitle: `${label} · ${fallback.stance === "defensive" ? "Defensive" : "Cyclical"} · no names in this sleeve.`,
       body: `No ${fallback.sector.toLowerCase()} names printed in the ${label} scan.
 
 **Relative strength leaders:** —
@@ -373,7 +533,7 @@ function diveFromStocks(
 
   return {
     ...fallback,
-    subtitle: `${label} · ${stocks.length} ${fallback.sector.toLowerCase()} names · session average ${signed(avg)}.`,
+    subtitle: `${label} · ${fallback.stance === "defensive" ? "Defensive" : "Cyclical"} · ${stocks.length} ${fallback.sector.toLowerCase()} names · session average ${signed(avg)}.`,
     body: `${fallback.sector} closed ${signed(avg)} across ${stocks.length} names in the ${label} scan.
 
 **Relative strength leaders:** ${leaders.map(stockLine).join("; ")}.
@@ -458,7 +618,7 @@ async function llmSessionNotes(
   const payload = divePromptPayload(dives, stocks, sessionDate);
   const prompt = `Write one session note per US equity sector for ${formatSessionLabel(sessionDate)}.
 Use ONLY the facts in the JSON. Do not invent prices, tickers, or headlines.
-JSON only: {"notes":{"tech":"2-3 sentences","financials":"...","healthcare":"...","consumer":"...","industrials":"...","energy":"..."}}
+JSON only: {"notes":{"communication":"2-3 sentences","discretionary":"...","staples":"...","energy":"...","financials":"...","healthcare":"...","industrials":"...","technology":"...","materials":"...","real-estate":"...","utilities":"..."}}
 
 ${JSON.stringify(payload)}`;
 

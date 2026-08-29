@@ -171,12 +171,12 @@ export const RELEASES: ReleaseNote[] = [
     title: "Ultra desk",
     date: "September 25th, 2026",
     summary:
-      "Builds on Beta v3.0. Country and time zone for every account. Ultra gets a 6am good morning, Portfolio 2.0, and a workstation. Predictions read at the 99%* target. Every plan now gets all six sector deep dives.",
+      "Builds on Beta v3.0. Country and time zone for every account. Ultra gets a 6am good morning, Portfolio 2.0, and a workstation. Predictions split by plan. Sector deep dives updated from 6 to all 11 market sectors.",
     features: [
       {
         title: "99%* accurate predictions",
         visual: "accuracy",
-        body: "Pulse Predict, Portfolio Score, and Portfolio Addition now read at the 99%* research-read target. Ultra also gets Advanced Predictions on the workstation. Not a guarantee — the plan table footnote still applies.",
+        body: "Free gets decent short-term predictions. Pro keeps non-algorithm based predictions with weekly caps. Ultra gets algorithm-based 99%* accuracy predictions, unlimited, plus Advanced Predictions on the workstation. Not a guarantee — the plan table footnote still applies.",
       },
       {
         title: "Portfolio 2.0",
@@ -186,7 +186,7 @@ export const RELEASES: ReleaseNote[] = [
       {
         title: "Ultra",
         visual: "ultra",
-        body: "Unlimited Predict, a 6:00 good morning in your zone, Portfolio 2.0, and a workstation. Pro stays at 5 Pulse Predicts, 3 score predictions, 1 book addition, and 5 Horizon predictions a week. Free gets 2 Pulse Predicts.",
+        body: "Unlimited algorithm-based 99%* Predict, a 6:00 good morning in your zone, Portfolio 2.0, and a workstation. Pro stays on non-algorithm based predictions: 5 Pulse Predicts, 3 score predictions, 1 book addition, and 5 Horizon predictions a week. Free gets 2 decent Pulse Predicts.",
       },
       {
         title: "Horizon Suite",
@@ -194,9 +194,9 @@ export const RELEASES: ReleaseNote[] = [
         body: "Slide to a horizon, then Predict. Live tape stays blue. Pro draws peach glow; Ultra draws the blue–white–peach sweep.",
       },
       {
-        title: "All 6 sector deep dives",
+        title: "Updated from 6 to all 11 sectors",
         visual: "sectors",
-        body: "Daily Brief flips through every sleeve — tech, financials, healthcare, consumer, industrials, and energy. Free, Pro, and Ultra all get the full deck.",
+        body: "Daily Brief now flips through all 11 stock-market sectors, each tagged cyclical or defensive: Communication Services, Consumer Discretionary, Consumer Staples, Energy, Financials, Health Care, Industrials, Information Technology, Materials, Real Estate, and Utilities. Free, Pro, and Ultra all get the full deck.",
       },
       {
         title: "Bogen mode updated",

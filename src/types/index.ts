@@ -133,6 +133,7 @@ export interface ScreenedStock {
 export interface SectorDive {
   id: string;
   sector: string;
+  stance?: "cyclical" | "defensive";
   title: string;
   subtitle: string;
   body: string;

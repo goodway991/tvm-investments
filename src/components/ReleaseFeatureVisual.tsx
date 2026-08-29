@@ -459,39 +459,24 @@ function CleanModeVisual() {
 function SectorsVisual() {
   const dives = [
     {
-      sector: "Technology",
-      title: "Tech Sector Deep Dive",
-      note: "Chip designers and cloud names lead the session tape.",
+      sector: "Communication Services",
+      title: "Communication Services Deep Dive",
+      note: "Cyclical · telecom, media, and entertainment on this session.",
     },
     {
-      sector: "Financial Services",
-      title: "Financials Deep Dive",
-      note: "Banks and payments follow the rate tape into the close.",
+      sector: "Health Care",
+      title: "Health Care Deep Dive",
+      note: "Defensive · biotech, pharma, and devices versus the tape.",
     },
     {
-      sector: "Healthcare",
-      title: "Healthcare Deep Dive",
-      note: "Pharma and devices split as managed care holds.",
-    },
-    {
-      sector: "Consumer Cyclical",
-      title: "Consumer Deep Dive",
-      note: "Retail and autos move with the discretionary names.",
-    },
-    {
-      sector: "Industrials",
-      title: "Industrials Deep Dive",
-      note: "Aerospace and machinery catch the session’s cyclicals.",
-    },
-    {
-      sector: "Energy",
-      title: "Energy Deep Dive",
-      note: "Oil, gas, and infrastructure versus this session.",
+      sector: "Utilities",
+      title: "Utilities Deep Dive",
+      note: "Defensive · electric, gas, and water providers.",
     },
   ];
 
   return (
-    <MiniWindow title="Daily Brief · Sector deep dives">
+            <MiniWindow title="Daily Brief · 11 sectors">
       <div className="wn-sectors-stage bg-surface p-4">
         <div className="relative overflow-hidden rounded-2xl border border-ink/[0.08] bg-white p-3">
           <div className="relative h-[7.6rem]">
@@ -510,7 +495,7 @@ function SectorsVisual() {
                     </p>
                   </div>
                   <p className="shrink-0 text-[11px] font-semibold tabular-nums text-violet">
-                    {index + 1} / 6
+                    {index + 1} / 11
                   </p>
                 </div>
                 <p className="mt-2 text-[11px] leading-relaxed text-ink-soft">

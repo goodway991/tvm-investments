@@ -79,7 +79,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   "nav-brief": {
     title: "Daily Brief",
     what: "The session write-up: market headlines and sector notes from today’s scan of about 1,500 liquid US names.",
-    how: "Open Daily Brief in the sidebar. Tap a headline to open its sheet. Flip sector cards for the rest — all six sleeves are on every plan.",
+    how: "Open Daily Brief in the sidebar. Tap a headline to open its sheet. Flip sector cards for the rest — all eleven sleeves are on every plan, each tagged cyclical or defensive.",
   },
   "nav-screener": {
     title: "Screener",
@@ -174,7 +174,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   brief: {
     title: "Daily Brief",
     what: "Headlines and sector notes for this session, not leftover copy from a prior day.",
-    how: "Tap a headline card to open the full article sheet, like a stock sheet. Then flip all six sector dives.",
+    how: "Tap a headline card to open the full article sheet, like a stock sheet. Then flip all eleven sector dives.",
   },
   "market-events": {
     title: "Market-moving events",
@@ -183,8 +183,8 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "sector-dives": {
     title: "Sector dives",
-    what: "A flip-through of sector notes with example names, scores, and headlines from the scan.",
-    how: "Use the arrows. Every plan flips all six sleeves — tech, financials, healthcare, consumer, industrials, and energy.",
+    what: "A flip-through of all 11 market sectors, each tagged cyclical or defensive, with example names, scores, and headlines from the scan.",
+    how: "Use the arrows. Every plan flips the full deck — communication through utilities.",
   },
   screener: {
     title: "Stock filter",
@@ -353,7 +353,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "advanced-predict": {
     title: "Advanced Predictions",
-    what: "Ultra-only 99%* reads on the workstation. You pick the name and tune the knobs, then Predict.",
+    what: "Ultra-only algorithm-based 99%* reads on the workstation. Tune the knobs, then Predict.",
     how: "Search a name the same way as Watchlist, or tap a heatmap tile. Quiet / Balanced / Push sets a starting mix. Slide the horizon, then Advanced Predict. Hide clears the path.",
   },
   "good-morning": {

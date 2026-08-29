@@ -7,6 +7,7 @@ import { BogenHeading } from "@/components/BogenProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { BogenTerms } from "@/components/BogenTerms";
 import { sectorDiveLimit } from "@/lib/plans";
+import { sectorStance } from "@/lib/sector-dives";
 
 type StockStat = {
   symbol: string;
@@ -338,6 +339,15 @@ export function TechSector({
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
             {current.sector}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
+            <BogenTerms
+              text={
+                (current.stance ?? sectorStance(current.sector)) === "defensive"
+                  ? "Defensive"
+                  : "Cyclical"
+              }
+            />
           </p>
           <h2 className="mt-1 flex flex-wrap items-center gap-2 font-display text-2xl font-bold text-ink">
             <BogenHeading id="sector-dives">{current.title}</BogenHeading>

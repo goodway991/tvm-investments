@@ -112,7 +112,7 @@ export const PLAN_FEATURES: Array<{
     hideInLabs: true,
   },
   {
-    name: "All 6 sector deep dives",
+    name: "All 11 sector deep dives (cyclical & defensive)",
     free: true,
     pro: true,
     ultra: true,
@@ -218,7 +218,21 @@ export const PLAN_FEATURES: Array<{
   { name: "Live weekday news-scored snapshot", free: false, pro: true },
   { name: "Full backtest track record", free: false, pro: true },
   {
-    name: "99%* accurate readings",
+    name: "Decent short-term predictions",
+    free: true,
+    pro: false,
+    ultra: false,
+    labsOnly: true,
+  },
+  {
+    name: "Non-algorithm based predictions",
+    free: false,
+    pro: true,
+    ultra: false,
+    labsOnly: true,
+  },
+  {
+    name: "Algorithm-based 99%* accuracy predictions",
     free: false,
     pro: false,
     ultra: true,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/api-guard";
+import { getPlanForUser } from "@/lib/firebase/admin";
 import { buildLiveForecast } from "@/lib/live-forecast";
 import { parseTicker } from "@/lib/ticker";
 
@@ -18,7 +19,8 @@ export async function GET(request: NextRequest) {
   const asOf = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
 
   try {
-    const forecast = await buildLiveForecast(symbol, asOf);
+    const plan = await getPlanForUser(gate.uid, gate.email);
+    const forecast = await buildLiveForecast(symbol, asOf, plan);
     return NextResponse.json(forecast);
   } catch (error) {
     console.error("Forecast error:", error);

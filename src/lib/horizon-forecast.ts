@@ -198,6 +198,29 @@ function fitLogDifferential(closes: number[]): HorizonStats {
   };
 }
 
+export function simpleHorizonStats(closes: number[]): HorizonStats | null {
+  const series = closes.filter((price) => price > 0);
+  if (series.length < 8) return null;
+  const last = series[series.length - 1];
+  const logs: number[] = [];
+  for (const price of series) logs.push(Math.log(price));
+  const rets = firstDiff(logs).slice(-10);
+  if (rets.length < 3) return null;
+  const mu = mean(rets);
+  const variance =
+    rets.reduce((sum, value) => sum + (value - mu) ** 2, 0) / rets.length;
+  return {
+    last,
+    dailyDrift: clamp(mu, -MAX_DAILY_DRIFT * 0.55, MAX_DAILY_DRIFT * 0.55),
+    dailyVol: clamp(Math.sqrt(Math.max(variance, 0)), MIN_SIGMA, MAX_SIGMA),
+    kappa: 0,
+    thetaLog: clamp(mu, -MAX_DAILY_DRIFT * 0.55, MAX_DAILY_DRIFT * 0.55),
+    lastDelta: rets[rets.length - 1] ?? 0,
+    rho: 0,
+    avgBlend: 0.15,
+  };
+}
+
 export function horizonStats(closes: number[]): HorizonStats | null {
   if (closes.length < 3) return null;
   const last = closes[closes.length - 1];

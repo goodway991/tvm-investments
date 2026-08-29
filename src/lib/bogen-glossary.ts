@@ -6,6 +6,66 @@ export type GlossaryTerm = {
 /** Longer phrases first so they match before shorter tokens. */
 export const BOGEN_GLOSSARY: GlossaryTerm[] = [
   {
+    term: "Algorithm-based 99%* accuracy predictions",
+    blurb:
+      "Ultra’s stronger path engine. It uses the full algorithm stack. 99%* is a research-read target, not a guarantee.",
+  },
+  {
+    term: "Non-algorithm based predictions",
+    blurb:
+      "Pro’s short-term path: the previous statistical read from recent closes, with weekly caps. Not the Ultra algorithm.",
+  },
+  {
+    term: "Decent short-term predictions",
+    blurb:
+      "Free’s simpler path from recent closes. Two Pulse Predicts a week. Not as tight as Pro, and not Ultra’s algorithm.",
+  },
+  {
+    term: "Communication Services",
+    blurb:
+      "Telecommunication, media, and entertainment companies. Tagged cyclical on the sector deck.",
+  },
+  {
+    term: "Consumer Discretionary",
+    blurb:
+      "Non-essential goods and services like apparel, cars, and luxury items. Tagged cyclical.",
+  },
+  {
+    term: "Consumer Staples",
+    blurb:
+      "Everyday essentials like food, beverages, and household products. Tagged defensive.",
+  },
+  {
+    term: "Information Technology",
+    blurb:
+      "Software, hardware, and semiconductor companies. Tagged cyclical.",
+  },
+  {
+    term: "Health Care",
+    blurb:
+      "Biotechnology, pharmaceuticals, and medical devices. Tagged defensive.",
+  },
+  {
+    term: "Real Estate",
+    blurb:
+      "Property developers and real estate investment trusts (REITs). Tagged cyclical.",
+  },
+  {
+    term: "sector deep dives",
+    blurb:
+      "Eleven session notes on Daily Brief — one per market sector — each tagged cyclical or defensive.",
+  },
+  {
+    term: "Cyclical",
+    blurb:
+      "Sectors that tend to move with the economy: discretionary spend, industrials, financials, energy, tech, materials, real estate, and communication.",
+  },
+  {
+    term: "Defensive",
+    blurb:
+      "Sectors that tend to hold up when growth slows: consumer staples, health care, and utilities.",
+  },
+  {
     term: "Advanced Predictions",
     blurb:
       "Ultra-only 99%* reads on the workstation. Tune the knobs, then Predict. Not a target price.",

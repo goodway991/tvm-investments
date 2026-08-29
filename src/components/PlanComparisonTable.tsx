@@ -2,6 +2,7 @@
 
 import { PLAN_FEATURES, type PlanId } from "@/lib/plans";
 import { showTvm10Labs } from "@/lib/beta-labs";
+import { BogenTerms } from "@/components/BogenTerms";
 import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 
@@ -137,7 +138,9 @@ export function PlanComparisonTable({
         ) : null}
         {features.map((feature) => (
           <div key={feature.name} className="contents">
-            <div className="plan-compare-cell plan-compare-feature">{feature.name}</div>
+            <div className="plan-compare-cell plan-compare-feature">
+              <BogenTerms text={feature.name} />
+            </div>
             <div className="plan-compare-cell plan-compare-mark">
               <PlanMark included={feature.free} />
             </div>
@@ -155,12 +158,12 @@ export function PlanComparisonTable({
       {showUltra ? (
         <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">
           <ProGlowText>
-            *99% is an Ultra research-read target, not a guarantee. Pulse Predict
-            is the watchlist short-term path (Free 2/week, Pro 5/week). Portfolio
-            Score Predictions are 3/week on Pro. Portfolio Addition Predictions
-            are 1/week on Pro. Horizon Suite stays 5/week on Pro. Advanced
-            Predictions are Ultra-only on the workstation. Ultra is unlimited on
-            all of them.
+            *99% is an Ultra research-read target, not a guarantee. Free gets
+            decent short-term predictions (2 Pulse Predicts / week). Pro gets
+            non-algorithm based predictions with weekly caps: 5 Pulse, 3
+            Portfolio Score, 1 Portfolio Addition, 5 Horizon. Ultra gets
+            algorithm-based 99%* accuracy predictions, unlimited, plus Advanced
+            Predictions on the workstation.
           </ProGlowText>
         </p>
       ) : null}

@@ -1,15 +1,22 @@
 import type { ChartPoint } from "@/lib/chart-series";
+import type { PlanId } from "@/lib/plans";
 import {
   MAX_DAILY_DRIFT,
   MAX_SIGMA,
   MIN_SIGMA,
   horizonStats,
+  simpleHorizonStats,
   type HorizonStats,
 } from "@/lib/horizon-forecast";
 import {
+  DEFAULT_ADVANCED_SETTINGS,
+  fitAdvancedForecast,
+  ohlcvToHistory,
+} from "@/lib/advanced-forecast";
+import {
   fetchYahooAnalystView,
   fetchYahooChartSeries,
-  fetchYahooNews,
+  fetchYahooOhlcvSeries,
 } from "@/lib/providers/yahoo";
 
 const CACHE_MS = 15 * 60 * 1000;
@@ -42,8 +49,8 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function cacheKey(symbol: string, asOf?: string) {
-  return `${symbol}:${asOf ?? "live"}`;
+function cacheKey(symbol: string, asOf: string | undefined, plan: PlanId) {
+  return `${symbol}:${asOf ?? "live"}:${plan}`;
 }
 
 function blendDrift(stats: HorizonStats, targetMean: number | null) {
@@ -142,59 +149,71 @@ ${news}`;
 export async function buildLiveForecast(
   symbol: string,
   asOf?: string,
+  plan: PlanId = "free",
 ): Promise<LiveForecast> {
-  const key = cacheKey(symbol, asOf);
+  const key = cacheKey(symbol, asOf, plan);
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
-  const useGemini = Boolean(process.env.GEMINI_MODEL?.trim());
-  const [history, analyst, headlines] = await Promise.all([
-    fetchYahooChartSeries(symbol, "month", asOf, 90),
-    asOf ? Promise.resolve({
+  if (plan === "ultra") {
+    const bars = await fetchYahooOhlcvSeries(symbol, 90, asOf);
+    const stats = fitAdvancedForecast(bars, DEFAULT_ADVANCED_SETTINGS);
+    const history = ohlcvToHistory(bars).slice(-90);
+    if (!stats || history.length < 3) {
+      throw new Error("Not enough daily bars to project this name.");
+    }
+    const value: LiveForecast = {
+      symbol,
+      history,
+      last: stats.last,
+      dailyDrift: stats.dailyDrift,
+      dailyVol: clamp(stats.dailyVol, MIN_SIGMA, MAX_SIGMA),
+      kappa: stats.kappa,
+      thetaLog: stats.thetaLog,
+      lastDelta: stats.lastDelta,
+      rho: stats.rho,
+      source: "yahoo",
       targetMean: null,
       targetLow: null,
       targetHigh: null,
       recommendation: null,
       analystCount: null,
-    }) : fetchYahooAnalystView(symbol),
-    asOf || !useGemini ? Promise.resolve([]) : fetchYahooNews(symbol, 6),
+      note: "Ultra algorithm-based 99%* research-read.",
+    };
+    cache.set(key, { at: Date.now(), value });
+    return value;
+  }
+
+  const [history, analyst] = await Promise.all([
+    fetchYahooChartSeries(symbol, "month", asOf, 90),
+    plan === "pro" && !asOf
+      ? fetchYahooAnalystView(symbol)
+      : Promise.resolve({
+          targetMean: null,
+          targetLow: null,
+          targetHigh: null,
+          recommendation: null,
+          analystCount: null,
+        }),
   ]);
 
-  const stats = horizonStats(history.map((point) => point.value));
+  const stats =
+    plan === "pro"
+      ? horizonStats(history.map((point) => point.value))
+      : simpleHorizonStats(history.map((point) => point.value));
   if (!stats) {
     throw new Error("Not enough daily closes to project this name.");
   }
 
-  let dailyDrift = blendDrift(stats, analyst.targetMean);
-  let source: LiveForecast["source"] = "yahoo";
-  let note = analyst.targetMean
-        ? `Short-term path from recent closes. 12-month mean target ${analyst.targetMean.toFixed(2)}${analyst.recommendation ? ` · ${analyst.recommendation.replace(/_/g, " ")}` : ""}.`
-    : "Short-term path from recent closes.";
-
-  if (!asOf && useGemini) {
-    try {
-      const gemini = await geminiShortTermDrift({
-        symbol,
-        last: stats.last,
-        dailyDrift,
-        dailyVol: stats.dailyVol,
-        targetMean: analyst.targetMean,
-        recommendation: analyst.recommendation,
-        headlines: headlines.map((item) => `${item.headline} (${item.source})`),
-      });
-      if (gemini) {
-        dailyDrift = blendGeminiDrift(
-          dailyDrift,
-          gemini.dailyDrift,
-          stats.dailyVol,
-        );
-        note = gemini.note;
-        source = "yahoo+gemini";
-      }
-    } catch (error) {
-      console.warn("Gemini forecast fallback:", error);
-    }
-  }
+  let dailyDrift =
+    plan === "pro" ? blendDrift(stats, analyst.targetMean) : stats.dailyDrift;
+  const source: LiveForecast["source"] = "yahoo";
+  const note =
+    plan === "pro"
+      ? analyst.targetMean
+        ? `Non-algorithm path from recent closes. 12-month mean target ${analyst.targetMean.toFixed(2)}${analyst.recommendation ? ` · ${analyst.recommendation.replace(/_/g, " ")}` : ""}.`
+        : "Non-algorithm path from recent closes."
+      : "Decent short-term path from recent closes.";
 
   const value: LiveForecast = {
     symbol,
