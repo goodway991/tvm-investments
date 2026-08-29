@@ -218,6 +218,15 @@ export async function getLatestSnapshot(): Promise<DailySnapshot | null> {
   );
 }
 
+export async function hasLiveSnapshotForDate(date: string): Promise<boolean> {
+  const db = await getAdminDb();
+  if (!db) return false;
+  const doc = await db.collection("daily_snapshots").doc(date).get();
+  if (!doc.exists) return false;
+  const data = doc.data() || {};
+  return data.dataMode === "live" && Number(data.screenedCount || 0) > 0;
+}
+
 export async function getSnapshotByDate(date: string): Promise<DailySnapshot | null> {
   const db = await getAdminDb();
   if (!db) return null;
@@ -843,6 +852,58 @@ export async function admitBetaTester(uid: string) {
     { merge: true },
   );
   return getBetaStatus(uid);
+}
+
+function siteMaintenanceFields(data: Record<string, unknown> | undefined) {
+  return {
+    enabled: data?.enabled === true,
+    warning: data?.warning === true || data?.warningEnabled === true,
+    start: typeof data?.start === "string" ? data.start : "",
+    end: typeof data?.end === "string" ? data.end : "",
+    message: typeof data?.message === "string" ? data.message : "",
+  };
+}
+
+export async function getSiteMaintenance() {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Maintenance could not be loaded.");
+  const snap = await db.collection("site").doc("maintenance").get();
+  return siteMaintenanceFields(snap.data());
+}
+
+export async function updateSiteMaintenance(input: {
+  enabled: boolean;
+  warning: boolean;
+  start: string;
+  end: string;
+  message: string;
+}) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Maintenance could not be updated.");
+  const { FieldValue } = await import("firebase-admin/firestore");
+  const start = input.start.trim();
+  const end = input.end.trim();
+  const message = input.message.trim();
+  await db.collection("site").doc("maintenance").set(
+    {
+      enabled: input.enabled,
+      warning: input.warning,
+      start,
+      end,
+      message,
+      startAt: FieldValue.delete(),
+      endAt: FieldValue.delete(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  return siteMaintenanceFields({
+    enabled: input.enabled,
+    warning: input.warning,
+    start,
+    end,
+    message,
+  });
 }
 
 export async function disableSiteMaintenance() {

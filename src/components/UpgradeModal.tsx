@@ -474,7 +474,8 @@ export function UpgradeModal({
       }
       footer={
         <p className="text-[11px] leading-relaxed text-ink-soft">
-          Secure checkout is powered by Stripe. You have {REFUND_GRACE_DAYS} days
+          Secure checkout is powered by Stripe. Add a promotion code on the
+          Stripe page if you have one. You have {REFUND_GRACE_DAYS} days
           from purchase to request a full refund. After that, the interval you
           paid for is locked in; upgrades and downgrades wait until that period
           ends.{" "}

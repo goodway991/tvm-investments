@@ -7,6 +7,7 @@ import { useBogen } from "@/components/BogenProvider";
 import { useTheme, type Appearance } from "@/components/ThemeProvider";
 import { useExperience } from "@/components/ExperienceProvider";
 import { useAuth } from "@/components/AuthProvider";
+import { useDeskAccess } from "@/components/BetaStatusProvider";
 import { useTour } from "@/components/TourProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { showCustomizeExperience, showTvm10Labs } from "@/lib/beta-labs";
@@ -113,6 +114,7 @@ export function CustomizeExperienceModal() {
     updateLocale,
     acknowledgeCustomize,
   } = useAuth();
+  const { allowed: deskAllowed } = useDeskAccess();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
   const [step, setStep] = useState(0);
@@ -133,6 +135,7 @@ export function CustomizeExperienceModal() {
   useEffect(() => {
     if (
       !showCustomizeExperience(entitlement.role) ||
+      !deskAllowed ||
       tourOpen ||
       rewind ||
       giftPending ||
@@ -162,6 +165,7 @@ export function CustomizeExperienceModal() {
   }, [
     acknowledgeCustomize,
     customizeOpen,
+    deskAllowed,
     entitlement.role,
     finishCustomize,
     giftPending,
@@ -178,7 +182,7 @@ export function CustomizeExperienceModal() {
     user?.uid,
   ]);
 
-  if (!customizeOpen || rewind || releasePending) return null;
+  if (!customizeOpen || !deskAllowed || rewind || releasePending) return null;
   if (!showCustomizeExperience(entitlement.role)) return null;
 
   const tvm10 = showTvm10Labs();

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { LegalDocument } from "@/components/LegalDocument";
 import { LEGAL_EFFECTIVE_DATE, LEGAL_ENTITY } from "@/lib/legal";
 
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   title: "Risk Disclaimer — TVM Investments",
   robots: { index: true, follow: true },

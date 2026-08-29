@@ -1,6 +1,14 @@
 import "server-only";
 import { NextRequest, NextResponse } from "next/server";
-import { consumeApiQuota, type ApiQuotaKind } from "@/lib/firebase/admin";
+import {
+  consumeApiQuota,
+  getBetaStatus,
+  getPlanForUser,
+  isAdminEmail,
+  type ApiQuotaKind,
+} from "@/lib/firebase/admin";
+import { SHOW_BETA_WAITLIST, isAdmittedBeta } from "@/lib/beta-waitlist";
+import { planHasPro } from "@/lib/plans";
 import { verifyUserToken } from "@/lib/verify-user-token";
 
 const BURST_WINDOW_MS = 60_000;
@@ -73,6 +81,52 @@ export async function requireSignedIn(request: NextRequest): Promise<
   return { ok: true, uid: user.uid, email: user.email };
 }
 
+export async function requireDeskAccess(
+  uid: string,
+  email: string,
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  if (!SHOW_BETA_WAITLIST || isAdminEmail(email)) return { ok: true };
+  const [status, plan] = await Promise.all([
+    getBetaStatus(uid),
+    getPlanForUser(uid, email),
+  ]);
+  if (!isAdmittedBeta(status)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Join the waitlist and wait to be admitted." },
+        { status: 403 },
+      ),
+    };
+  }
+  if (!planHasPro(plan)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Beta access requires Pro or Ultra." },
+        { status: 403 },
+      ),
+    };
+  }
+  return { ok: true };
+}
+
+export async function requireAdmittedBeta(
+  uid: string,
+  email: string,
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  if (!SHOW_BETA_WAITLIST || isAdminEmail(email)) return { ok: true };
+  const status = await getBetaStatus(uid);
+  if (isAdmittedBeta(status)) return { ok: true };
+  return {
+    ok: false,
+    response: NextResponse.json(
+      { error: "You're not admitted to the beta yet." },
+      { status: 403 },
+    ),
+  };
+}
+
 export async function requireApiUser(
   request: NextRequest,
   kind: ApiQuotaKind,
@@ -82,6 +136,9 @@ export async function requireApiUser(
 > {
   const signedIn = await requireSignedIn(request);
   if (!signedIn.ok) return signedIn;
+
+  const desk = await requireDeskAccess(signedIn.uid, signedIn.email);
+  if (!desk.ok) return desk;
 
   const burstGate = takeBurst(signedIn.uid);
   if (!burstGate.ok) {

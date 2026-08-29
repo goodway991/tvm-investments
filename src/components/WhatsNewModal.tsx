@@ -4,6 +4,7 @@ import { OverlaySheet } from "@/components/OverlaySheet";
 import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
 import { ProGlowText } from "@/components/ProGlowText";
 import { useAuth } from "@/components/AuthProvider";
+import { useDeskAccess } from "@/components/BetaStatusProvider";
 import { useMaintenance } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { CURRENT_RELEASE } from "@/lib/release-notes";
@@ -11,12 +12,14 @@ import { useSiteEra } from "@/components/SiteEraProvider";
 
 export function WhatsNewModal() {
   const { giftPending, releasePending, acknowledgeRelease } = useAuth();
+  const { allowed } = useDeskAccess();
   const { lock: maintenanceLock } = useMaintenance();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
 
   if (
     !releasePending ||
+    !allowed ||
     tourOpen ||
     rewind ||
     maintenanceLock ||

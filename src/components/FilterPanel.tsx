@@ -236,9 +236,9 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
         <BogenHeading id="screener">Stock Filter</BogenHeading>
       </h2>
       <p className="text-ink-soft text-sm mb-6">
-        Filter today&apos;s scored scan of about 1,500 liquid US names by P/E,
-        Beta, Volume, EPS, and Market Cap. Quotes refresh when a name scrolls
-        into view; tap a ticker for the full sheet.
+        Filter today&apos;s scored scan of about 2,800 US stocks and ETFs by
+        P/E, Beta, Volume, EPS, and Market Cap. Quotes refresh when a name
+        scrolls into view; tap a ticker for the full sheet.
       </p>
 
       <label className="mb-5 block">
@@ -246,7 +246,7 @@ export function FilterPanel({ initialStocks = [], archiveDate }: FilterPanelProp
         <input
           value={find}
           onChange={(event) => setFind(event.target.value)}
-          placeholder="Find a ticker in today’s 1,500-name scan…"
+          placeholder="Find a ticker in today’s scan…"
           className="field w-full rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-ink-soft/50"
         />
       </label>

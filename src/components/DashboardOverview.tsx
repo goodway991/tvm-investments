@@ -22,7 +22,6 @@ import { ProGlowPhrase } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
-import { WaitlistCard } from "@/components/WaitlistCard";
 
 function FlaggedPicksPanel({
   picks,
@@ -267,10 +266,6 @@ export function DashboardOverview({
           <BogenTip id="ticker-search" />
         </form>
         ) : null}
-      </div>
-
-      <div className="mt-5">
-        <WaitlistCard />
       </div>
 
       <div className={`mt-7 grid gap-4 ${clean ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4"}`}>

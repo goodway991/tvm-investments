@@ -65,12 +65,108 @@ export const WATCHLIST_EXTRA_SYMBOLS = [
   "SOFI",
 ] as const;
 
-/** Target size for the weekday research scan. */
-export const SCAN_UNIVERSE_LIMIT = 1500;
+/** Liquid index, sector, and theme funds people actually look up. */
+export const CORE_ETFS = [
+  { symbol: "SPY", name: "SPDR S&P 500 ETF" },
+  { symbol: "QQQ", name: "Invesco QQQ Trust" },
+  { symbol: "IWM", name: "iShares Russell 2000 ETF" },
+  { symbol: "DIA", name: "SPDR Dow Jones Industrial Average ETF" },
+  { symbol: "VTI", name: "Vanguard Total Stock Market ETF" },
+  { symbol: "VOO", name: "Vanguard S&P 500 ETF" },
+  { symbol: "VTV", name: "Vanguard Value ETF" },
+  { symbol: "IWF", name: "iShares Russell 1000 Growth ETF" },
+  { symbol: "XLK", name: "Technology Select Sector SPDR" },
+  { symbol: "XLF", name: "Financial Select Sector SPDR" },
+  { symbol: "XLE", name: "Energy Select Sector SPDR" },
+  { symbol: "XLV", name: "Health Care Select Sector SPDR" },
+  { symbol: "XLI", name: "Industrial Select Sector SPDR" },
+  { symbol: "XLY", name: "Consumer Discretionary Select Sector SPDR" },
+  { symbol: "XLP", name: "Consumer Staples Select Sector SPDR" },
+  { symbol: "XLU", name: "Utilities Select Sector SPDR" },
+  { symbol: "XLB", name: "Materials Select Sector SPDR" },
+  { symbol: "XLRE", name: "Real Estate Select Sector SPDR" },
+  { symbol: "XLC", name: "Communication Services Select Sector SPDR" },
+  { symbol: "SMH", name: "VanEck Semiconductor ETF" },
+  { symbol: "SOXX", name: "iShares Semiconductor ETF" },
+  { symbol: "ARKK", name: "ARK Innovation ETF" },
+  { symbol: "TLT", name: "iShares 20+ Year Treasury Bond ETF" },
+  { symbol: "HYG", name: "iShares iBoxx High Yield Corporate Bond ETF" },
+  { symbol: "GLD", name: "SPDR Gold Trust" },
+  { symbol: "SLV", name: "iShares Silver Trust" },
+  { symbol: "USO", name: "United States Oil Fund" },
+  { symbol: "UNG", name: "United States Natural Gas Fund" },
+  { symbol: "EEM", name: "iShares MSCI Emerging Markets ETF" },
+  { symbol: "EWZ", name: "iShares MSCI Brazil ETF" },
+  { symbol: "FXI", name: "iShares China Large-Cap ETF" },
+  { symbol: "KWEB", name: "KraneShares CSI China Internet ETF" },
+  { symbol: "IBIT", name: "iShares Bitcoin Trust" },
+  { symbol: "BITO", name: "ProShares Bitcoin Strategy ETF" },
+  { symbol: "TQQQ", name: "ProShares UltraPro QQQ" },
+  { symbol: "SQQQ", name: "ProShares UltraPro Short QQQ" },
+] as const;
 
-/** Fallback research scan: S&P 500 + Dow 30 + extras. */
+/** Smaller and higher-beta names that the large-cap scan used to drop. */
+export const LIBRARY_EXTRA = [
+  { symbol: "RANI", name: "Rani Therapeutics" },
+  { symbol: "OPEN", name: "Opendoor Technologies" },
+  { symbol: "PLUG", name: "Plug Power" },
+  { symbol: "NIO", name: "NIO Inc." },
+  { symbol: "LCID", name: "Lucid Group" },
+  { symbol: "RIVN", name: "Rivian Automotive" },
+  { symbol: "SNAP", name: "Snap Inc." },
+  { symbol: "AMC", name: "AMC Entertainment" },
+  { symbol: "GME", name: "GameStop" },
+  { symbol: "BB", name: "BlackBerry" },
+  { symbol: "NOK", name: "Nokia" },
+  { symbol: "SIRI", name: "Sirius XM" },
+  { symbol: "SOUN", name: "SoundHound AI" },
+  { symbol: "BBAI", name: "BigBear.ai" },
+  { symbol: "IONQ", name: "IonQ" },
+  { symbol: "RKLB", name: "Rocket Lab" },
+  { symbol: "JOBY", name: "Joby Aviation" },
+  { symbol: "ASTS", name: "AST SpaceMobile" },
+  { symbol: "LUNR", name: "Intuitive Machines" },
+  { symbol: "MARA", name: "MARA Holdings" },
+  { symbol: "RIOT", name: "Riot Platforms" },
+  { symbol: "CLSK", name: "CleanSpark" },
+  { symbol: "HUT", name: "Hut 8" },
+  { symbol: "CIFR", name: "Cipher Mining" },
+  { symbol: "ACHR", name: "Archer Aviation" },
+  { symbol: "UAMY", name: "United States Antimony" },
+  { symbol: "SERV", name: "Serve Robotics" },
+  { symbol: "RR", name: "Richtech Robotics" },
+  { symbol: "NU", name: "Nu Holdings" },
+  { symbol: "GRAB", name: "Grab Holdings" },
+  { symbol: "PFE", name: "Pfizer" },
+  { symbol: "INTC", name: "Intel Corporation" },
+] as const;
+
+/** Names shown in the Watchlist grid beyond today’s scan. */
+export const LIBRARY_BROWSE = [
+  ...POPULAR_WATCHLIST,
+  ...CORE_ETFS,
+  ...LIBRARY_EXTRA,
+].filter(
+  (row, index, list) =>
+    list.findIndex((item) => item.symbol === row.symbol) === index,
+);
+
+export const LIBRARY_SEED_SYMBOLS = LIBRARY_BROWSE.map((row) => row.symbol);
+
+/** Target size for the weekday research scan. */
+export const SCAN_UNIVERSE_LIMIT = 2800;
+export const SCAN_LARGE_CAP = 1400;
+export const SCAN_SMALL_CAP = 700;
+export const SCAN_ETF_LIMIT = 400;
+
+/** Fallback research scan: S&P 500 + Dow 30 + extras + ETFs. */
 export const YAHOO_SCAN_UNIVERSE: string[] = Array.from(
-  new Set([...SP500, ...DOW_30, ...WATCHLIST_EXTRA_SYMBOLS]),
+  new Set([
+    ...SP500,
+    ...DOW_30,
+    ...WATCHLIST_EXTRA_SYMBOLS,
+    ...LIBRARY_SEED_SYMBOLS,
+  ]),
 ).sort();
 
 export const WATCHLIST_ALLOWED_SYMBOLS = YAHOO_SCAN_UNIVERSE;

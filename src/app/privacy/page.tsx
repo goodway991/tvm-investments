@@ -7,6 +7,8 @@ import {
   PRIVACY_VERSION,
 } from "@/lib/legal";
 
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   title: "Privacy Policy — TVM Investments",
   robots: { index: true, follow: true },

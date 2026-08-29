@@ -1,9 +1,13 @@
+import { planHasPro, type PlanId } from "@/lib/plans";
+
 /** Flip to false when Varish says the beta period is over. */
 export const SHOW_BETA_WAITLIST = true;
 
 export const DISCORD_PENDING_KEY = "tvm-discord-joined";
 
 export type WaitlistStatus = "none" | "pending" | "admitted";
+
+export type DeskPhase = "open" | "join" | "pending" | "pay";
 
 export type BetaStatus = {
   waitlistStatus: WaitlistStatus;
@@ -27,4 +31,22 @@ export function parseBetaStatus(data: Record<string, unknown> | undefined): Beta
     betaTester: data?.betaTester === true || waitlistStatus === "admitted",
     discordConnected: data?.discordConnected === true,
   };
+}
+
+export function isAdmittedBeta(status: Pick<BetaStatus, "waitlistStatus" | "betaTester">) {
+  return status.betaTester || status.waitlistStatus === "admitted";
+}
+
+export function deskPhase(input: {
+  show: boolean;
+  role: "client" | "admin";
+  plan: PlanId;
+  waitlistStatus: WaitlistStatus;
+  betaTester: boolean;
+}): DeskPhase {
+  if (!input.show || input.role === "admin") return "open";
+  if (!isAdmittedBeta(input)) {
+    return input.waitlistStatus === "pending" ? "pending" : "join";
+  }
+  return planHasPro(input.plan) ? "open" : "pay";
 }

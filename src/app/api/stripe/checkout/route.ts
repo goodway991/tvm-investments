@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSignedIn } from "@/lib/api-guard";
+import { requireAdmittedBeta, requireSignedIn } from "@/lib/api-guard";
 import {
   appOrigin,
   checkoutPlanAllowed,
@@ -59,6 +59,9 @@ export async function POST(request: NextRequest) {
       { status: 503 },
     );
   }
+
+  const admitted = await requireAdmittedBeta(gate.uid, gate.email);
+  if (!admitted.ok) return admitted.response;
 
   const entitlement = await getEntitlementForUid(gate.uid);
   if (entitlement?.role === "admin") {

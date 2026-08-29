@@ -16,7 +16,7 @@ import { type FormEvent, useState } from "react";
 import { MiniChart } from "@/components/MiniChart";
 import { PublicShell } from "@/components/PublicShell";
 import { TVMBrand } from "@/components/TVMBrand";
-import { DiscordJoinButton } from "@/components/DiscordJoinButton";
+import { SHOW_BETA_WAITLIST } from "@/lib/beta-waitlist";
 import {
   getClientAuth,
   isFirebaseConfigured,
@@ -220,8 +220,9 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                 The market, decoded every day.
               </h2>
               <p className="mt-4 max-w-md leading-relaxed text-ink-soft">
-                Sign in to see today&apos;s flagged picks, run the eight-signal screener, and track
-                your projected returns.
+                {SHOW_BETA_WAITLIST
+                  ? "Sign in or create an account, then join the waitlist. Admitted testers pick Pro or Ultra to open the desk."
+                  : "Sign in to see today's flagged picks, run the eight-signal screener, and track your projected returns."}
               </p>
             </div>
             <p className="text-xs text-ink-soft">
@@ -269,8 +270,12 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
               </h1>
               <p className="mt-1.5 text-sm text-ink-soft">
                 {isLogin
-                  ? "Sign in to your TVM workspace."
-                  : "Start screening the market in minutes."}
+                  ? SHOW_BETA_WAITLIST
+                    ? "Sign in, then join the waitlist to request desk access."
+                    : "Sign in to your TVM workspace."
+                  : SHOW_BETA_WAITLIST
+                    ? "Create an account first. You'll join the waitlist on the next screen."
+                    : "Start screening the market in minutes."}
               </p>
 
               {!firebaseConfigured && (
@@ -456,8 +461,6 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                   {isLogin ? "Create an account here" : "Log in"}
                 </span>
               </button>
-              <DiscordJoinButton />
-
               {error && (
                 <p
                   className="mt-4 rounded-xl bg-coral/10 px-3 py-2 text-center text-xs text-coral"

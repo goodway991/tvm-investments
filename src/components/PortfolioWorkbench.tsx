@@ -7,7 +7,7 @@ import { StockSearchField, type SearchHit } from "@/components/StockSearchField"
 import { BogenHeading } from "@/components/BogenProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { BookScoreCard, PortfolioAnalysis } from "@/components/PortfolioAnalysis";
-import { POPULAR_WATCHLIST } from "@/lib/watchlist-symbols";
+import { LIBRARY_BROWSE } from "@/lib/watchlist-symbols";
 import { authedFetch } from "@/lib/authed-fetch";
 
 type DraftRow = {
@@ -74,7 +74,7 @@ export function PortfolioWorkbench({
 
   const quotes = useMemo(() => {
     const map = new Map<string, { name: string; price: number }>();
-    for (const stock of POPULAR_WATCHLIST) {
+    for (const stock of LIBRARY_BROWSE) {
       map.set(stock.symbol, { name: stock.name, price: 0 });
     }
     for (const stock of screened) {

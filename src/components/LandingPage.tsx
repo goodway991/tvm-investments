@@ -3,6 +3,7 @@ import { MiniChart } from "@/components/MiniChart";
 import { PublicShell } from "@/components/PublicShell";
 import { TVMIcon } from "@/components/TVMBrand";
 import { ProGlowText } from "@/components/ProGlowText";
+import { SHOW_BETA_WAITLIST } from "@/lib/beta-waitlist";
 
 const founders = [
   { initials: "TO", name: "Taiki Okada", role: "Strategy & Research", timing: "6s", delay: "0s" },
@@ -45,7 +46,7 @@ export function LandingPage() {
               </h1>
               <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
                 TVM Investments is for individuals who want a repeatable process —
-                not a hot tip. Each weekday we screen liquid large-caps, flag
+                not a hot tip. Each weekday we screen US stocks and ETFs, flag
                 names that hit multiple historically-motivated setups, and hand
                 you the notes.
               </p>
@@ -54,7 +55,7 @@ export function LandingPage() {
                   href="/signup"
                   className="glass-violet inline-flex items-center justify-center rounded-full px-7 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(37,90,230,0.7)] active:scale-[0.97]"
                 >
-                  Get started free
+                  {SHOW_BETA_WAITLIST ? "Create account" : "Get started free"}
                 </Link>
               </div>
               <div className="mt-9 flex items-center gap-6 text-sm text-ink-soft">
@@ -209,7 +210,7 @@ export function LandingPage() {
                 what you are watching — updated after the US cash close.
               </p>
               <p className="mt-4 leading-relaxed text-ink-soft">
-                It is a structured reading of liquid large-cap names, with the
+                It is a structured reading of US stocks and ETFs, with the
                 reasoning in front of you instead of buried in a black box.
               </p>
               <Link
@@ -247,9 +248,23 @@ export function LandingPage() {
               Start the day with a process, not a blank screen.
             </h2>
             <p className="mx-auto mt-3 max-w-md text-white/[0.85]">
-              Create a free account to open today’s screen, movers, and research
-              notes. <ProGlowText>Pro unlocks deeper lookbacks and higher limits when you
-              need them.</ProGlowText>
+              {SHOW_BETA_WAITLIST ? (
+                <>
+                  Create an account, join the waitlist, and after you&apos;re
+                  admitted pick Pro or Ultra to open the desk.{" "}
+                  <ProGlowText>
+                    Have a beta code? Add it on the Stripe checkout page.
+                  </ProGlowText>
+                </>
+              ) : (
+                <>
+                  Create a free account to open today’s screen, movers, and research
+                  notes.{" "}
+                  <ProGlowText>
+                    Pro unlocks deeper lookbacks and higher limits when you need them.
+                  </ProGlowText>
+                </>
+              )}
             </p>
             <div className="mt-7 flex justify-center gap-3">
               <Link

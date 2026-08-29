@@ -3,6 +3,8 @@ import { LegalDocument } from "@/components/LegalDocument";
 import { REFUND_GRACE_DAYS } from "@/lib/refund-policy";
 import { LEGAL_EFFECTIVE_DATE } from "@/lib/legal";
 
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   title: "Cancellation and refunds — TVM Investments",
   robots: { index: true, follow: true },

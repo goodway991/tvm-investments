@@ -77,7 +77,8 @@ export function AdminWaitlistPanel() {
         Beta waitlist
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Admit someone and they become a beta tester.
+        Admit someone after they join. They still have to check out Pro or Ultra
+        before the desk opens. Gift a plan from Accounts if you want to skip Stripe.
       </p>
       {loading ? (
         <p className="mt-4 text-sm text-ink-soft">Loading waitlist…</p>

@@ -9,6 +9,8 @@ import {
   TOS_VERSION,
 } from "@/lib/legal";
 
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   title: "Terms of Service — TVM Investments",
   robots: { index: true, follow: true },

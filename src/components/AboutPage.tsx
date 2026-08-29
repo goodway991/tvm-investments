@@ -8,7 +8,7 @@ const statements = [
   },
   {
     title: "What it does",
-    text: "Each weekday after the US close, TVM screens liquid large-cap names, ranks the session’s movers, and writes up the names that hit several of eight historically-motivated setups at once.",
+    text: "Each weekday after the US close, TVM screens US stocks and ETFs — large-caps, smaller names, and liquid funds — ranks the session’s movers, and writes up the names that hit several of eight historically-motivated setups at once.",
   },
   {
     title: "What it is not",

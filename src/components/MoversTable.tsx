@@ -73,7 +73,7 @@ export function MoversTable({ movers }: MoversTableProps) {
       </h2>
       <p className="text-ink-soft text-sm mb-6">
         Largest moves versus the previous close across the daily scan of about
-        1,500 liquid US names.
+        2,800 US stocks and ETFs.
         {isPro ? (
           <>
             {" "}

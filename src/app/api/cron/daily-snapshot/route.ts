@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { runDailyAnalysis } from "@/lib/analysis-pipeline";
 import { persistSnapshot } from "@/lib/snapshot-cache";
 import { hasNewsLlm } from "@/lib/scoring";
+import { hasLiveSnapshotForDate } from "@/lib/firebase/admin";
+import { etDateString } from "@/lib/archive-window";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 800;
@@ -18,6 +20,17 @@ export async function GET(request: NextRequest) {
 
   if (isDev && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const force = request.nextUrl.searchParams.get("force") === "1";
+  const date = etDateString();
+  if (!force && (await hasLiveSnapshotForDate(date))) {
+    return NextResponse.json({
+      success: true,
+      skipped: true,
+      date,
+      reason: "Today's live snapshot is already saved.",
+    });
   }
 
   try {

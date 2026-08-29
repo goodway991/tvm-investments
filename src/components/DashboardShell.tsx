@@ -12,6 +12,8 @@ import { BillingNotice } from "@/components/BillingNotice";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
 import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useAuth } from "@/components/AuthProvider";
+import { useDeskAccess } from "@/components/BetaStatusProvider";
+import { BetaAccessScreen } from "@/components/BetaAccessScreen";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
@@ -341,6 +343,7 @@ function PreviewSidebar({
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, profile, entitlement, loading, error, tourPending } = useAuth();
+  const desk = useDeskAccess();
   const { era, rewind } = useSiteEra();
   const { density } = useExperience();
   const clean = density === "clean" && !rewind;
@@ -360,10 +363,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (loading || !user || !tourPending || tourOpen || archive) return;
+    if (loading || !user || !desk.allowed || !tourPending || tourOpen || archive) return;
     const timer = window.setTimeout(() => openTour({ required: true }), 400);
     return () => window.clearTimeout(timer);
-  }, [archive, loading, openTour, tourOpen, tourPending, user]);
+  }, [archive, desk.allowed, loading, openTour, tourOpen, tourPending, user]);
 
   function cycleSidebar() {
     setSidebarMode((current) =>
@@ -375,7 +378,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (loading) {
+  if (loading || (user && !desk.ready)) {
     return (
       <div className="grid min-h-screen place-items-center bg-surface">
         <div className="glass-strong rounded-[24px] px-8 py-6 text-center">
@@ -384,6 +387,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  if (user && !desk.allowed && desk.phase !== "open") {
+    return <BetaAccessScreen phase={desk.phase} />;
   }
 
   if (!user) {

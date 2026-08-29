@@ -2,7 +2,12 @@ import YahooFinance from "yahoo-finance2";
 import type { ChartPoint, ChartRange } from "@/lib/chart-series";
 import type { MarketEvent, NewsHeadline, OHLCVBar, StockCandidate } from "@/types";
 import { YAHOO_SCAN_UNIVERSE, SCAN_UNIVERSE_LIMIT } from "@/lib/watchlist-symbols";
-import { fetchNasdaqScreener, type NasdaqQuote } from "@/lib/providers/nasdaq";
+import {
+  fetchNasdaqEtfs,
+  fetchNasdaqScreener,
+  mixScanUniverse,
+  type NasdaqQuote,
+} from "@/lib/providers/nasdaq";
 import { resolveSector, sectorNewsSymbols } from "@/lib/sector-dives";
 
 export { YAHOO_SCAN_UNIVERSE, WATCHLIST_ALLOWED_SYMBOLS, WATCHLIST_EXTRA_SYMBOLS, SCAN_UNIVERSE_LIMIT, POPULAR_WATCHLIST_SYMBOLS } from "@/lib/watchlist-symbols";
@@ -624,7 +629,11 @@ export async function fetchYahooOhlcvSeries(
 export async function fetchYahooUniverse(): Promise<StockCandidate[]> {
   let nasdaqRows: NasdaqQuote[] = [];
   try {
-    nasdaqRows = await fetchNasdaqScreener(SCAN_UNIVERSE_LIMIT);
+    const [stocks, etfs] = await Promise.all([
+      fetchNasdaqScreener(12_000),
+      fetchNasdaqEtfs(8_000),
+    ]);
+    nasdaqRows = mixScanUniverse(stocks, etfs, SCAN_UNIVERSE_LIMIT);
   } catch (error) {
     console.warn("NASDAQ screener unavailable for universe:", error);
   }

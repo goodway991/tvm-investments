@@ -1,5 +1,6 @@
 "use client";
 
+import { doc, onSnapshot } from "firebase/firestore";
 import {
   createContext,
   useCallback,
@@ -10,16 +11,23 @@ import {
 } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { authedFetch } from "@/lib/authed-fetch";
+import { getClientFirestore } from "@/lib/firebase/client";
 import {
   DISCORD_PENDING_KEY,
   EMPTY_BETA_STATUS,
   SHOW_BETA_WAITLIST,
+  deskPhase,
+  parseBetaStatus,
   type BetaStatus,
+  type DeskPhase,
 } from "@/lib/beta-waitlist";
 
 type BetaContextValue = BetaStatus & {
   show: boolean;
   loading: boolean;
+  ready: boolean;
+  phase: DeskPhase;
+  allowed: boolean;
   joinWaitlist: () => Promise<void>;
   connectDiscord: () => Promise<void>;
 };
@@ -28,12 +36,25 @@ const BetaContext = createContext<BetaContextValue>({
   ...EMPTY_BETA_STATUS,
   show: SHOW_BETA_WAITLIST,
   loading: false,
+  ready: !SHOW_BETA_WAITLIST,
+  phase: SHOW_BETA_WAITLIST ? "join" : "open",
+  allowed: !SHOW_BETA_WAITLIST,
   joinWaitlist: async () => undefined,
   connectDiscord: async () => undefined,
 });
 
 export function useBetaStatus() {
   return useContext(BetaContext);
+}
+
+export function useDeskAccess() {
+  const beta = useBetaStatus();
+  return {
+    allowed: beta.allowed,
+    ready: beta.ready,
+    phase: beta.phase,
+    show: beta.show,
+  };
 }
 
 function readDiscordPending() {
@@ -57,23 +78,48 @@ export function markDiscordPending() {
 }
 
 export function BetaStatusProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, entitlement, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<BetaStatus>(EMPTY_BETA_STATUS);
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(!SHOW_BETA_WAITLIST);
 
   const refresh = useCallback(async () => {
     if (!user || !SHOW_BETA_WAITLIST) {
       setStatus(EMPTY_BETA_STATUS);
+      setReady(true);
       return;
     }
     const response = await authedFetch("/api/beta/status");
     const payload = (await response.json()) as BetaStatus;
     if (response.ok) setStatus(payload);
+    setReady(true);
   }, [user]);
 
   useEffect(() => {
-    void refresh().catch(() => undefined);
-  }, [refresh]);
+    if (!user || !SHOW_BETA_WAITLIST) {
+      setStatus(EMPTY_BETA_STATUS);
+      setReady(true);
+      return;
+    }
+    setReady(false);
+    const db = getClientFirestore();
+    if (!db) {
+      void refresh();
+      return;
+    }
+    return onSnapshot(
+      doc(db, "beta_status", user.uid),
+      (snapshot) => {
+        setStatus(
+          parseBetaStatus(snapshot.data() as Record<string, unknown> | undefined),
+        );
+        setReady(true);
+      },
+      () => {
+        void refresh();
+      },
+    );
+  }, [refresh, user]);
 
   useEffect(() => {
     if (!user || !SHOW_BETA_WAITLIST) return;
@@ -125,15 +171,40 @@ export function BetaStatusProvider({ children }: { children: React.ReactNode }) 
     }
   }, [user]);
 
+  const phase = deskPhase({
+    show: SHOW_BETA_WAITLIST,
+    role: entitlement.role,
+    plan: entitlement.plan,
+    waitlistStatus: status.waitlistStatus,
+    betaTester: status.betaTester,
+  });
+  const allowed = !user || phase === "open";
+  const statusReady =
+    !SHOW_BETA_WAITLIST ||
+    !user ||
+    entitlement.role === "admin" ||
+    (ready && !authLoading);
+
   const value = useMemo(
     () => ({
       ...status,
       show: SHOW_BETA_WAITLIST,
       loading,
+      ready: statusReady,
+      phase,
+      allowed,
       joinWaitlist,
       connectDiscord,
     }),
-    [connectDiscord, joinWaitlist, loading, status],
+    [
+      allowed,
+      connectDiscord,
+      joinWaitlist,
+      loading,
+      phase,
+      status,
+      statusReady,
+    ],
   );
 
   return <BetaContext.Provider value={value}>{children}</BetaContext.Provider>;

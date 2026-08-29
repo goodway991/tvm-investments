@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { WatchlistPanel } from "@/components/WatchlistPanel";
 import { uniqueStocks } from "@/lib/chart-series";
-import { POPULAR_WATCHLIST } from "@/lib/watchlist-symbols";
+import { LIBRARY_BROWSE } from "@/lib/watchlist-symbols";
 import { getDashboardSnapshot } from "@/lib/snapshot";
 import { slimCandidate } from "@/lib/snapshot-view";
 
@@ -21,13 +21,13 @@ export default async function WatchlistPage({
   [...snapshot.topMovers, ...snapshot.topPicks].forEach((stock) => {
     names.set(stock.symbol, stock.name);
   });
-  POPULAR_WATCHLIST.forEach((stock) => {
+  LIBRARY_BROWSE.forEach((stock) => {
     if (!names.has(stock.symbol)) names.set(stock.symbol, stock.name);
   });
 
   const seen = new Set<string>();
   const stocks: Array<{ symbol: string; name: string }> = [];
-  for (const stock of POPULAR_WATCHLIST) {
+  for (const stock of LIBRARY_BROWSE) {
     if (seen.has(stock.symbol)) continue;
     seen.add(stock.symbol);
     stocks.push({ symbol: stock.symbol, name: names.get(stock.symbol) ?? stock.name });

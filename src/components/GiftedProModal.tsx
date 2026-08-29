@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { useDeskAccess } from "@/components/BetaStatusProvider";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { PlanComparisonTable } from "@/components/PlanComparisonTable";
 import { useTour } from "@/components/TourProvider";
@@ -11,12 +12,13 @@ import { ProGlowText } from "@/components/ProGlowText";
 
 export function GiftedProModal() {
   const { giftPending, acknowledgeGift } = useAuth();
+  const { allowed } = useDeskAccess();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
   const { customizeOpen } = useExperience();
   const [busy, setBusy] = useState(false);
 
-  if (!giftPending || tourOpen || rewind || customizeOpen) return null;
+  if (!giftPending || !allowed || tourOpen || rewind || customizeOpen) return null;
 
   async function continueOn() {
     if (busy) return;
