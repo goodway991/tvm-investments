@@ -26,11 +26,6 @@ export function Methodology() {
             <p className="mt-2 text-xs leading-relaxed text-ink-soft">
               {STRATEGY_DETAILS[id]}
             </p>
-            {id === "catalyst_upside" && (
-              <p className="mt-2 text-xs text-amber-600">
-                Partial: unusual options flow is paid, so this signal uses headline scanning.
-              </p>
-            )}
           </div>
         ))}
       </div>
