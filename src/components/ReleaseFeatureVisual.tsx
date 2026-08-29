@@ -357,7 +357,7 @@ function HorizonVisual() {
         </div>
 
         <div className="flex justify-center">
-          <span className="wn-horizon-predict predict-glow inline-flex rounded-full px-4 py-1.5 text-[11px] font-semibold">
+          <span className="wn-horizon-predict pro-profile-glow inline-flex rounded-full bg-transparent px-4 py-1.5 text-[11px] font-semibold">
             Predict
           </span>
         </div>

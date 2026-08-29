@@ -1341,33 +1341,6 @@ html.dark .plan-current-pane.plan-ultra-pane {
   }
 }
 
-.predict-glow {
-  color: #f7f3ec;
-  background: #16132b;
-  border: 1px solid rgba(255, 196, 138, 0.72);
-  box-shadow:
-    0 0 0 1px rgba(255, 196, 138, 0.16),
-    0 0 10px rgba(255, 196, 138, 0.42),
-    0 0 20px rgba(255, 196, 138, 0.18);
-}
-
-html:not(.dark) .predict-glow {
-  color: #1a2438;
-  background: #fffaf4;
-  border-color: rgba(232, 164, 110, 0.55);
-  box-shadow:
-    0 0 0 1px rgba(255, 196, 138, 0.2),
-    0 0 12px rgba(255, 196, 138, 0.32);
-}
-
-.predict-glow-ultra {
-  border-color: rgba(255, 196, 138, 0.42);
-  box-shadow:
-    0 0 0 1px rgba(110, 162, 255, 0.2),
-    0 0 10px rgba(110, 162, 255, 0.28),
-    0 0 18px rgba(255, 196, 138, 0.22);
-}
-
 .horizon-path-pro {
   filter: drop-shadow(0 0 2.5px rgba(255, 196, 138, 0.55));
 }
