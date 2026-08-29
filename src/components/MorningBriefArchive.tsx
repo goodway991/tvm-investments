@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { MorningBriefView } from "@/components/MorningBriefView";
+import { TVMIcon } from "@/components/TVMBrand";
 import { BogenHeading } from "@/components/BogenProvider";
 import { authedFetch } from "@/lib/authed-fetch";
 import { formatSessionLabel } from "@/lib/archive-window";
@@ -132,16 +133,45 @@ export function MorningBriefArchive() {
           variant="card"
           zIndexClass="z-[107]"
           header={
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
-                Morning Brief Archive
-              </p>
-              <h2
-                id="morning-brief-archive-title"
-                className="mt-2 font-display text-3xl font-bold text-ink"
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
+                  Morning Brief Archive
+                </p>
+                <h2
+                  id="morning-brief-archive-title"
+                  className="mt-2 font-display text-3xl font-bold text-ink"
+                >
+                  {formatSessionLabel(selected)}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  setBrief(null);
+                  setFailed(false);
+                }}
+                className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-violet/10 hover:text-violet"
               >
-                {formatSessionLabel(selected)}
-              </h2>
+                <TVMIcon name="close" size={16} />
+                Close
+              </button>
+            </div>
+          }
+          footer={
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  setBrief(null);
+                  setFailed(false);
+                }}
+                className="glass-violet rounded-full px-6 py-3 text-sm font-semibold text-white"
+              >
+                Close
+              </button>
             </div>
           }
         >

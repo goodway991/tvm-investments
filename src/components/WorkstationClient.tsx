@@ -205,8 +205,11 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
         setLiveQuotes((current) => {
           const next = { ...current };
           for (const quote of payload.quotes || []) {
-            next[quote.symbol] = {
+            const key = quote.symbol?.toUpperCase?.() || quote.symbol;
+            if (!key) continue;
+            next[key] = {
               ...quote,
+              symbol: key,
               peRatio: quote.peRatio ?? null,
               recommendation: quote.recommendation ?? null,
               analystCount: quote.analystCount ?? null,
@@ -228,7 +231,10 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
   const compared = desk.compare
     .map((symbol) => {
       const row = snapshot.screenedStocks.find((stock) => stock.symbol === symbol);
-      const quote = liveQuotes[symbol];
+      const quote = liveQuotes[symbol] ?? liveQuotes[symbol.replace(/\./g, "-")];
+      const livePrice = quote?.price && quote.price > 0 ? quote.price : 0;
+      const rowPrice = row && row.price > 0 ? row.price : 0;
+      const price = livePrice || rowPrice;
       const peRatio =
         quote?.peRatio ?? row?.fundamentals.peRatio ?? null;
       const extras = {
@@ -238,48 +244,23 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
         targetMean: quote?.targetMean ?? null,
       };
       if (row) {
-        return quote
-          ? {
-              ...row,
-              ...extras,
-              name: quote.name || row.name,
-              price: quote.price || row.price,
-              changePercent: quote.changePercent ?? row.changePercent,
-            }
-          : { ...row, ...extras };
-      }
-      if (!quote) {
         return {
-          symbol,
-          name: symbol,
-          sector: "",
-          industry: "",
-          price: 0,
-          changePercent: 0,
-          volume: 0,
-          compositeScore: 0,
-          shortTermScore: 0,
-          longTermScore: 0,
-          fundamentals: {
-            peRatio: null,
-            beta: null,
-            eps: null,
-            marketCap: null,
-            avgVolume: null,
-            shortInterestPct: null,
-          },
+          ...row,
           ...extras,
-        } satisfies ScreenedStock & QuoteCard;
+          name: quote?.name || row.name,
+          price,
+          changePercent: quote?.changePercent ?? row.changePercent,
+        };
       }
       return {
-        symbol: quote.symbol,
-        name: quote.name || quote.symbol,
+        symbol,
+        name: quote?.name || symbol,
         sector: "",
         industry: "",
-        price: quote.price,
-        changePercent: quote.changePercent,
+        price,
+        changePercent: quote?.changePercent ?? 0,
         volume: 0,
-        compositeScore: quote.compositeScore ?? 0,
+        compositeScore: quote?.compositeScore ?? 0,
         shortTermScore: 0,
         longTermScore: 0,
         fundamentals: {
@@ -546,7 +527,7 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
                 <p className="font-semibold text-ink">{stock.symbol}</p>
                 <p className="text-xs text-ink-soft">{stock.name}</p>
                 <p className="mt-1 font-display text-lg font-bold text-ink">
-                  {stock.price
+                  {stock.price > 0
                     ? `$${stock.price.toFixed(2)} · ${stock.changePercent.toFixed(2)}%`
                     : quotesReady
                       ? "No live quote"

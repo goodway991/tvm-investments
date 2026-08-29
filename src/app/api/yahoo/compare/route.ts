@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/api-guard";
 import { showTvm10Labs } from "@/lib/beta-labs";
 import { getPlanForUser } from "@/lib/firebase/admin";
-import { fetchYahooCompareCards } from "@/lib/providers/yahoo";
+import { fetchYahooCompareCards, fetchYahooQuoteCards } from "@/lib/providers/yahoo";
 import { parseTicker } from "@/lib/ticker";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +36,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ quotes });
   } catch (error) {
     console.error("Yahoo compare error:", error);
-    return NextResponse.json({ quotes: [] }, { status: 200 });
+    try {
+      const quotes = await fetchYahooQuoteCards(symbols);
+      return NextResponse.json({ quotes });
+    } catch {
+      return NextResponse.json({ quotes: [] }, { status: 200 });
+    }
   }
 }
