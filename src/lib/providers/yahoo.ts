@@ -243,6 +243,7 @@ type YahooQuote = {
   industry?: string;
   regularMarketPrice?: unknown;
   postMarketPrice?: unknown;
+  preMarketPrice?: unknown;
   regularMarketChange?: unknown;
   regularMarketChangePercent?: unknown;
   regularMarketPreviousClose?: unknown;
@@ -651,27 +652,100 @@ export async function hydrateYahooCandidates(
   }));
 }
 
-export function quoteCardFromYahoo(symbol: string, quote: YahooQuote | undefined) {
+function lastTradePrice(quote: YahooQuote | undefined) {
   if (!quote) return null;
-  const price = num(quote.regularMarketPrice) ?? num(quote.postMarketPrice);
-  if (!(price && price > 0)) return null;
+  const price =
+    num(quote.regularMarketPrice) ??
+    num(quote.postMarketPrice) ??
+    num(quote.preMarketPrice) ??
+    num(quote.regularMarketPreviousClose);
+  return price && price > 0 ? price : null;
+}
+
+export function quoteCardFromYahoo(symbol: string, quote: YahooQuote | undefined) {
+  const price = lastTradePrice(quote);
+  if (!price) return null;
   return {
     symbol: symbol.toUpperCase(),
+    name: String(quote?.shortName || quote?.longName || "").trim() || undefined,
     price,
-    change: num(quote.regularMarketChange) ?? 0,
-    changePercent: num(quote.regularMarketChangePercent) ?? 0,
-    volume: num(quote.regularMarketVolume) ?? 0,
+    change: num(quote?.regularMarketChange) ?? 0,
+    changePercent: num(quote?.regularMarketChangePercent) ?? 0,
+    volume: num(quote?.regularMarketVolume) ?? 0,
+    peRatio: num(quote?.trailingPE),
   };
+}
+
+async function fillMissingQuotes(
+  symbols: string[],
+  quotes: Map<string, YahooQuote>,
+) {
+  const missing = symbols.filter((symbol) => !quotes.has(symbol));
+  if (missing.length === 0) return quotes;
+  const yahooFinance = getYahoo();
+  await Promise.all(
+    missing.map(async (symbol) => {
+      try {
+        const result = await yahooFinance.quote(symbol);
+        const quote = asQuoteList(result)[0];
+        if (quote) quotes.set(symbol, quote);
+      } catch (error) {
+        console.warn(`Yahoo quote fallback failed for ${symbol}:`, error);
+      }
+    }),
+  );
+  return quotes;
 }
 
 export async function fetchYahooQuoteCards(symbols: string[]) {
   const unique = Array.from(
     new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)),
   ).slice(0, 40);
-  const quotes = await fetchYahooQuotesBatch(unique);
+  const quotes = await fillMissingQuotes(
+    unique,
+    await fetchYahooQuotesBatch(unique),
+  );
   return unique
     .map((symbol) => quoteCardFromYahoo(symbol, quotes.get(symbol)))
     .filter((row): row is NonNullable<typeof row> => row != null);
+}
+
+export type YahooCompareCard = {
+  symbol: string;
+  name: string;
+  price: number;
+  changePercent: number;
+  peRatio: number | null;
+  recommendation: string | null;
+  analystCount: number | null;
+  targetMean: number | null;
+};
+
+export async function fetchYahooCompareCards(symbols: string[]) {
+  const unique = Array.from(
+    new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)),
+  ).slice(0, 4);
+  const quotes = await fillMissingQuotes(
+    unique,
+    await fetchYahooQuotesBatch(unique),
+  );
+  return Promise.all(
+    unique.map(async (symbol) => {
+      const quote = quotes.get(symbol);
+      const card = quoteCardFromYahoo(symbol, quote);
+      const analyst = await fetchYahooAnalystView(symbol);
+      return {
+        symbol,
+        name: card?.name || String(quote?.shortName || quote?.longName || symbol),
+        price: card?.price ?? 0,
+        changePercent: card?.changePercent ?? 0,
+        peRatio: card?.peRatio ?? null,
+        recommendation: analyst.recommendation,
+        analystCount: analyst.analystCount,
+        targetMean: analyst.targetMean,
+      } satisfies YahooCompareCard;
+    }),
+  );
 }
 
 export async function fetchYahooMarketEvents(): Promise<MarketEvent[]> {

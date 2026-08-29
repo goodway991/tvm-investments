@@ -5,11 +5,12 @@ import {
   lastCompletedSessionDate,
 } from "@/lib/archive-window";
 
-/** First visit at or after this hour in the account time zone. */
+/** Ready at 6:00am in the account time zone; gone at local midnight. */
 export const GOOD_MORNING_HOUR = 6;
 
+/** True from 6:00am through 11:59pm (hour 23). Hour 0–5 is closed. */
 export function isGoodMorningHour(hour: number) {
-  return Number.isFinite(hour) && hour >= GOOD_MORNING_HOUR;
+  return Number.isFinite(hour) && hour >= GOOD_MORNING_HOUR && hour <= 23;
 }
 
 export type MorningBriefName = {

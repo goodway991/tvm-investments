@@ -58,6 +58,7 @@ export type BogenId =
   | "workstation-recipes"
   | "advanced-predict"
   | "good-morning"
+  | "morning-brief-archive"
   | "settings"
   | "feedback"
   | "virtual-tour"
@@ -337,8 +338,8 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "workstation-compare": {
     title: "Compare",
-    what: "Up to four tickers side by side with score and session move. Names not in the scan still pull a live quote.",
-    how: "Type a ticker and press Enter. Remove drops it. This is a glance, not a full sheet.",
+    what: "Up to four tickers with last quote, stock score, P/E, and analyst consensus. Bullish/bearish stance is coming. A research pick ranks the set — not a buy order.",
+    how: "Type a ticker and press Enter. Names missing from the scan still pull a last trade (including weekends). Remove drops it.",
   },
   "workstation-notes": {
     title: "Tags & notes",
@@ -357,8 +358,13 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "good-morning": {
     title: "Good morning",
-    what: "Ultra’s 6:00am recap in the account time zone: last session tape, headlines, and names the screen is watching.",
-    how: "It waits until 6:00 in your saved zone, then shows once that local day. Open the desk dismisses it.",
+    what: "Ultra’s 6:00am recap in the account time zone. It is queued from 6:00am until 11:59pm, then that day’s sheet expires at midnight.",
+    how: "It does not sit on the desk before you log in. The first login after 6:00 in your zone opens it. Dismissing it marks that local day as seen.",
+  },
+  "morning-brief-archive": {
+    title: "Morning Brief Archive",
+    what: "Past Ultra morning briefs from saved sessions, newest first.",
+    how: "Search a date, tap a row, and that session’s recap opens. Today’s popup still only appears on first login after 6:00am.",
   },
   "nav-workstation": {
     title: "Workstation",

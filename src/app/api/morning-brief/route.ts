@@ -3,7 +3,7 @@ import { requireApiUser } from "@/lib/api-guard";
 import { showTvm10Labs } from "@/lib/beta-labs";
 import { getPlanForUser } from "@/lib/firebase/admin";
 import { buildMorningBrief } from "@/lib/morning-brief";
-import { getDashboardSnapshot } from "@/lib/snapshot";
+import { getDashboardSnapshot, parseArchiveDate } from "@/lib/snapshot";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 15;
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Ultra only." }, { status: 403 });
   }
 
-  const snapshot = await getDashboardSnapshot();
+  const date = parseArchiveDate(request.nextUrl.searchParams.get("date"));
+  const snapshot = await getDashboardSnapshot(date);
   return NextResponse.json(buildMorningBrief(snapshot));
 }

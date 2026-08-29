@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DailySnapshot, ScreenedStock, StrategyId } from "@/types";
 import { AdvancedPredictions } from "@/components/AdvancedPredictions";
+import { MorningBriefArchive } from "@/components/MorningBriefArchive";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { BogenHeading } from "@/components/BogenProvider";
@@ -40,7 +41,44 @@ type QuoteCard = {
   price: number;
   changePercent: number;
   compositeScore?: number;
+  peRatio: number | null;
+  recommendation: string | null;
+  analystCount: number | null;
+  targetMean: number | null;
 };
+
+function formatAnalyst(key: string | null | undefined) {
+  if (!key) return "—";
+  return key.replace(/_/g, " ");
+}
+
+function analystScore(key: string | null | undefined) {
+  const k = (key || "").toLowerCase();
+  if (k.includes("strong_buy") || k === "buy") return 90;
+  if (k.includes("outperform") || k.includes("overweight")) return 75;
+  if (k.includes("hold") || k.includes("neutral")) return 50;
+  if (k.includes("underperform") || k.includes("underweight")) return 25;
+  if (k.includes("sell")) return 10;
+  return 50;
+}
+
+function peScore(pe: number | null | undefined) {
+  if (pe == null || pe <= 0) return 50;
+  if (pe < 8) return 40;
+  if (pe > 80) return 35;
+  return Math.max(20, Math.min(90, 110 - pe));
+}
+
+function buyScore(stock: {
+  compositeScore: number;
+  peRatio?: number | null;
+  recommendation?: string | null;
+}) {
+  const composite = Number.isFinite(stock.compositeScore) && stock.compositeScore > 0
+    ? stock.compositeScore
+    : 50;
+  return 0.5 * composite + 0.2 * peScore(stock.peRatio) + 0.3 * analystScore(stock.recommendation);
+}
 
 function deskKey(uid: string) {
   return `tvm-ultra-desk:${uid}`;
@@ -150,14 +188,20 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
     setQuotesReady(false);
     const params = compareKey;
     let cancelled = false;
-    void authedFetch(`/api/yahoo/quotes?symbols=${encodeURIComponent(params)}`)
+    void authedFetch(`/api/yahoo/compare?symbols=${encodeURIComponent(params)}`)
       .then((response) => response.json())
       .then((payload: { quotes?: QuoteCard[] }) => {
         if (cancelled || !payload.quotes) return;
         setLiveQuotes((current) => {
           const next = { ...current };
           for (const quote of payload.quotes || []) {
-            next[quote.symbol] = quote;
+            next[quote.symbol] = {
+              ...quote,
+              peRatio: quote.peRatio ?? null,
+              recommendation: quote.recommendation ?? null,
+              analystCount: quote.analystCount ?? null,
+              targetMean: quote.targetMean ?? null,
+            };
           }
           return next;
         });
@@ -175,14 +219,24 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
     .map((symbol) => {
       const row = snapshot.screenedStocks.find((stock) => stock.symbol === symbol);
       const quote = liveQuotes[symbol];
+      const peRatio =
+        quote?.peRatio ?? row?.fundamentals.peRatio ?? null;
+      const extras = {
+        peRatio,
+        recommendation: quote?.recommendation ?? null,
+        analystCount: quote?.analystCount ?? null,
+        targetMean: quote?.targetMean ?? null,
+      };
       if (row) {
         return quote
           ? {
               ...row,
+              ...extras,
+              name: quote.name || row.name,
               price: quote.price || row.price,
               changePercent: quote.changePercent ?? row.changePercent,
             }
-          : row;
+          : { ...row, ...extras };
       }
       if (!quote) {
         return {
@@ -204,7 +258,8 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
             avgVolume: null,
             shortInterestPct: null,
           },
-        } satisfies ScreenedStock;
+          ...extras,
+        } satisfies ScreenedStock & QuoteCard;
       }
       return {
         symbol: quote.symbol,
@@ -218,16 +273,24 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
         shortTermScore: 0,
         longTermScore: 0,
         fundamentals: {
-          peRatio: null,
+          peRatio: extras.peRatio,
           beta: null,
           eps: null,
           marketCap: null,
           avgVolume: null,
           shortInterestPct: null,
         },
-      } satisfies ScreenedStock;
+        ...extras,
+      } satisfies ScreenedStock & QuoteCard;
     })
-    .filter((row): row is ScreenedStock => Boolean(row));
+    .filter(Boolean) as Array<ScreenedStock & QuoteCard>;
+
+  const comparePick =
+    compared.length >= 2
+      ? [...compared]
+          .filter((row) => row.price > 0)
+          .sort((left, right) => buyScore(right) - buyScore(left))[0]
+      : null;
 
   if (!showUltraDesk(entitlement.plan)) {
     return (
@@ -438,6 +501,8 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
         />
       ) : null}
 
+      <MorningBriefArchive />
+
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="glass-strong rounded-[24px] p-5">
           <h2 className="font-display text-lg font-semibold text-ink">
@@ -457,6 +522,12 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
               event.currentTarget.value = "";
             }}
           />
+          {comparePick ? (
+            <p className="mt-3 rounded-2xl bg-ink/[0.04] px-3 py-2 text-sm text-ink">
+              Research pick: <span className="font-semibold">{comparePick.symbol}</span>
+              {" "}from score, P/E, and analyst consensus — not advice.
+            </p>
+          ) : null}
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {compared.map((stock) => (
               <article key={stock.symbol} className="glass rounded-2xl p-3">
@@ -469,11 +540,19 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
                       ? "No live quote"
                       : "Quote loading…"}
                 </p>
-                {stock.compositeScore ? (
-                  <p className="text-xs text-ink-soft">
-                    Composite {stock.compositeScore.toFixed(0)}
-                  </p>
-                ) : null}
+                <p className="mt-2 text-xs leading-relaxed text-ink-soft">
+                  Stock score {stock.compositeScore ? stock.compositeScore.toFixed(0) : "—"}
+                  {" · "}P/E{" "}
+                  {stock.peRatio != null ? stock.peRatio.toFixed(1) : "—"}
+                  {" · "}Analysts {formatAnalyst(stock.recommendation)}
+                  {stock.analystCount ? ` (${stock.analystCount})` : ""}
+                  {stock.targetMean
+                    ? ` · Target $${stock.targetMean.toFixed(0)}`
+                    : ""}
+                </p>
+                <p className="mt-1 text-[11px] uppercase tracking-wider text-ink-soft">
+                  Bullish / bearish: coming
+                </p>
                 <button
                   type="button"
                   className="mt-1 text-xs font-semibold text-coral"
