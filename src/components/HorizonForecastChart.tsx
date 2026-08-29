@@ -103,13 +103,16 @@ export function HorizonForecastChart({
     () => buildHorizonChart(history, pathDays, statsOverride, windowDays),
     [history, pathDays, windowDays, statsOverride],
   );
-  const lastForecast = [...points].reverse().find((point) => point.predicted != null);
-  const projected = lastForecast?.predicted ?? stats?.last ?? 0;
+  const lastForecast =
+    pathDays > 0
+      ? [...points].reverse().find((point) => point.predicted != null)
+      : undefined;
+  const projected = lastForecast?.predicted;
   const maxLabel = formatHorizonLabel(sliderMax);
   const showMidLabel =
     horizonDays > 0.05 && formatHorizonLabel(horizonDays) !== maxLabel;
-  const low = lastForecast?.low ?? projected;
-  const high = lastForecast?.high ?? projected;
+  const low = lastForecast?.low ?? projected ?? 0;
+  const high = lastForecast?.high ?? projected ?? 0;
   const muted = tone === "dark" ? "text-white/55" : "text-ink-soft";
   const title = tone === "dark" ? "text-white" : "text-ink";
   const ultraPath = forecastPlan === "ultra";
@@ -183,11 +186,11 @@ export function HorizonForecastChart({
               Forward path
             </p>
             <p className={`mt-1 font-display text-3xl font-bold ${title}`}>
-              {formatPrice(projected)}
+              {pathDays > 0 && projected != null ? formatPrice(projected) : "--"}
             </p>
             <p className={`mt-1 text-xs ${muted}`}>
               {pathDays <= 0.05
-                ? "Last close. Pick a horizon, then Predict to draw the path."
+                ? "Pick a horizon, then Predict to draw the path."
                 : `Range ${formatPrice(low)} – ${formatPrice(high)} · ${projectedLabel}`}
             </p>
           </div>

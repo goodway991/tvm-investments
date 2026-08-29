@@ -9,18 +9,29 @@ import {
   type HorizonStats,
 } from "@/lib/horizon-forecast";
 import {
+  lastDayChangePct,
+  researchHorizonRead,
+  sectorEtfSymbol,
+  tapeWeightForPlan,
+  walkResearchStats,
+} from "@/lib/horizon-research";
+import {
   DEFAULT_ADVANCED_SETTINGS,
   fitAdvancedForecast,
   ohlcvToHistory,
 } from "@/lib/advanced-forecast";
+import { resolveSector } from "@/lib/sector-dives";
 import {
   fetchYahooAnalystView,
+  fetchYahooCandidate,
   fetchYahooChartSeries,
+  fetchYahooNews,
   fetchYahooOhlcvSeries,
 } from "@/lib/providers/yahoo";
+import type { StockCandidate } from "@/types";
 
 const CACHE_MS = 15 * 60 * 1000;
-const GEMINI_TIMEOUT_MS = 1800;
+const GEMINI_TIMEOUT_MS = 4000;
 const ANALYST_YEAR_DAYS = 252;
 
 export type LiveForecast = {
@@ -33,6 +44,7 @@ export type LiveForecast = {
   thetaLog: number;
   lastDelta: number;
   rho: number;
+  avgBlend: number;
   source: "yahoo" | "yahoo+gemini";
   targetMean: number | null;
   targetLow: number | null;
@@ -45,6 +57,14 @@ export type LiveForecast = {
 type CacheEntry = { at: number; value: LiveForecast };
 const cache = new Map<string, CacheEntry>();
 
+const EMPTY_ANALYST = {
+  targetMean: null as number | null,
+  targetLow: null as number | null,
+  targetHigh: null as number | null,
+  recommendation: null as string | null,
+  analystCount: null as number | null,
+};
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -53,11 +73,10 @@ function cacheKey(symbol: string, asOf: string | undefined, plan: PlanId) {
   return `${symbol}:${asOf ?? "live"}:${plan}`;
 }
 
-function blendDrift(stats: HorizonStats, targetMean: number | null) {
-  if (!(targetMean && targetMean > 0 && stats.last > 0)) return stats.dailyDrift;
-  const analystDaily = Math.log(targetMean / stats.last) / ANALYST_YEAR_DAYS;
+function analystDailyDrift(last: number, targetMean: number | null) {
+  if (!(targetMean && targetMean > 0 && last > 0)) return 0;
   return clamp(
-    stats.dailyDrift * 0.88 + analystDaily * 0.12,
+    Math.log(targetMean / last) / ANALYST_YEAR_DAYS,
     -MAX_DAILY_DRIFT,
     MAX_DAILY_DRIFT,
   );
@@ -68,10 +87,10 @@ function blendGeminiDrift(
   gemini: number,
   dailyVol: number,
 ) {
-  const cap = Math.max(dailyVol, 0.004);
+  const cap = Math.max(dailyVol * 1.6, 0.005);
   const bounded = clamp(gemini, statistical - cap, statistical + cap);
   return clamp(
-    statistical * 0.75 + bounded * 0.25,
+    statistical * 0.55 + bounded * 0.45,
     -MAX_DAILY_DRIFT,
     MAX_DAILY_DRIFT,
   );
@@ -82,6 +101,11 @@ async function geminiShortTermDrift(input: {
   last: number;
   dailyDrift: number;
   dailyVol: number;
+  sector: string;
+  sectorEtf: string;
+  sectorChange: number;
+  marketChange: number;
+  researchNote: string;
   targetMean: number | null;
   recommendation: string | null;
   headlines: string[];
@@ -91,13 +115,16 @@ async function geminiShortTermDrift(input: {
   if (!geminiKey || !model) return null;
 
   const news =
-    input.headlines.slice(0, 6).map((line) => `- ${line}`).join("\n") ||
+    input.headlines.slice(0, 8).map((line) => `- ${line}`).join("\n") ||
     "- No recent headlines";
-  const prompt = `Estimate expected daily log return for the NEXT 5 to 10 trading days only. JSON only:
+  const prompt = `Estimate expected daily log return for the NEXT 5 to 10 trading days. JSON only:
 {"dailyDrift": number, "note": "one sentence"}
-dailyDrift must stay close to the historical daily drift below (within about one daily vol). Do not treat the 12-month analyst target as a 2-week price destination. Typical short-term dailyDrift is between -0.012 and 0.012.
+Use the stock tape, sector tape, and headlines. Do not flatten to the last close. Do not treat the 12-month analyst target as a 2-week price. Typical dailyDrift is between -0.012 and 0.012.
 
-${input.symbol} last close ${input.last}. Short-term daily log increment ${input.dailyDrift.toFixed(5)}, daily vol ${input.dailyVol.toFixed(5)}. Yahoo 12-month mean target ${input.targetMean ?? "n/a"} (context only), recommendation ${input.recommendation ?? "n/a"}.
+${input.symbol} last close ${input.last}. Research tilt ${input.dailyDrift.toFixed(5)} (daily vol ${input.dailyVol.toFixed(5)}).
+Sector ${input.sector} via ${input.sectorEtf} 1-day ${input.sectorChange.toFixed(2)}%. SPY 1-day ${input.marketChange.toFixed(2)}%.
+8-signal read: ${input.researchNote}
+Yahoo 12-month mean target ${input.targetMean ?? "n/a"} (context only), recommendation ${input.recommendation ?? "n/a"}.
 Headlines:
 ${news}`;
 
@@ -116,7 +143,7 @@ ${news}`;
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.2,
+            temperature: 0.25,
             responseMimeType: "application/json",
           },
         }),
@@ -137,13 +164,94 @@ ${news}`;
       note:
         typeof parsed.note === "string" && parsed.note.trim()
           ? parsed.note.trim().slice(0, 220)
-          : "Short-term path from recent closes.",
+          : input.researchNote,
     };
   } catch {
     return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function loadCandidate(symbol: string, asOf?: string): Promise<StockCandidate> {
+  const ticker = symbol.toUpperCase();
+  if (asOf) {
+    const bars = await fetchYahooOhlcvSeries(ticker, 90, asOf);
+    return emptyCandidate(ticker, bars);
+  }
+  try {
+    return await fetchYahooCandidate(ticker);
+  } catch {
+    const [bars, headlines] = await Promise.all([
+      fetchYahooOhlcvSeries(ticker, 90),
+      fetchYahooNews(ticker, 6).catch(() => []),
+    ]);
+    return { ...emptyCandidate(ticker, bars), headlines };
+  }
+}
+
+function emptyCandidate(symbol: string, bars: Awaited<ReturnType<typeof fetchYahooOhlcvSeries>>): StockCandidate {
+  const last = bars.at(-1);
+  const prev = bars.at(-2);
+  const price = last?.close ?? 0;
+  const prevClose = prev?.close ?? price;
+  return {
+    symbol,
+    name: symbol,
+    sector: resolveSector(symbol, "", ""),
+    industry: "",
+    price,
+    change: price - prevClose,
+    changePercent: prevClose ? ((price - prevClose) / prevClose) * 100 : 0,
+    volume: last?.volume ?? 0,
+    fundamentals: {
+      peRatio: null,
+      beta: null,
+      eps: null,
+      marketCap: null,
+      avgVolume: null,
+      shortInterestPct: null,
+    },
+    ohlcv: bars,
+    yearCloses: [],
+    headlines: [],
+    signals: [],
+    compositeScore: 0,
+    maxCompositeScore: 100,
+  };
+}
+
+async function loadPeerReturns(sector: string, asOf?: string) {
+  const etf = sectorEtfSymbol(sector);
+  try {
+    const [sectorSeries, spySeries] = await Promise.all([
+      fetchYahooChartSeries(etf, "month", asOf, 16),
+      etf === "SPY"
+        ? Promise.resolve(null)
+        : fetchYahooChartSeries("SPY", "month", asOf, 16).catch(() => null),
+    ]);
+    const sectorCloses = sectorSeries.map((point) => point.value);
+    const marketCloses = (spySeries ?? sectorSeries).map((point) => point.value);
+    return {
+      etf,
+      sectorChange: lastDayChangePct(sectorCloses),
+      marketChange: lastDayChangePct(marketCloses),
+    };
+  } catch {
+    return { etf, sectorChange: 0, marketChange: 0 };
+  }
+}
+
+function planNote(plan: PlanId, researchNote: string, usedGemini: boolean) {
+  if (plan === "ultra") {
+    return usedGemini
+      ? researchNote
+      : `Ultra 8-signal research-read. ${researchNote}`;
+  }
+  if (plan === "pro") {
+    return `Non-algorithm path from tape, sector, and headlines. ${researchNote}`;
+  }
+  return `Decent short-term path from tape, sector, and headlines. ${researchNote}`;
 }
 
 export async function buildLiveForecast(
@@ -155,87 +263,99 @@ export async function buildLiveForecast(
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
-  if (plan === "ultra") {
-    const bars = await fetchYahooOhlcvSeries(symbol, 90, asOf);
-    const stats = fitAdvancedForecast(bars, DEFAULT_ADVANCED_SETTINGS);
-    const history = ohlcvToHistory(bars).slice(-90);
-    if (!stats || history.length < 3) {
-      throw new Error("Not enough daily bars to project this name.");
-    }
-    const value: LiveForecast = {
-      symbol,
-      history,
-      last: stats.last,
-      dailyDrift: stats.dailyDrift,
-      dailyVol: clamp(stats.dailyVol, MIN_SIGMA, MAX_SIGMA),
-      kappa: stats.kappa,
-      thetaLog: stats.thetaLog,
-      lastDelta: stats.lastDelta,
-      rho: stats.rho,
-      source: "yahoo",
-      targetMean: null,
-      targetLow: null,
-      targetHigh: null,
-      recommendation: null,
-      analystCount: null,
-      note: "Ultra algorithm-based 99%* research-read.",
-    };
-    cache.set(key, { at: Date.now(), value });
-    return value;
-  }
-
-  const [history, analyst] = await Promise.all([
-    fetchYahooChartSeries(symbol, "month", asOf, 90),
-    plan === "pro" && !asOf
-      ? fetchYahooAnalystView(symbol)
-      : Promise.resolve({
-          targetMean: null,
-          targetLow: null,
-          targetHigh: null,
-          recommendation: null,
-          analystCount: null,
-        }),
+  const [candidate, analyst] = await Promise.all([
+    loadCandidate(symbol, asOf),
+    plan !== "free" && !asOf
+      ? fetchYahooAnalystView(symbol).catch(() => EMPTY_ANALYST)
+      : Promise.resolve(EMPTY_ANALYST),
   ]);
 
-  const stats =
-    plan === "pro"
-      ? horizonStats(history.map((point) => point.value))
-      : simpleHorizonStats(history.map((point) => point.value));
-  if (!stats) {
+  const history = ohlcvToHistory(candidate.ohlcv).slice(-90);
+  if (history.length < 3) {
+    throw new Error("Not enough daily bars to project this name.");
+  }
+
+  const tape: HorizonStats | null =
+    plan === "ultra"
+      ? fitAdvancedForecast(candidate.ohlcv, DEFAULT_ADVANCED_SETTINGS)
+      : plan === "pro"
+        ? horizonStats(history.map((point) => point.value))
+        : simpleHorizonStats(history.map((point) => point.value));
+  if (!tape) {
     throw new Error("Not enough daily closes to project this name.");
   }
 
-  const dailyDrift =
-    plan === "pro" ? blendDrift(stats, analyst.targetMean) : stats.dailyDrift;
-  const source: LiveForecast["source"] = "yahoo";
-  const note =
-    plan === "pro"
-      ? analyst.targetMean
-        ? `Non-algorithm path from recent closes. 12-month mean target ${analyst.targetMean.toFixed(2)}${analyst.recommendation ? ` · ${analyst.recommendation.replace(/_/g, " ")}` : ""}.`
-        : "Non-algorithm path from recent closes."
-      : "Decent short-term path from recent closes.";
+  const peers = await loadPeerReturns(candidate.sector, asOf);
+  const research = await researchHorizonRead({
+    stock: candidate,
+    sectorChangePercent: peers.sectorChange,
+    marketChangePercent: peers.marketChange,
+    sectorEtf: peers.etf,
+    useLlm: plan === "ultra" && !asOf,
+  });
+
+  let walked = walkResearchStats(
+    tape,
+    research.dailyDrift,
+    tapeWeightForPlan(plan),
+  );
+  if (plan === "pro") {
+    const analystDaily = analystDailyDrift(walked.last, analyst.targetMean);
+    const blended = clamp(
+      walked.dailyDrift * 0.88 + analystDaily * 0.12,
+      -MAX_DAILY_DRIFT,
+      MAX_DAILY_DRIFT,
+    );
+    walked = { ...walked, dailyDrift: blended, thetaLog: blended, lastDelta: blended };
+  }
+
+  let source: LiveForecast["source"] = "yahoo";
+  let note = research.note;
+  if (plan === "ultra" && !asOf) {
+    const gemini = await geminiShortTermDrift({
+      symbol,
+      last: walked.last,
+      dailyDrift: walked.dailyDrift,
+      dailyVol: walked.dailyVol,
+      sector: candidate.sector,
+      sectorEtf: peers.etf,
+      sectorChange: peers.sectorChange,
+      marketChange: peers.marketChange,
+      researchNote: research.note,
+      targetMean: analyst.targetMean,
+      recommendation: analyst.recommendation,
+      headlines: candidate.headlines.map((item) => item.headline),
+    });
+    if (gemini) {
+      const blended = blendGeminiDrift(
+        walked.dailyDrift,
+        gemini.dailyDrift,
+        walked.dailyVol,
+      );
+      walked = { ...walked, dailyDrift: blended, thetaLog: blended, lastDelta: blended };
+      note = gemini.note;
+      source = "yahoo+gemini";
+    }
+  }
 
   const value: LiveForecast = {
     symbol,
     history,
-    last: stats.last,
-    dailyDrift,
-    dailyVol: clamp(stats.dailyVol, MIN_SIGMA, MAX_SIGMA),
-    kappa: stats.kappa,
-    thetaLog: clamp(
-      stats.thetaLog * 0.7 + dailyDrift * 0.3,
-      -MAX_DAILY_DRIFT,
-      MAX_DAILY_DRIFT,
-    ),
-    lastDelta: stats.lastDelta,
-    rho: stats.rho,
+    last: walked.last,
+    dailyDrift: walked.dailyDrift,
+    dailyVol: clamp(walked.dailyVol, MIN_SIGMA, MAX_SIGMA),
+    kappa: 0,
+    thetaLog: walked.thetaLog,
+    lastDelta: walked.lastDelta,
+    rho: 0,
+    avgBlend: 0,
     source,
     targetMean: analyst.targetMean,
     targetLow: analyst.targetLow,
     targetHigh: analyst.targetHigh,
     recommendation: analyst.recommendation,
     analystCount: analyst.analystCount,
-    note,
+    note: planNote(plan, note, source === "yahoo+gemini").slice(0, 280),
   };
   cache.set(key, { at: Date.now(), value });
   return value;

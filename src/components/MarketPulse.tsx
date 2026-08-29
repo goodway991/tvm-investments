@@ -180,6 +180,7 @@ export function MarketPulse({
         thetaLog?: number;
         lastDelta?: number;
         rho?: number;
+        avgBlend?: number;
         note?: string | null;
         error?: string;
       };
@@ -196,6 +197,7 @@ export function MarketPulse({
           thetaLog: payload.thetaLog ?? payload.dailyDrift ?? 0,
           lastDelta: payload.lastDelta ?? 0,
           rho: payload.rho ?? 0,
+          avgBlend: payload.avgBlend ?? 0,
         },
         note: payload.note ?? null,
       };

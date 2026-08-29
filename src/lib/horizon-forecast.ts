@@ -217,7 +217,7 @@ export function simpleHorizonStats(closes: number[]): HorizonStats | null {
     thetaLog: clamp(mu, -MAX_DAILY_DRIFT * 0.55, MAX_DAILY_DRIFT * 0.55),
     lastDelta: rets[rets.length - 1] ?? 0,
     rho: 0,
-    avgBlend: 0.15,
+    avgBlend: 0,
   };
 }
 
@@ -404,15 +404,16 @@ export function buildHorizonChart(
   const recent = history.slice(-keep);
   const points: HorizonChartPoint[] = recent.map((point, index) => {
     const isLast = index === recent.length - 1;
+    const seedPath = isLast && Math.round(tradingDaysAhead) > 0;
     return {
       label: point.label,
       timestamp: point.timestamp,
       actual: point.value,
-      predicted: isLast ? point.value : null,
-      low: isLast ? point.value : null,
-      high: isLast ? point.value : null,
-      bandBase: isLast ? point.value : null,
-      bandSize: isLast ? 0 : null,
+      predicted: seedPath ? point.value : null,
+      low: seedPath ? point.value : null,
+      high: seedPath ? point.value : null,
+      bandBase: seedPath ? point.value : null,
+      bandSize: seedPath ? 0 : null,
     };
   });
 

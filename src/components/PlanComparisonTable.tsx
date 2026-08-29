@@ -1,40 +1,64 @@
 "use client";
 
-import { PLAN_FEATURES, type PlanId } from "@/lib/plans";
+import {
+  PLAN_FEATURES,
+  planFeatureMark,
+  type PlanId,
+} from "@/lib/plans";
 import { showTvm10Labs } from "@/lib/beta-labs";
 import { BogenTerms } from "@/components/BogenTerms";
 import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 
-function PlanMark({ included }: { included: boolean }) {
-  if (included) {
-    return (
-      <span className="plan-mark plan-mark-yes" aria-label="Included">
-        <svg viewBox="0 0 20 20" aria-hidden className="h-3.5 w-3.5">
-          <path
-            d="M4.5 10.5 8.2 14 15.5 6.2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
-    );
-  }
-
+function CheckIcon() {
   return (
-    <span className="plan-mark plan-mark-no" aria-label="Not included">
-      <svg viewBox="0 0 20 20" aria-hidden className="h-3.5 w-3.5">
-        <path
-          d="M6 6 14 14M14 6 6 14"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-        />
-      </svg>
+    <svg viewBox="0 0 20 20" aria-hidden className="h-3.5 w-3.5">
+      <path
+        d="M4.5 10.5 8.2 14 15.5 6.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CrossIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden className="h-3.5 w-3.5">
+      <path
+        d="M6 6 14 14M14 6 6 14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function PlanMark({
+  kind,
+  mini = false,
+}: {
+  kind: "yes" | "better" | "no";
+  mini?: boolean;
+}) {
+  const label =
+    kind === "yes"
+      ? "Included"
+      : kind === "better"
+        ? "Better version than this row"
+        : "Not included";
+  return (
+    <span
+      className={`plan-mark plan-mark-${kind}${mini ? " plan-mark-mini" : ""}`}
+      aria-label={label}
+      title={label}
+    >
+      {kind === "no" ? <CrossIcon /> : <CheckIcon />}
     </span>
   );
 }
@@ -69,7 +93,22 @@ export function PlanComparisonTable({
 
   return (
     <>
-      <div className={`plan-compare ${showUltra ? "has-ultra" : ""}`}>
+      <div className="plan-compare-wrap">
+        <div className="plan-mark-legend" aria-label="Plan icon key">
+          <span>
+            <PlanMark kind="yes" mini />
+            included
+          </span>
+          <span>
+            <PlanMark kind="better" mini />
+            better than the plan to the left
+          </span>
+          <span>
+            <PlanMark kind="no" mini />
+            not included
+          </span>
+        </div>
+        <div className={`plan-compare ${showUltra ? "has-ultra" : ""}`}>
         {alreadyUltra ? null : (
           <div
             className={`plan-current-pane ${alreadyPro ? "is-pro" : "is-free"}`}
@@ -142,18 +181,19 @@ export function PlanComparisonTable({
               <BogenTerms text={feature.name} />
             </div>
             <div className="plan-compare-cell plan-compare-mark">
-              <PlanMark included={feature.free} />
+              <PlanMark kind={planFeatureMark(feature, "free", features)} />
             </div>
             <div className="plan-compare-cell plan-compare-mark">
-              <PlanMark included={feature.pro} />
+              <PlanMark kind={planFeatureMark(feature, "pro", features)} />
             </div>
             {showUltra ? (
               <div className="plan-compare-cell plan-compare-mark plan-compare-ultra">
-                <PlanMark included={feature.ultra ?? feature.pro} />
+                <PlanMark kind={planFeatureMark(feature, "ultra", features)} />
               </div>
             ) : null}
           </div>
         ))}
+        </div>
       </div>
       {showUltra ? (
         <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">

@@ -14,6 +14,7 @@ type ForecastPayload = {
   thetaLog?: number;
   lastDelta?: number;
   rho?: number;
+  avgBlend?: number;
   error?: string;
 };
 
@@ -27,6 +28,7 @@ function parseStats(payload: ForecastPayload): HorizonStats | null {
     thetaLog: payload.thetaLog ?? payload.dailyDrift ?? 0,
     lastDelta: payload.lastDelta ?? 0,
     rho: payload.rho ?? 0,
+    avgBlend: payload.avgBlend ?? 0,
   };
 }
 

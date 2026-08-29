@@ -158,6 +158,7 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
               thetaLog?: number;
               lastDelta?: number;
               rho?: number;
+              avgBlend?: number;
               note?: string | null;
             };
             if (!response.ok || !payload.history?.length || payload.last == null) return;
@@ -171,6 +172,7 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
                 thetaLog: payload.thetaLog ?? payload.dailyDrift ?? 0,
                 lastDelta: payload.lastDelta ?? 0,
                 rho: payload.rho ?? 0,
+                avgBlend: payload.avgBlend ?? 0,
               },
               note: payload.note ?? null,
             };
