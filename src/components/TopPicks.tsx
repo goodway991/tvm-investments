@@ -6,6 +6,7 @@ import { STRATEGY_NAMES } from "@/types";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import { BogenHeading } from "@/components/BogenProvider";
 import { ProGlowText } from "@/components/ProGlowText";
+import { evaluateRange52Week } from "@/lib/range-52-week";
 
 interface TopPicksProps {
   picks: StockCandidate[];
@@ -64,9 +65,15 @@ function fundamentalRows(pick?: StockCandidate) {
   ];
 }
 
-function signalsForLayout(signals: StockCandidate["signals"] | undefined) {
+function signalsForLayout(
+  signals: StockCandidate["signals"] | undefined,
+  pick?: StockCandidate,
+) {
   const byId = new Map((signals ?? []).map((signal) => [signal.strategyId, signal]));
   return STRATEGY_ORDER.map((id) => {
+    if (id === "short_squeeze" && pick) {
+      return evaluateRange52Week(pick);
+    }
     const signal = byId.get(id);
     return (
       signal ?? {
@@ -186,7 +193,7 @@ export function TopPicks({
                     )}
                   </div>
                   <div className="glass rounded-[22px] p-4 shadow-[0_16px_34px_-22px_rgba(30,70,160,0.4)]">
-                    <SignalGrid signals={signalsForLayout(pick?.signals)} />
+                    <SignalGrid signals={signalsForLayout(pick?.signals, pick)} />
                   </div>
                 </div>
               )}

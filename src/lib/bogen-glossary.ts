@@ -86,6 +86,11 @@ export const BOGEN_GLOSSARY: GlossaryTerm[] = [
       "Whether a name held up versus its group. A relative-strength signal prefers names that did not sink with the sector.",
   },
   {
+    term: "52-week range",
+    blurb:
+      "Where today’s price sits between the 52-week high and low. Near the lows, or well off the high, is a pullback reading — not a squeeze.",
+  },
+  {
     term: "short squeeze",
     blurb:
       "A squeeze setup: heavy short interest plus a bounce can force shorts to buy back, lifting the price fast.",

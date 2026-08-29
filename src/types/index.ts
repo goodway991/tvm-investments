@@ -259,7 +259,7 @@ export const STRATEGY_NAMES: Record<StrategyId, string> = {
   relative_strength: "Relative strength vs sector/market",
   catalyst_upside: "Catalyst-driven upside",
   gap_fill: "Gap fills",
-  short_squeeze: "Short interest / squeeze setups",
+  short_squeeze: "52-week range / pullback",
 };
 
 export const STRATEGY_DETAILS: Record<StrategyId, string> = {
@@ -278,5 +278,5 @@ export const STRATEGY_DETAILS: Record<StrategyId, string> = {
   gap_fill:
     "When a stock gaps down at the open without new negative news overnight, there is a common pattern of it filling the gap — drifting back toward the previous close during the session.",
   short_squeeze:
-    "Stocks with high short interest that start moving up can trigger short covering, forcing more buying. Live short-interest and options-flow feeds are paid (Ortex, Unusual Whales) or biweekly (FINRA), so this signal stays visible but is marked limited on the free tier.",
+    "Where price sits in its 52-week range. Names near the lows, or well off the high, are pullback setups using Yahoo highs and lows — no Ortex or FINRA feed required.",
 };

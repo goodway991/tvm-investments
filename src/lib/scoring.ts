@@ -18,6 +18,7 @@ import {
   detectGapDown,
   findSupportLevel,
 } from "./indicators";
+import { evaluateRange52Week } from "./range-52-week";
 
 const KEYWORDS_COMPANY_BAD = [
   "earnings miss",
@@ -300,21 +301,8 @@ function evaluateStrategies(
       : "Insufficient data for gap detection.",
   });
 
-  // 8. Short squeeze — limited on free tier
-  const shortPct = stock.fundamentals.shortInterestPct;
-  const squeezeTriggered = shortPct !== null && shortPct > 15 && stock.changePercent > 2;
-  signals.push({
-    strategyId: "short_squeeze",
-    strategyName: STRATEGY_NAMES.short_squeeze,
-    triggered: squeezeTriggered,
-    score: squeezeTriggered ? 70 : shortPct !== null ? (shortPct > 10 ? 40 : 20) : 0,
-    maxScore: 100,
-    detail:
-      shortPct !== null
-        ? `Short interest ~${shortPct.toFixed(1)}% (FINRA biweekly; may be stale).`
-        : "Short interest data unavailable on free tier — Ortex/FINRA required for live accuracy.",
-    unavailable: shortPct === null,
-  });
+  // 8. 52-week range / pullback (Yahoo highs/lows — works on free)
+  signals.push(evaluateRange52Week(stock));
 
   return signals;
 }

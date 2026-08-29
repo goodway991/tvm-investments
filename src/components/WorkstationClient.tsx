@@ -33,7 +33,7 @@ const STRATEGIES: Array<{ id: StrategyId; label: string }> = [
   { id: "relative_strength", label: "RS" },
   { id: "catalyst_upside", label: "Catalyst" },
   { id: "gap_fill", label: "Gap" },
-  { id: "short_squeeze", label: "Squeeze" },
+  { id: "short_squeeze", label: "52-week" },
 ];
 
 type QuoteCard = {

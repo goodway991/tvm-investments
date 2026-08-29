@@ -13,6 +13,7 @@ import { AddToWatchlistButton } from "@/components/AddToWatchlistButton";
 import { sparklineValues, type ChartRange } from "@/lib/chart-series";
 import { authedFetch } from "@/lib/authed-fetch";
 import { planHasPro } from "@/lib/plans";
+import { evaluateRange52Week } from "@/lib/range-52-week";
 
 function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -89,9 +90,13 @@ export function StockDetailModal({
     };
   }, [isPro, stock.symbol]);
 
-  const activeSignals = detail.signals.filter(
-    (signal) => signal.triggered || signal.score > 50,
-  );
+  const activeSignals = detail.signals
+    .map((signal) =>
+      signal.strategyId === "short_squeeze"
+        ? evaluateRange52Week(detail)
+        : signal,
+    )
+    .filter((signal) => signal.triggered || signal.score > 50);
 
   return (
     <OverlaySheet

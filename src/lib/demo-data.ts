@@ -435,7 +435,7 @@ export const DISCLAIMER =
   "Past flagged performance does not guarantee future results. Quotes, news, and scores can be delayed, incomplete, or wrong.";
 
 export const METHODOLOGY_NOTE =
-  "Eight weighted strategies (dip-without-fundamental-cause, oversold RSI/Bollinger, volume/momentum, support bounces, relative strength, catalysts, gap fills, short interest) combine into a composite score. Short interest and options flow use simplified or unavailable markers on free data tiers. News cause is classified via OpenAI when configured, otherwise rule-based keywords.";
+  "Eight weighted strategies (dip-without-fundamental-cause, oversold RSI/Bollinger, volume/momentum, support bounces, relative strength, catalysts, gap fills, 52-week range) combine into a composite score. Unusual options flow stays headline-only on the free data tier. News cause is classified via OpenAI when configured, otherwise rule-based keywords.";
 
 export function buildDemoMovers(candidates: StockCandidate[]): MarketMover[] {
   return [...candidates]

@@ -26,9 +26,9 @@ export function Methodology() {
             <p className="mt-2 text-xs leading-relaxed text-ink-soft">
               {STRATEGY_DETAILS[id]}
             </p>
-            {(id === "short_squeeze" || id === "catalyst_upside") && (
+            {id === "catalyst_upside" && (
               <p className="mt-2 text-xs text-amber-600">
-                Partial: options and short-interest data are limited on the free tier.
+                Partial: unusual options flow is paid, so this signal uses headline scanning.
               </p>
             )}
           </div>
