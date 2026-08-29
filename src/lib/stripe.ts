@@ -32,6 +32,12 @@ export function stripePriceId(plan: PaidPlanId, interval: BillingInterval) {
     : process.env.STRIPE_PRICE_MONTHLY || process.env.STRIPE_PRICE_PRO_MONTHLY;
 }
 
+/** Archived live Pro prices so existing subscribers still map after the catalog change. */
+const LEGACY_PRO_PRICE_IDS = [
+  "price_1U8tSfJhvXEbbFikxmUBZNWx",
+  "price_1U8tSgJhvXEbbFik712ReGSl",
+];
+
 export function planFromPriceId(priceId: string | null | undefined): PaidPlanId | null {
   if (!priceId) return null;
   const ultra = [
@@ -44,6 +50,7 @@ export function planFromPriceId(priceId: string | null | undefined): PaidPlanId 
     process.env.STRIPE_PRICE_YEARLY,
     process.env.STRIPE_PRICE_PRO_MONTHLY,
     process.env.STRIPE_PRICE_PRO_YEARLY,
+    ...LEGACY_PRO_PRICE_IDS,
   ];
   if (pro.includes(priceId)) return "pro";
   return null;
