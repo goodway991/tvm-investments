@@ -254,7 +254,7 @@ export function LandingPage() {
             <div className="mt-7 flex justify-center gap-3">
               <Link
                 href="/signup"
-                className="rounded-full bg-white px-7 py-3.5 font-semibold text-violet transition-transform hover:-translate-y-0.5"
+                className="on-white rounded-full bg-white px-7 py-3.5 font-semibold text-violet transition-transform hover:-translate-y-0.5"
               >
                 Create account
               </Link>

@@ -56,7 +56,7 @@ export function BillingNotice() {
       <button
         type="button"
         onClick={() => router.replace(pathname)}
-        className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-violet"
+        className="on-white rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-violet"
       >
         Dismiss
       </button>

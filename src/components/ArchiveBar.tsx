@@ -27,7 +27,7 @@ export function ArchiveBanner() {
           <button
             type="button"
             onClick={() => router.push(pathname)}
-            className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-violet"
+            className="on-white rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-violet"
           >
             Back to latest
           </button>

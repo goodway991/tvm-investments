@@ -615,6 +615,15 @@ html.dark .bg-white\/90 {
 
 html.dark .glass-violet .bg-white {
   background-color: #ffffff;
+  color: #0a0a0a !important;
+}
+
+html.dark .glass-violet .bg-white.text-violet,
+html.dark .glass-violet a.bg-white,
+html.dark .glass-violet button.bg-white,
+html.dark .glass-violet .bg-white .text-violet {
+  color: #0a0a0a !important;
+  -webkit-text-fill-color: #0a0a0a;
 }
 
 .on-white,

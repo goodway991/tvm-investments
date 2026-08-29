@@ -114,7 +114,7 @@ export function AboutPage() {
             </p>
             <Link
               href="/dashboard"
-              className="mt-7 inline-flex rounded-full bg-white px-8 py-3.5 font-semibold text-violet transition-transform hover:-translate-y-0.5"
+              className="on-white mt-7 inline-flex rounded-full bg-white px-8 py-3.5 font-semibold text-violet transition-transform hover:-translate-y-0.5"
             >
               Open dashboard
             </Link>
