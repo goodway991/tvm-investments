@@ -128,6 +128,21 @@ export async function clearPaidPlan(subscription: Stripe.Subscription) {
   });
 }
 
+/** Ends Stripe billing immediately. Refunds stay in the Stripe Dashboard. */
+export async function cancelSubscriptionNow(subscriptionId: string) {
+  const id = subscriptionId.trim();
+  if (!id) return;
+  const stripe = getStripe();
+  try {
+    await stripe.subscriptions.cancel(id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (!/no such subscription|already been canceled|resource_missing/i.test(message)) {
+      throw error;
+    }
+  }
+}
+
 export async function applyCheckoutSessionObject(session: Stripe.Checkout.Session) {
   const uid = uidFrom(session.metadata, session.client_reference_id);
   if (!uid) return;

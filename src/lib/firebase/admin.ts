@@ -428,79 +428,56 @@ export async function listAdminAccounts(): Promise<{
   return { rows, plansLoaded };
 }
 
-export async function setComplimentaryPro(uid: string, grant: boolean) {
+export async function setAdminPlan(uid: string, plan: PlanId) {
   const auth = await getAdminAuth();
   const db = await getAdminDb();
   if (!auth || !db) throw new Error("Admin access is not configured.");
+  if (plan !== "free" && plan !== "pro" && plan !== "ultra") {
+    throw new Error("Pick Free, Pro, or Ultra.");
+  }
 
   const record = await auth.getUser(uid);
   if (isAdminEmail(record.email)) {
-    throw new Error("The admin account stays on Pro.");
+    throw new Error("The admin account stays on Ultra.");
   }
 
   const ref = db.collection("entitlements").doc(uid);
   const current = await ref.get();
   const data = current.data() || {};
-  if (data.source === "stripe" || data.source === "paid") {
-    throw new Error("Paid plans stay as billed. Leave that account alone.");
-  }
   if (data.role === "admin") {
-    throw new Error("The admin account stays on Pro.");
+    throw new Error("The admin account stays on Ultra.");
   }
 
   const { FieldValue } = await import("firebase-admin/firestore");
   const now = new Date();
-  if (grant) {
-    await ref.set(
-      {
-        uid,
-        role: "client",
-        plan: "pro",
-        watchlistLimit: 100,
-        cooldownDays: 0,
-        createdAt: data.createdAt || now,
-        updatedAt: now,
-        source: "comp",
-        giftedAt: now,
-        giftAckedAt: FieldValue.delete(),
-      },
-      { merge: true },
-    );
-    return;
-  }
-
-  if (!current.exists) return;
-
+  const paid = plan === "pro" || plan === "ultra";
   await ref.set(
     {
       uid,
       role: "client",
-      plan: "free",
-      watchlistLimit: 10,
-      cooldownDays: 7,
+      plan: paid ? plan : "free",
+      watchlistLimit: watchlistLimitForPlan(paid ? plan : "free"),
+      cooldownDays: paid ? 0 : 7,
       createdAt: data.createdAt || now,
       updatedAt: now,
-      source: FieldValue.delete(),
-      giftedAt: FieldValue.delete(),
+      source: paid ? "comp" : FieldValue.delete(),
+      giftedAt: paid ? now : FieldValue.delete(),
       giftAckedAt: FieldValue.delete(),
+      stripeSubscriptionId: FieldValue.delete(),
+      stripeCancelAtPeriodEnd: FieldValue.delete(),
+      stripeAccessUntil: FieldValue.delete(),
+      stripePendingPlan: FieldValue.delete(),
+      stripePendingUntil: FieldValue.delete(),
     },
     { merge: true },
   );
 
-  const watchRef = db.collection("watchlists").doc(uid);
-  const watchSnap = await watchRef.get();
-  if (watchSnap.exists) {
-    await watchRef.set(
-      {
-        uid,
-        symbols: [],
-        changedAt: now,
-        nextChangeAt: now,
-        updatedAt: now,
-      },
-      { merge: true },
-    );
-  }
+  return {
+    stripeSubscriptionId:
+      typeof data.stripeSubscriptionId === "string"
+        ? data.stripeSubscriptionId
+        : "",
+  };
 }
 
 export async function saveFeedback(entry: {
@@ -674,6 +651,26 @@ export async function applyStripeEntitlement(input: {
   const { FieldValue } = await import("firebase-admin/firestore");
   const now = new Date();
   const paid = input.plan === "pro" || input.plan === "ultra";
+  const keepComp =
+    !paid &&
+    data.source === "comp" &&
+    (data.plan === "pro" || data.plan === "ultra");
+  if (keepComp) {
+    await ref.set(
+      {
+        updatedAt: now,
+        stripeCustomerId: input.stripeCustomerId || data.stripeCustomerId || "",
+        stripeSubscriptionId: FieldValue.delete(),
+        stripeCancelAtPeriodEnd: FieldValue.delete(),
+        stripeAccessUntil: FieldValue.delete(),
+        stripePendingPlan: FieldValue.delete(),
+        stripePendingUntil: FieldValue.delete(),
+      },
+      { merge: true },
+    );
+    return;
+  }
+
   await ref.set(
     {
       uid: input.uid,

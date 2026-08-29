@@ -493,8 +493,7 @@ export default function TermsPage() {
         <LegalContact purpose="Legal notices" />
       </p>
       <p>
-        If no public email is listed yet, use the signed-in Settings feedback
-        form.
+        You can also use the signed-in Settings feedback form.
       </p>
     </LegalDocument>
   );

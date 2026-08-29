@@ -739,9 +739,9 @@ export default function PrivacyPage() {
         <LegalContact purpose="Privacy and data-protection requests" />
       </p>
       <p>
-        If no public email is listed yet, submit the request from the signed-in
-        Settings feedback form using the same account the request concerns, and
-        say that it is a privacy request.
+        You can also submit the request from the signed-in Settings feedback
+        form using the same account the request concerns, and say that it is a
+        privacy request.
       </p>
     </LegalDocument>
   );

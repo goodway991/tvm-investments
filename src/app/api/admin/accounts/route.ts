@@ -3,11 +3,19 @@ import {
   isAdminEmail,
   isQuotaError,
   listAdminAccounts,
-  setComplimentaryPro,
+  setAdminPlan,
   verifyIdToken,
 } from "@/lib/firebase/admin";
+import { stripeConfigured } from "@/lib/stripe";
+import { cancelSubscriptionNow } from "@/lib/stripe-entitlements";
+import type { PlanId } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
+
+function parsePlan(value: unknown): PlanId | null {
+  if (value === "free" || value === "pro" || value === "ultra") return value;
+  return null;
+}
 
 async function requireAdmin(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -47,9 +55,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
-  let body: { uid?: string; grant?: boolean };
+  let body: { uid?: string; plan?: string; grant?: boolean };
   try {
-    body = (await request.json()) as { uid?: string; grant?: boolean };
+    body = (await request.json()) as { uid?: string; plan?: string; grant?: boolean };
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
@@ -59,8 +67,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Pick an account." }, { status: 400 });
   }
 
+  const plan =
+    parsePlan(body.plan) ||
+    (typeof body.grant === "boolean" ? (body.grant ? "pro" : "free") : null);
+  if (!plan) {
+    return NextResponse.json({ error: "Pick Free, Pro, or Ultra." }, { status: 400 });
+  }
+
   try {
-    await setComplimentaryPro(uid, Boolean(body.grant));
+    const previous = await setAdminPlan(uid, plan);
+    if (previous.stripeSubscriptionId && stripeConfigured()) {
+      try {
+        await cancelSubscriptionNow(previous.stripeSubscriptionId);
+      } catch {
+        /* Plan is already on TVM. Finish the Stripe cancel in the Dashboard. */
+      }
+    }
     const { rows, plansLoaded } = await listAdminAccounts();
     const nextRows = plansLoaded
       ? rows
@@ -68,15 +90,15 @@ export async function POST(request: NextRequest) {
           row.uid === uid
             ? {
                 ...row,
-                plan: body.grant ? "pro" : "free",
-                source: body.grant ? "comp" : "none",
+                plan,
+                source: plan === "free" ? "none" : "comp",
               }
             : row,
         );
     return NextResponse.json({ rows: nextRows, plansLoaded });
   } catch (error) {
     const message = isQuotaError(error)
-      ? "Firestore daily quota is used up, so gifting could not be saved yet."
+      ? "Firestore daily quota is used up, so the plan could not be saved yet."
       : error instanceof Error
         ? error.message
         : "Unable to update that plan.";

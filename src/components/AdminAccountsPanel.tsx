@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { authedFetch } from "@/lib/authed-fetch";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading } from "@/components/BogenProvider";
 import { ProGlowText } from "@/components/ProGlowText";
@@ -19,8 +20,15 @@ type AccountRow = {
   disabled: boolean;
 };
 
-function paidLook(row: AccountRow) {
-  return row.role === "admin" || row.source === "paid";
+function planLabel(row: AccountRow, plansLoaded: boolean) {
+  if (!plansLoaded) return "Plan unknown";
+  if (row.role === "admin") return "Admin";
+  if (row.source === "paid") {
+    return row.plan === "ultra" ? "Paid Ultra" : "Paid Pro";
+  }
+  if (row.plan === "ultra") return "Complimentary Ultra";
+  if (row.plan === "pro") return "Complimentary Pro";
+  return "Free";
 }
 
 export function AdminAccountsPanel() {
@@ -38,10 +46,7 @@ export function AdminAccountsPanel() {
       return;
     }
     setError("");
-    const token = await user.getIdToken();
-    const response = await fetch("/api/admin/accounts", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await authedFetch("/api/admin/accounts");
     const payload = (await response.json()) as {
       rows?: AccountRow[];
       plansLoaded?: boolean;
@@ -67,19 +72,15 @@ export function AdminAccountsPanel() {
 
   if (entitlement.role !== "admin") return null;
 
-  async function gift(row: AccountRow, grant: boolean) {
-    if (!user || row.role === "admin" || paidLook(row)) return;
+  async function setPlan(row: AccountRow, plan: PlanId) {
+    if (!user || row.role === "admin" || row.plan === plan) return;
     setBusyUid(row.uid);
     setError("");
     try {
-      const token = await user.getIdToken();
-      const response = await fetch("/api/admin/accounts", {
+      const response = await authedFetch("/api/admin/accounts", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ uid: row.uid, grant }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: row.uid, plan }),
       });
       const payload = (await response.json()) as {
         rows?: AccountRow[];
@@ -111,14 +112,13 @@ export function AdminAccountsPanel() {
       </p>
       <h2 className="mt-2 font-display text-2xl font-bold text-ink">
         <BogenHeading id="admin-gifting">
-          <ProGlowText>Complimentary Pro</ProGlowText>
+          <ProGlowText>Account plans</ProGlowText>
         </BogenHeading>
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        <ProGlowText>
-          Every signed-up account is listed here. Give friends Pro without charging
-          them. Paid boxes glow blue — leave those alone.
-        </ProGlowText>
+        Set Free, complimentary Pro, or complimentary Ultra. This also cancels
+        an active Stripe subscription on TVM so they stop being billed here.
+        Refund the charge in Stripe if they are owed money.
       </p>
 
       {loading ? (
@@ -129,7 +129,7 @@ export function AdminAccountsPanel() {
             <p className="text-sm text-ink-soft">No signed-up accounts yet.</p>
           ) : (
             rows.map((row) => {
-              const paid = paidLook(row);
+              const paid = row.source === "paid";
               const name = resolveAccountName({
                 profileName: row.displayName,
                 authName: row.displayName,
@@ -148,42 +148,32 @@ export function AdminAccountsPanel() {
                         {row.role}
                         {row.disabled ? " · Disabled" : ""}
                         {" · "}
-                        {!plansLoaded
-                          ? "Plan unknown"
-                          : paid
-                            ? row.plan === "ultra"
-                              ? "Paid Ultra"
-                              : <ProGlowText>Paid Pro</ProGlowText>
-                            : row.plan === "pro"
-                              ? <ProGlowText>Complimentary Pro</ProGlowText>
-                              : row.plan === "ultra"
-                                ? "Ultra"
-                                : "Free"}
+                        {row.plan === "pro" ? (
+                          <ProGlowText>{planLabel(row, plansLoaded)}</ProGlowText>
+                        ) : (
+                          planLabel(row, plansLoaded)
+                        )}
                       </p>
                     </div>
                     <div>
                       {row.role === "admin" ? (
                         <span className="text-xs font-semibold text-ink-soft">Admin</span>
-                      ) : paid ? (
-                        <span className="text-xs font-semibold text-violet">Paid</span>
-                      ) : row.plan === "pro" && plansLoaded ? (
-                        <button
-                          type="button"
-                          disabled={busyUid === row.uid}
-                          onClick={() => void gift(row, false)}
-                          className="rounded-full border border-coral/30 px-3 py-1.5 text-xs font-semibold text-coral disabled:opacity-50"
-                        >
-                          {busyUid === row.uid ? "Saving…" : "Set to Free"}
-                        </button>
                       ) : (
-                        <button
-                          type="button"
-                          disabled={busyUid === row.uid}
-                          onClick={() => void gift(row, true)}
-                          className="glass-violet rounded-full px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                        >
-                          {busyUid === row.uid ? "Saving…" : <ProGlowText>Give Pro</ProGlowText>}
-                        </button>
+                        <label className="block text-xs font-semibold text-ink-soft">
+                          Plan
+                          <select
+                            className="field mt-1 min-w-40 rounded-2xl px-3 py-2 text-sm font-semibold text-ink disabled:opacity-50"
+                            disabled={busyUid === row.uid || !plansLoaded}
+                            value={row.plan}
+                            onChange={(event) =>
+                              void setPlan(row, event.target.value as PlanId)
+                            }
+                          >
+                            <option value="free">Free</option>
+                            <option value="pro">Pro</option>
+                            <option value="ultra">Ultra</option>
+                          </select>
+                        </label>
                       )}
                     </div>
                   </div>

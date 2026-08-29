@@ -9,8 +9,9 @@ export const LEGAL_JURISDICTION = "the State of New York";
 export const LEGAL_VENUE =
   "the state or federal courts located in New York County, New York";
 
+/** Public legal/privacy inbox. Settings feedback still uses the server ops address. */
+export const PUBLIC_LEGAL_EMAIL = "investmentstvm@gmail.com";
+
 export function getLegalContactEmail() {
-  // Public legal pages only. The ops inbox for Settings feedback is separate
-  // (TVM_CONTACT_EMAIL) and must not appear in the product UI.
-  return process.env.NEXT_PUBLIC_TVM_CONTACT_EMAIL?.trim() || "";
+  return process.env.NEXT_PUBLIC_TVM_CONTACT_EMAIL?.trim() || PUBLIC_LEGAL_EMAIL;
 }
