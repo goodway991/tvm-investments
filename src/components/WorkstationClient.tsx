@@ -366,11 +366,52 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
         </label>
       </div>
 
+      {user && showUltraDesk(entitlement.plan) ? (
+        <AdvancedPredictions
+          uid={user.uid}
+          symbol={tapeSymbol || noteSymbol || watchlist.symbols[0] || ""}
+          universe={universe}
+          watchlist={watchlist.symbols}
+          onSymbol={(next) => {
+            setTapeSymbol(next);
+            setNoteSymbol(next);
+          }}
+        />
+      ) : null}
+
       <section className="glass-strong rounded-[24px] p-5">
-        <h2 className="font-display text-lg font-semibold text-ink">
-          <BogenHeading id="workstation-filters">Filters</BogenHeading>
-        </h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <h2 className="font-display text-lg font-semibold text-ink">Heatmap</h2>
+        {cells.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-soft">
+            No names match these filters. Lower min score or turn off Watchlist only.
+          </p>
+        ) : (
+          <div className="mt-3 grid grid-cols-4 gap-1 sm:grid-cols-8">
+            {cells.map((stock) => (
+              <button
+                key={stock.symbol}
+                type="button"
+                onClick={() => {
+                  setNoteSymbol(stock.symbol);
+                  setTapeSymbol(stock.symbol);
+                }}
+                className={`rounded-lg px-1 py-2 text-center ${heatColor(stock.changePercent)}`}
+                title={`${stock.symbol} ${stock.changePercent.toFixed(2)}%`}
+              >
+                <p className="text-[10px] font-bold">{stock.symbol}</p>
+                <p className="text-[10px]">{stock.changePercent.toFixed(1)}%</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="glass-strong rounded-[24px] p-5">
+          <h2 className="font-display text-lg font-semibold text-ink">
+            <BogenHeading id="workstation-filters">Filters</BogenHeading>
+          </h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="text-sm text-ink-soft">
             Min composite {desk.filters.minScore}
             <input
@@ -451,56 +492,50 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
               <option value="volume">Volume</option>
             </select>
           </label>
-        </div>
-      </section>
-
-      <section className="glass-strong rounded-[24px] p-5">
-        <h2 className="font-display text-lg font-semibold text-ink">Heatmap</h2>
-        {cells.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-soft">
-            No names match these filters. Lower min score or turn off Watchlist only.
-          </p>
-        ) : (
-          <div className="mt-3 grid grid-cols-4 gap-1 sm:grid-cols-8">
-            {cells.map((stock) => (
-              <button
-                key={stock.symbol}
-                type="button"
-                onClick={() => {
-                  setNoteSymbol(stock.symbol);
-                  setTapeSymbol(stock.symbol);
-                }}
-                className={`rounded-lg px-1 py-2 text-center ${heatColor(stock.changePercent)}`}
-                title={`${stock.symbol} ${stock.changePercent.toFixed(2)}%`}
-              >
-                <p className="text-[10px] font-bold">{stock.symbol}</p>
-                <p className="text-[10px]">{stock.changePercent.toFixed(1)}%</p>
-              </button>
-            ))}
           </div>
-        )}
-      </section>
+        </section>
 
-      {user && showUltraDesk(entitlement.plan) ? (
-        <AdvancedPredictions
-          uid={user.uid}
-          symbol={tapeSymbol || noteSymbol || watchlist.symbols[0] || ""}
-          universe={universe}
-          watchlist={watchlist.symbols}
-          onSymbol={(next) => {
-            setTapeSymbol(next);
-            setNoteSymbol(next);
-          }}
-        />
-      ) : null}
-
-      <MorningBriefArchive />
-
-      <div className="grid gap-4 lg:grid-cols-2">
         <section className="glass-strong rounded-[24px] p-5">
           <h2 className="font-display text-lg font-semibold text-ink">
-            <BogenHeading id="workstation-compare">Compare</BogenHeading>
+            Signal weights
           </h2>
+          <p className="mt-1 text-xs text-ink-soft">
+            These re-rank the heatmap: short-term signals vs long-term vs volume.
+          </p>
+          <div className="mt-3 space-y-2">
+            {STRATEGIES.map((strategy) => (
+              <label key={strategy.id} className="flex items-center gap-3 text-sm">
+                <span className="w-20 text-ink-soft">{strategy.label}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  value={desk.weights[strategy.id]}
+                  onChange={(event) =>
+                    persist((current) => ({
+                      ...current,
+                      weights: {
+                        ...current.weights,
+                        [strategy.id]: Number(event.target.value),
+                      },
+                    }))
+                  }
+                  className="flex-1"
+                />
+                <span className="w-8 text-right font-semibold text-ink">
+                  {desk.weights[strategy.id].toFixed(1)}
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <section className="glass-strong rounded-[24px] p-5">
+        <h2 className="font-display text-lg font-semibold text-ink">
+          <BogenHeading id="workstation-compare">Compare</BogenHeading>
+        </h2>
           <div className="mt-3">
             <StockSearchField
               universe={universe}
@@ -561,44 +596,7 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
               </article>
             ))}
           </div>
-        </section>
-
-        <section className="glass-strong rounded-[24px] p-5">
-          <h2 className="font-display text-lg font-semibold text-ink">
-            Signal weights
-          </h2>
-          <p className="mt-1 text-xs text-ink-soft">
-            These re-rank the heatmap: short-term signals vs long-term vs volume.
-          </p>
-          <div className="mt-3 space-y-2">
-            {STRATEGIES.map((strategy) => (
-              <label key={strategy.id} className="flex items-center gap-3 text-sm">
-                <span className="w-20 text-ink-soft">{strategy.label}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  value={desk.weights[strategy.id]}
-                  onChange={(event) =>
-                    persist((current) => ({
-                      ...current,
-                      weights: {
-                        ...current.weights,
-                        [strategy.id]: Number(event.target.value),
-                      },
-                    }))
-                  }
-                  className="flex-1"
-                />
-                <span className="w-8 text-right font-semibold text-ink">
-                  {desk.weights[strategy.id].toFixed(1)}
-                </span>
-              </label>
-            ))}
-          </div>
-        </section>
-      </div>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="glass-strong rounded-[24px] p-5">
@@ -746,6 +744,8 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
           </p>
         </section>
       </div>
+
+      <MorningBriefArchive />
 
       {help ? (
         <div className="glass-strong rounded-[24px] p-5 text-sm text-ink-soft">
