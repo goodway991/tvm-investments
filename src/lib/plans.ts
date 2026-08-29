@@ -36,7 +36,10 @@ export type PlanId = "free" | "pro" | "ultra";
 export const FREE_WATCHLIST_LIMIT = 10;
 export const PRO_WATCHLIST_LIMIT = 100;
 export const ULTRA_WATCHLIST_LIMIT = 500;
-export const PRO_WEEKLY_PORTFOLIO_REVIEW_LIMIT = 5;
+export const FREE_WEEKLY_PULSE_PREDICT_LIMIT = 2;
+export const PRO_WEEKLY_PULSE_PREDICT_LIMIT = 5;
+export const PRO_WEEKLY_SCORE_PREDICT_LIMIT = 3;
+export const PRO_WEEKLY_ADDITION_PREDICT_LIMIT = 1;
 export const PRO_WEEKLY_HORIZON_PREDICT_LIMIT = 5;
 
 export function watchlistLimitForPlan(plan: PlanId) {
@@ -117,22 +120,67 @@ export const PLAN_FEATURES: Array<{
   },
   { name: "Ticker news on watched names", free: true, pro: true },
   { name: "Portfolio (under construction)", free: true, pro: true },
-  { name: "Portfolio book review", free: false, pro: true },
   {
-    name: "5 portfolio reviews & prediction scores / week",
+    name: "Portfolio book review",
+    free: false,
+    pro: true,
+    hideInLabs: true,
+  },
+  {
+    name: "2 Pulse Predicts / week (watchlist)",
+    free: true,
+    pro: true,
+    ultra: true,
+    labsOnly: true,
+  },
+  {
+    name: "5 Pulse Predicts / week",
     free: false,
     pro: true,
     ultra: true,
     labsOnly: true,
   },
   {
-    name: "Unlimited portfolio reviews & prediction scores",
+    name: "Unlimited Pulse Predicts",
     free: false,
     pro: false,
     ultra: true,
     labsOnly: true,
   },
-  { name: "Short-term path prediction", free: false, pro: true },
+  {
+    name: "3 Portfolio Score Predictions / week",
+    free: false,
+    pro: true,
+    ultra: true,
+    labsOnly: true,
+  },
+  {
+    name: "Unlimited Portfolio Score Predictions",
+    free: false,
+    pro: false,
+    ultra: true,
+    labsOnly: true,
+  },
+  {
+    name: "1 Portfolio Addition Prediction / week",
+    free: false,
+    pro: true,
+    ultra: true,
+    labsOnly: true,
+  },
+  {
+    name: "Unlimited Portfolio Addition Predictions",
+    free: false,
+    pro: false,
+    ultra: true,
+    labsOnly: true,
+  },
+  {
+    name: "Short-term path prediction",
+    free: false,
+    pro: true,
+    hideInLabs: true,
+  },
   { name: "Horizon Suite (coming soon)", free: false, pro: true },
   {
     name: "5 Horizon Suite predictions / week",
@@ -143,6 +191,13 @@ export const PLAN_FEATURES: Array<{
   },
   {
     name: "Unlimited Horizon Suite predictions",
+    free: false,
+    pro: false,
+    ultra: true,
+    labsOnly: true,
+  },
+  {
+    name: "Advanced Predictions (workstation)",
     free: false,
     pro: false,
     ultra: true,

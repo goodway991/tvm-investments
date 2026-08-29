@@ -8,13 +8,39 @@ export const NEW_FEATURE_IDS = [
   "settings",
   "density",
   "appearance",
+  "horizon",
+  "workstation",
+  "pulse",
+  "sectors",
 ] as const;
 
 export type NewFeatureId = (typeof NEW_FEATURE_IDS)[number];
 
+/** First-seen stamps reset when this wave changes. Bump on launch so everyone gets 3 days. */
+export const NEW_BADGE_WAVE = showTvm10Labs() ? "tvm-1-launch" : "beta-3";
+
+const BETA_FEATURE_IDS: NewFeatureId[] = [
+  "bogen",
+  "settings",
+  "appearance",
+  "density",
+];
+
+const LAUNCH_FEATURE_IDS: NewFeatureId[] = [
+  "portfolio",
+  "horizon",
+  "workstation",
+  "pulse",
+  "sectors",
+];
+
 export function publicNewFeatureIds(): NewFeatureId[] {
-  if (showTvm10Labs()) return [...NEW_FEATURE_IDS];
-  return ["bogen", "settings", "appearance", "density"];
+  if (showTvm10Labs()) return [...BETA_FEATURE_IDS, ...LAUNCH_FEATURE_IDS];
+  return [...BETA_FEATURE_IDS];
+}
+
+export function launchFeatureIds(): NewFeatureId[] {
+  return showTvm10Labs() ? [...LAUNCH_FEATURE_IDS] : [];
 }
 
 export type NewSeenMap = Partial<Record<NewFeatureId, string>>;
@@ -59,14 +85,36 @@ export function parseNewSeen(value: unknown): NewSeenMap {
   return next;
 }
 
-export function missingNewSeenStamps(
-  seen: NewSeenMap,
+export function mergeNewSeen(
+  local: NewSeenMap,
+  cloud: NewSeenMap,
+  cloudWave: string,
+  localWave = "",
   now = new Date(),
-): NewSeenMap {
-  const today = todayStamp(now);
-  const next: NewSeenMap = {};
-  for (const id of publicNewFeatureIds()) {
-    if (!seen[id]) next[id] = today;
+): { seen: NewSeenMap; wave: string } {
+  const launch = new Set(launchFeatureIds());
+  const combined = { ...local, ...cloud };
+  const dropLaunch = (map: NewSeenMap): NewSeenMap =>
+    Object.fromEntries(
+      Object.entries(map).filter(([id]) => !launch.has(id as NewFeatureId)),
+    );
+  let base: NewSeenMap;
+  if (cloudWave === NEW_BADGE_WAVE) {
+    base = combined;
+  } else if (localWave === NEW_BADGE_WAVE) {
+    base = {
+      ...dropLaunch(combined),
+      ...Object.fromEntries(
+        Object.entries(local).filter(([id]) => launch.has(id as NewFeatureId)),
+      ),
+    };
+  } else {
+    base = {};
   }
-  return next;
+  const today = todayStamp(now);
+  const next: NewSeenMap = { ...base };
+  for (const id of publicNewFeatureIds()) {
+    if (!next[id]) next[id] = today;
+  }
+  return { seen: next, wave: NEW_BADGE_WAVE };
 }

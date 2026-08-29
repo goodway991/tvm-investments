@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { BriefArticleBlock, MarketEvent } from "@/types";
 import { BogenHeading } from "@/components/BogenProvider";
+import { BogenTerms } from "@/components/BogenTerms";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { TVMIcon } from "@/components/TVMBrand";
@@ -65,7 +66,7 @@ function ArticleBlocks({ blocks }: { blocks: BriefArticleBlock[] }) {
         if (block.type === "heading") {
           return (
             <h3 key={index} className="font-display text-xl font-bold text-ink">
-              {block.text}
+              <BogenTerms text={block.text} />
             </h3>
           );
         }
@@ -73,14 +74,16 @@ function ArticleBlocks({ blocks }: { blocks: BriefArticleBlock[] }) {
           return (
             <ul key={index} className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-ink sm:text-base">
               {block.items.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item}>
+                  <BogenTerms text={item} />
+                </li>
               ))}
             </ul>
           );
         }
         return (
           <p key={index} className="text-sm leading-relaxed text-ink sm:text-base">
-            {block.text}
+            <BogenTerms text={block.text} />
           </p>
         );
       })}
@@ -97,7 +100,15 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EventSheet({ event, onClose }: { event: MarketEvent; onClose: () => void }) {
+function EventSheet({
+  event,
+  onClose,
+  onOpenSymbol,
+}: {
+  event: MarketEvent;
+  onClose: () => void;
+  onOpenSymbol?: (symbol: string) => void;
+}) {
   const blocks = fallbackBlocks(event);
   const read = event.readMinutes ?? Math.max(1, Math.round(blocks.length / 2));
   return (
@@ -175,14 +186,28 @@ function EventSheet({ event, onClose }: { event: MarketEvent; onClose: () => voi
 
         {event.tickers?.length ? (
           <div className="flex flex-wrap gap-2">
-            {event.tickers.map((ticker) => (
-              <span
-                key={ticker}
-                className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet"
-              >
-                {ticker}
-              </span>
-            ))}
+            {event.tickers.map((ticker) =>
+              onOpenSymbol ? (
+                <button
+                  key={ticker}
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenSymbol(ticker);
+                  }}
+                  className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet hover:bg-violet/20"
+                >
+                  {ticker}
+                </button>
+              ) : (
+                <span
+                  key={ticker}
+                  className="rounded-full bg-violet/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet"
+                >
+                  {ticker}
+                </span>
+              ),
+            )}
           </div>
         ) : null}
       </div>
@@ -282,10 +307,12 @@ function EventCard({
         </div>
         <h3 className="font-medium text-ink">{event.title}</h3>
         <p className={`mt-2 text-sm leading-relaxed text-ink-soft ${open ? "" : "line-clamp-2"}`}>
-          {teaser}
+          <BogenTerms text={teaser} />
         </p>
         {open && extra ? (
-          <p className="mt-2 text-sm leading-relaxed text-ink-soft">{extra}</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            <BogenTerms text={extra} />
+          </p>
         ) : null}
         {open && (event.source || event.tickers?.length) ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -312,7 +339,13 @@ function EventCard({
   );
 }
 
-export function MarketEvents({ events }: { events: MarketEvent[] }) {
+export function MarketEvents({
+  events,
+  onOpenSymbol,
+}: {
+  events: MarketEvent[];
+  onOpenSymbol?: (symbol: string) => void;
+}) {
   const { era } = useSiteEra();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const slots = [0, 1, 2, 3].map((index) => events[index] ?? EMPTY_EVENT);
@@ -352,7 +385,11 @@ export function MarketEvents({ events }: { events: MarketEvent[] }) {
         ))}
       </div>
       {openEvent ? (
-        <EventSheet event={openEvent} onClose={() => setOpenIndex(null)} />
+        <EventSheet
+          event={openEvent}
+          onClose={() => setOpenIndex(null)}
+          onOpenSymbol={onOpenSymbol}
+        />
       ) : null}
     </div>
   );

@@ -1,6 +1,20 @@
 import type { JSX, ReactNode } from "react";
 import { LoopMotion } from "@/components/LoopMotion";
+import { ProGlowText } from "@/components/ProGlowText";
 import type { ReleaseFeatureVisualId } from "@/lib/release-notes";
+
+function WindowChrome({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-2 border-b border-ink/[0.06] bg-surface px-3 py-2">
+      <span className="h-2 w-2 rounded-full bg-coral/80" />
+      <span className="h-2 w-2 rounded-full bg-amber-400/90" />
+      <span className="h-2 w-2 rounded-full bg-emerald-400/90" />
+      <span className="ml-1 text-[11px] font-semibold text-ink-soft">
+        <ProGlowText>{title}</ProGlowText>
+      </span>
+    </div>
+  );
+}
 
 function MiniWindow({
   title,
@@ -11,13 +25,34 @@ function MiniWindow({
 }) {
   return (
     <div className="overflow-hidden rounded-[22px] border border-ink/[0.08] bg-white">
-      <div className="flex items-center gap-2 border-b border-ink/[0.06] bg-surface px-3 py-2">
-        <span className="h-2 w-2 rounded-full bg-coral/80" />
-        <span className="h-2 w-2 rounded-full bg-amber-400/90" />
-        <span className="h-2 w-2 rounded-full bg-emerald-400/90" />
-        <span className="ml-1 text-[11px] font-semibold text-ink-soft">{title}</span>
-      </div>
+      <WindowChrome title={title} />
       {children}
+    </div>
+  );
+}
+
+function VideoWindow({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[22px] border border-ink/[0.08] bg-white">
+      <WindowChrome title={title} />
+      {children}
+      <div className="flex items-center gap-2 border-t border-ink/[0.06] bg-surface px-3 py-2">
+        <span className="grid h-5 w-5 place-items-center rounded-full bg-ink text-white">
+          <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" aria-hidden>
+            <path d="M3.2 1.8v8.4L10.2 6 3.2 1.8Z" fill="currentColor" />
+          </svg>
+        </span>
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink/[0.08]">
+          <span className="wn-video-playhead block h-full rounded-full bg-violet" />
+        </div>
+        <span className="text-[10px] font-semibold tabular-nums text-ink-soft">loop</span>
+      </div>
     </div>
   );
 }
@@ -46,7 +81,12 @@ function BogenVisual() {
             <span className="new-badge">New</span>
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-ink-soft">
-            Question marks next to each feature.
+            Unfamiliar words get a dotted underline. Tap one for a short popup.
+          </p>
+          <p className="mt-3 text-xs">
+            <span className="bogen-term">composite score</span>
+            {" · "}
+            <span className="bogen-term">paper book</span>
           </p>
           <div className="mt-3 flex gap-2">
             <span className="glass-violet rounded-full px-3 py-1 text-[11px] font-semibold text-white">
@@ -201,7 +241,7 @@ function AccountScoreVisual() {
 
 function PortfolioTwoVisual() {
   return (
-    <MiniWindow title="Portfolio · Current book">
+    <MiniWindow title="Portfolio 2.0 · Current book">
       <div className="space-y-3 bg-surface p-4">
         <div className="flex items-end justify-between">
           <div>
@@ -210,7 +250,7 @@ function PortfolioTwoVisual() {
             </p>
             <p className="font-display text-lg font-bold text-ink">$24,810</p>
           </div>
-          <p className="text-[11px] text-ink-soft">2 holdings</p>
+          <p className="text-[11px] text-ink-soft">2 holdings · cash $10,964</p>
         </div>
         <div className="overflow-hidden rounded-2xl border border-ink/[0.08] bg-white">
           <div className="flex items-center justify-between px-3 py-2">
@@ -228,10 +268,131 @@ function PortfolioTwoVisual() {
             <p className="text-sm font-semibold text-ink">$4,926</p>
           </div>
         </div>
-        <div className="relative rounded-2xl border border-violet/40 bg-white px-3 py-2.5 pl-9 text-[12px] text-ink-soft">
-          Search the tape or your watchlist…
-          <span className="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border border-ink/30" />
+        <div className="flex justify-center">
+          <span className="pro-profile-glow inline-flex rounded-full bg-transparent px-4 py-1.5 text-[11px] font-semibold text-ink">
+            Analyze book
+          </span>
         </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Overall</p>
+            <p className="font-display text-sm font-bold text-ink">74</p>
+          </div>
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Mix</p>
+            <p className="font-display text-sm font-bold text-ink">80</p>
+          </div>
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Cash</p>
+            <p className="font-display text-sm font-bold text-ink">62</p>
+          </div>
+        </div>
+      </div>
+    </MiniWindow>
+  );
+}
+
+function HorizonVisual() {
+  return (
+    <VideoWindow title="Horizon Suite · Forward path">
+      <div className="wn-horizon-stage space-y-3 bg-surface p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-1.5">
+            <span className="wn-horizon-chip wn-horizon-nvda rounded-full bg-violet px-2.5 py-1 text-[10px] font-semibold text-white">
+              NVDA
+            </span>
+            <span className="wn-horizon-chip wn-horizon-amzn rounded-full bg-ink/[0.06] px-2.5 py-1 text-[10px] font-semibold text-ink">
+              AMZN
+            </span>
+          </div>
+          <span className="wn-horizon-day relative inline-block min-w-[7.6rem] rounded-full border border-violet/15 bg-violet/10 px-2.5 py-1 text-center text-[10px] font-semibold text-violet">
+            <span className="wn-horizon-now">Now</span>
+            <span className="wn-horizon-six">6 trading days</span>
+            <span className="wn-horizon-week">1 week</span>
+          </span>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-ink/[0.08] bg-white px-2 pt-2">
+          <p className="px-1 text-[10px] font-semibold uppercase tracking-widest text-ink-soft">
+            Forward path
+          </p>
+          <p className="wn-horizon-price px-1 font-display text-lg font-bold text-ink">
+            <span className="wn-horizon-live">$118.40</span>
+            <span className="wn-horizon-proj">$124.10</span>
+          </p>
+          <svg viewBox="0 0 320 92" className="mt-1 h-[5.6rem] w-full" aria-hidden>
+            <path
+              d="M8 64 C48 62 78 50 112 54 S168 38 200 42"
+              fill="none"
+              stroke="#2f62ff"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+            />
+            <path
+              className="wn-horizon-band"
+              d="M200 42 C232 36 268 24 312 18 L312 48 C268 52 232 58 200 42Z"
+              fill="rgba(255, 210, 176, 0.28)"
+            />
+            <path
+              className="wn-horizon-pred wn-horizon-pred-pro"
+              d="M200 42 C232 36 268 24 312 18"
+              fill="none"
+              stroke="#ffd2b0"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            />
+            <path
+              className="wn-horizon-pred wn-horizon-pred-ultra"
+              d="M200 42 C232 36 268 24 312 18"
+              fill="none"
+              stroke="#111111"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            />
+            <circle cx="200" cy="42" r="3.2" fill="#2f62ff" />
+          </svg>
+          <div className="relative mx-1 mb-2 mt-1 h-2 rounded-full bg-ink/[0.08]">
+            <span className="wn-horizon-thumb absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-violet shadow-[0_0_0_3px_rgba(47,98,255,0.18)]" />
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <span className="wn-horizon-predict pro-profile-glow inline-flex rounded-full bg-transparent px-4 py-1.5 text-[11px] font-semibold">
+            Predict
+          </span>
+        </div>
+      </div>
+    </VideoWindow>
+  );
+}
+
+function UltraWelcomeVisual() {
+  return (
+    <MiniWindow title="Dashboard · Ultra">
+      <div className="space-y-3 bg-surface p-4">
+        <h2 className="font-display text-xl font-bold text-ink">
+          Welcome, <span className="ultra-name-shine">Alex</span>
+        </h2>
+        <p className="text-[11px] leading-relaxed text-ink-soft">
+          Unlimited Predict, 6:00 good morning, Portfolio 2.0, workstation.
+        </p>
+        <div className="grid grid-cols-3 gap-1.5">
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Predict</p>
+            <p className="font-display text-sm font-bold text-ink">Unlimited</p>
+          </div>
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Watchlist</p>
+            <p className="font-display text-sm font-bold text-ink">500</p>
+          </div>
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Desk</p>
+            <p className="font-display text-sm font-bold text-ink">Workstation</p>
+          </div>
+        </div>
+        <span className="ultra-profile-glow-move inline-flex rounded-full px-4 py-1.5 text-[11px] font-semibold">
+          <span className="ultra-name-shine">Ultra</span>
+        </span>
       </div>
     </MiniWindow>
   );
@@ -295,6 +456,104 @@ function CleanModeVisual() {
   );
 }
 
+function SectorsVisual() {
+  const dives = [
+    {
+      sector: "Technology",
+      title: "Tech Sector Deep Dive",
+      note: "Chip designers and cloud names lead the session tape.",
+    },
+    {
+      sector: "Financial Services",
+      title: "Financials Deep Dive",
+      note: "Banks and payments follow the rate tape into the close.",
+    },
+    {
+      sector: "Healthcare",
+      title: "Healthcare Deep Dive",
+      note: "Pharma and devices split as managed care holds.",
+    },
+    {
+      sector: "Consumer Cyclical",
+      title: "Consumer Deep Dive",
+      note: "Retail and autos move with the discretionary names.",
+    },
+    {
+      sector: "Industrials",
+      title: "Industrials Deep Dive",
+      note: "Aerospace and machinery catch the session’s cyclicals.",
+    },
+    {
+      sector: "Energy",
+      title: "Energy Deep Dive",
+      note: "Oil, gas, and infrastructure versus this session.",
+    },
+  ];
+
+  return (
+    <MiniWindow title="Daily Brief · Sector deep dives">
+      <div className="wn-sectors-stage bg-surface p-4">
+        <div className="relative overflow-hidden rounded-2xl border border-ink/[0.08] bg-white p-3">
+          <div className="relative h-[7.6rem]">
+            {dives.map((dive, index) => (
+              <div
+                key={dive.sector}
+                className={`wn-sectors-pane wn-sectors-p${index + 1}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
+                      {dive.sector}
+                    </p>
+                    <p className="mt-0.5 font-display text-sm font-bold text-ink">
+                      {dive.title}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-[11px] font-semibold tabular-nums text-violet">
+                    {index + 1} / 6
+                  </p>
+                </div>
+                <p className="mt-2 text-[11px] leading-relaxed text-ink-soft">
+                  {dive.note}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-1 flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-ink-soft">
+              <ProGlowText>Free · Pro · Ultra</ProGlowText>
+            </p>
+            <div className="flex items-center gap-1">
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-surface text-ink-soft/50">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+                  <path
+                    d="M15 6 9 12l6 6"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <span className="wn-sectors-next grid h-7 w-7 place-items-center rounded-full bg-surface text-violet">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+                  <path
+                    d="M9 6l6 6-6 6"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </MiniWindow>
+  );
+}
+
 function CustomizeVisual() {
   return (
     <MiniWindow title="Let’s customize your experience">
@@ -344,6 +603,36 @@ function CustomizeVisual() {
   );
 }
 
+function AccuracyVisual() {
+  return (
+    <MiniWindow title="Predict">
+      <div className="space-y-3 bg-surface p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
+          Research read
+        </p>
+        <p className="font-display text-5xl font-bold text-ink">99%*</p>
+        <p className="text-[11px] leading-relaxed text-ink-soft">
+          Pulse, Portfolio Score, and Portfolio Addition.
+        </p>
+        <div className="grid grid-cols-3 gap-1.5">
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Pulse</p>
+            <p className="font-display text-sm font-bold text-ink">99%*</p>
+          </div>
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Score</p>
+            <p className="font-display text-sm font-bold text-ink">99%*</p>
+          </div>
+          <div className="rounded-xl bg-white px-2 py-2">
+            <p className="text-[9px] text-ink-soft">Addition</p>
+            <p className="font-display text-sm font-bold text-ink">99%*</p>
+          </div>
+        </div>
+      </div>
+    </MiniWindow>
+  );
+}
+
 const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   bogen: BogenVisual,
   events: EventsVisual,
@@ -351,6 +640,10 @@ const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   "portfolio-2": PortfolioTwoVisual,
   "clean-mode": CleanModeVisual,
   customize: CustomizeVisual,
+  sectors: SectorsVisual,
+  horizon: HorizonVisual,
+  ultra: UltraWelcomeVisual,
+  accuracy: AccuracyVisual,
 };
 
 export function ReleaseFeatureVisual({ id }: { id: ReleaseFeatureVisualId }) {

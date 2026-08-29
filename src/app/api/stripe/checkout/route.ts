@@ -10,6 +10,7 @@ import {
 } from "@/lib/stripe";
 import { getEntitlementForUid } from "@/lib/firebase/admin";
 import { changeSubscriptionPrice } from "@/lib/stripe-entitlements";
+import { REFUND_POLICY_CHECKOUT } from "@/lib/refund-policy";
 import type { BillingInterval, PaidPlanId } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
@@ -81,7 +82,13 @@ export async function POST(request: NextRequest) {
       priceId,
     });
     if (updated) {
-      return NextResponse.json({ url: `${origin}/dashboard?billing=success` });
+      const latest = await getEntitlementForUid(gate.uid);
+      return NextResponse.json({
+        url: `${origin}/dashboard?billing=success`,
+        scheduled: true,
+        pendingPlan: latest?.stripePendingPlan || plan,
+        pendingUntil: latest?.stripePendingUntil || 0,
+      });
     }
   }
 
@@ -95,6 +102,11 @@ export async function POST(request: NextRequest) {
     customer_email: entitlement?.stripeCustomerId ? undefined : gate.email || undefined,
     allow_promotion_codes: true,
     billing_address_collection: "auto",
+    custom_text: {
+      submit: {
+        message: REFUND_POLICY_CHECKOUT,
+      },
+    },
     metadata: {
       firebaseUid: gate.uid,
       plan,

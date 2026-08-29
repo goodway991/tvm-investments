@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
   deleteDoc,
@@ -14,17 +14,23 @@ import {
 } from "firebase/firestore";
 import { useAuth } from "@/components/AuthProvider";
 import { HorizonForecastChart } from "@/components/HorizonForecastChart";
+import { PredictButton, usePredictUsage } from "@/components/PredictButton";
+import { useUpgrade } from "@/components/UpgradeProvider";
 import type { ChartPoint } from "@/lib/chart-series";
 import { formatPrice } from "@/lib/chart-series";
 import { getClientFirestore } from "@/lib/firebase/client";
 import { BogenHeading } from "@/components/BogenProvider";
+import { NewBadge } from "@/components/NewBadge";
+import { BogenTerms } from "@/components/BogenTerms";
 import {
   HORIZON_STARTING_CASH,
   buildPortfolioSeries,
+  formatHorizonLabel,
   horizonStats,
   projectPrice,
   type HorizonStats,
 } from "@/lib/horizon-forecast";
+import { authedFetch } from "@/lib/authed-fetch";
 
 const MAX_POSITIONS = 40;
 
@@ -49,6 +55,8 @@ type LoadedForecast = {
 
 export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
   const { user, watchlist } = useAuth();
+  const { openUpgrade } = useUpgrade();
+  const { usage, busy: predictBusy, consume, plan } = usePredictUsage("horizon");
   const quoteMap = useMemo(
     () => new Map(quotes.map((quote) => [quote.symbol, quote])),
     [quotes],
@@ -59,8 +67,11 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
   const [selected, setSelected] = useState(watchSymbols[0] ?? quotes[0]?.symbol ?? "AAPL");
   const [shares, setShares] = useState("1");
   const [horizonDays, setHorizonDays] = useState(5);
+  const [committedDays, setCommittedDays] = useState(0);
   const [history, setHistory] = useState<ChartPoint[]>([]);
   const [forecasts, setForecasts] = useState<Record<string, LoadedForecast>>({});
+  const forecastsRef = useRef(forecasts);
+  forecastsRef.current = forecasts;
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -105,6 +116,10 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
   }, [user]);
 
   useEffect(() => {
+    setCommittedDays(0);
+  }, [selected]);
+
+  useEffect(() => {
     const db = getClientFirestore();
     if (!db || !user || !simReady || simExists) return;
     void setDoc(doc(db, "horizon_sims", user.uid), {
@@ -125,11 +140,13 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
     );
     let cancelled = false;
     async function load() {
-      const next: Record<string, LoadedForecast> = {};
+      const cached = forecastsRef.current;
+      const missing = symbols.filter((symbol) => !cached[symbol]);
+      const next: Record<string, LoadedForecast> = { ...cached };
       await Promise.all(
-        symbols.map(async (symbol) => {
+        missing.map(async (symbol) => {
           try {
-            const response = await fetch(
+            const response = await authedFetch(
               `/api/forecast?symbol=${encodeURIComponent(symbol)}`,
             );
             const payload = (await response.json()) as {
@@ -137,6 +154,10 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
               last?: number;
               dailyDrift?: number;
               dailyVol?: number;
+              kappa?: number;
+              thetaLog?: number;
+              lastDelta?: number;
+              rho?: number;
               note?: string | null;
             };
             if (!response.ok || !payload.history?.length || payload.last == null) return;
@@ -146,6 +167,10 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
                 last: payload.last,
                 dailyDrift: payload.dailyDrift ?? 0,
                 dailyVol: payload.dailyVol ?? 0.02,
+                kappa: payload.kappa ?? 0,
+                thetaLog: payload.thetaLog ?? payload.dailyDrift ?? 0,
+                lastDelta: payload.lastDelta ?? 0,
+                rho: payload.rho ?? 0,
               },
               note: payload.note ?? null,
             };
@@ -155,6 +180,7 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
         }),
       );
       if (cancelled) return;
+      forecastsRef.current = next;
       setForecasts(next);
       setHistory(next[selected]?.history ?? []);
     }
@@ -192,7 +218,7 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
           high: range.high + marked,
         };
       }
-      const projection = projectPrice(stats, horizonDays);
+      const projection = projectPrice(stats, committedDays);
       return {
         predicted: range.predicted + position.shares * projection.predicted,
         low: range.low + position.shares * projection.low,
@@ -235,12 +261,29 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
       last: bookValue,
       dailyDrift: drift * equityShare,
       dailyVol: vol * equityShare,
+      kappa: 0,
+      thetaLog: drift * equityShare,
+      lastDelta: 0,
+      rho: 0,
     };
   })();
   const chartNote =
     positions.length > 0
-      ? "Book path uses live closes and analyst targets on each lot."
+      ? "Book path weights each lot, then mixes with cash."
       : selectedForecast?.note;
+
+  function onHorizonChange(days: number) {
+    if (days <= 0) {
+      setCommittedDays(0);
+      setHorizonDays(0);
+      return;
+    }
+    if (committedDays > 0) {
+      setHorizonDays(Math.min(days, committedDays));
+      return;
+    }
+    setHorizonDays(days);
+  }
 
   async function writeSim(nextCash: number, nextPositions: HorizonPosition[]) {
     const db = getClientFirestore();
@@ -412,9 +455,13 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
             Paper desk
           </p>
-          <h1 className="mt-1 font-display text-3xl font-bold text-ink">
+          <h1 className="mt-1 flex flex-wrap items-center gap-2 font-display text-3xl font-bold text-ink">
             <BogenHeading id="horizon">Horizon Suite</BogenHeading>
+            <NewBadge feature="horizon" />
           </h1>
+          <p className="mt-1 max-w-xl text-sm text-ink-soft">
+            <BogenTerms text="Paper book fills at the last close. Slide trading days, then Predict for the cone." />
+          </p>
         </div>
         <button
           type="button"
@@ -430,10 +477,14 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
         <Metric label="Cash" value={formatPrice(cash)} />
         <Metric label="Portfolio now" value={formatPrice(bookValue)} />
         <Metric
-          label={horizonDays === 0 ? "Now" : `Could grow to in ${horizonDays.toFixed(1)} days`}
+          label={
+            committedDays === 0
+              ? "Now"
+              : `Could grow to in ${formatHorizonLabel(committedDays)}`
+          }
           value={formatPrice(projectedValue)}
           hint={
-            horizonDays === 0
+            committedDays === 0
               ? undefined
               : `${formatPrice(cash + projectedHoldings.low)} – ${formatPrice(cash + projectedHoldings.high)}`
           }
@@ -588,7 +639,37 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
               statsOverride={chartStats}
               note={chartNote}
               horizonDays={horizonDays}
-              onHorizonChange={setHorizonDays}
+              committedDays={committedDays}
+              onHorizonChange={onHorizonChange}
+              forecastPlan={
+                plan === "ultra" ? "ultra" : plan === "pro" ? "pro" : undefined
+              }
+              predictAction={
+                <PredictButton
+                  plan={plan}
+                  kind="horizon"
+                  used={usage.horizon}
+                  busy={predictBusy}
+                  predicted={committedDays > 0}
+                  onUpgrade={openUpgrade}
+                  onPredict={() => {
+                    void (async () => {
+                      if (committedDays > 0) {
+                        setCommittedDays(0);
+                        setHorizonDays(0);
+                        return;
+                      }
+                      if (horizonDays <= 0) return;
+                      const result = await consume();
+                      if (!result.ok) {
+                        openUpgrade(plan === "pro" ? "ultra" : "pro");
+                        return;
+                      }
+                      setCommittedDays(horizonDays);
+                    })();
+                  }}
+                />
+              }
               tone="light"
             />
           </div>

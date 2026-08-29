@@ -1,7 +1,8 @@
 import { showTvm10Labs } from "@/lib/beta-labs";
 
 export const CURRENT_RELEASE_ID = showTvm10Labs() ? "tvm-1" : "beta-3";
-export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-v1" : "beta-3-reopen";
+/** Frozen for TVM 1.0. Do not bump this for copy edits — that re-opens What’s New. */
+export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-launch" : "beta-3-reopen";
 
 const RELEASE_ACK_ORDER = [
   "beta-1",
@@ -12,12 +13,19 @@ const RELEASE_ACK_ORDER = [
   "beta-3-live",
   "beta-3-reopen",
   "tvm-1-v1",
+  "tvm-1-v2",
+  "tvm-1-v3",
+  "tvm-1-v4",
+  "tvm-1-v5",
+  "tvm-1-v6",
+  "tvm-1-v7",
+  "tvm-1",
+  "tvm-1-launch",
 ];
 
 const RELEASE_ACK_ALIASES: Record<string, string> = {
   "beta-2.1": "beta-2.1-score",
   "beta-3": "beta-3-live",
-  "tvm-1": "tvm-1-v1",
 };
 
 function normalizeReleaseAck(id: string) {
@@ -59,7 +67,11 @@ export type ReleaseFeatureVisualId =
   | "account-score"
   | "portfolio-2"
   | "clean-mode"
-  | "customize";
+  | "customize"
+  | "sectors"
+  | "horizon"
+  | "ultra"
+  | "accuracy";
 
 export type ReleaseFeature = {
   title: string;
@@ -157,15 +169,43 @@ export const RELEASES: ReleaseNote[] = [
     id: "tvm-1",
     version: "TVM 1.0",
     title: "Ultra desk",
-    date: "August 15th, 2026",
+    date: "September 25th, 2026",
     summary:
-      "Builds on Beta v3.0. Country and time zone for every account. Ultra gets a 9am good morning, Portfolio 2.0, and a workstation.",
+      "Builds on Beta v3.0. Country and time zone for every account. Ultra gets a 6am good morning, Portfolio 2.0, and a workstation. Predictions read at the 99%* target. Every plan now gets all six sector deep dives.",
+    features: [
+      {
+        title: "99%* accurate predictions",
+        visual: "accuracy",
+        body: "Pulse Predict, Portfolio Score, and Portfolio Addition now read at the 99%* research-read target. Ultra also gets Advanced Predictions on the workstation. Not a guarantee — the plan table footnote still applies.",
+      },
+      {
+        title: "Portfolio 2.0",
+        visual: "portfolio-2",
+        body: "Analyze the book and Predict a score before you add a name. Pro gets 3 Portfolio Score Predictions and 1 Portfolio Addition Prediction a week. Ultra is unlimited. Free still logs holdings.",
+      },
+      {
+        title: "Ultra",
+        visual: "ultra",
+        body: "Unlimited Predict, a 6:00 good morning in your zone, Portfolio 2.0, and a workstation. Pro stays at 5 Pulse Predicts, 3 score predictions, 1 book addition, and 5 Horizon predictions a week. Free gets 2 Pulse Predicts.",
+      },
+      {
+        title: "Horizon Suite",
+        visual: "horizon",
+        body: "Slide to a horizon, then Predict. Live tape stays blue. Pro draws peach glow; Ultra draws the blue–white–peach sweep.",
+      },
+      {
+        title: "All 6 sector deep dives",
+        visual: "sectors",
+        body: "Daily Brief flips through every sleeve — tech, financials, healthcare, consumer, industrials, and energy. Free, Pro, and Ultra all get the full deck.",
+      },
+      {
+        title: "Bogen mode updated",
+        visual: "bogen",
+        body: "Turn Bogen on and unfamiliar vocab is highlighted. Tap an underline for a short popup — stock news, Daily Brief headlines, morning recap, and Horizon Suite recipes like what High score quiet names or a trading-day horizon actually do.",
+      },
+    ],
     items: [
-      "Country and time zone in Let’s customize and Settings — every plan",
-      "Ultra: good morning at 9:00 in your zone",
-      "Ultra: Portfolio 2.0 with Analyze, unlimited Predict, and scenarios",
-      "Ultra: workstation — heatmap, compare, signal weights, tags, notes, recipes, keyboard, compact terminal",
-      "Pro keeps the simple book cap / construction page",
+      "Open View plan to see every Ultra feature.",
     ],
   },
 ];

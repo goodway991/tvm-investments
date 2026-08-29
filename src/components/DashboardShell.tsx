@@ -21,6 +21,7 @@ import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { NewBadge } from "@/components/NewBadge";
+import type { NewFeatureId } from "@/lib/new-badges";
 import { LOCAL_EXPERIMENT, useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { UltraShinePhrase } from "@/components/UltraText";
@@ -35,6 +36,12 @@ export const dashboardNav = [
   { label: "Watchlist", href: "/dashboard/watchlist", icon: "watchlist" as const, bogen: "nav-watchlist" as const },
   { label: "Portfolio", href: "/dashboard/portfolio", icon: "dashboard" as const, bogen: "nav-portfolio" as const },
 ];
+
+function navNewFeature(label: string): NewFeatureId | null {
+  if (label === "Portfolio") return "portfolio";
+  if (label === "Workstation") return "workstation";
+  return null;
+}
 
 function navIsActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
@@ -329,9 +336,17 @@ function PreviewSidebar({
           />
           <span className="pointer-events-none relative z-[1]">
             <TVMIcon name="horizon" />
+            {compact ? (
+              <span className="absolute -right-2 -top-1">
+                <NewBadge feature="horizon" />
+              </span>
+            ) : null}
           </span>
           {!compact && (
-            <span className="pointer-events-none relative z-[1]">Horizon Suite</span>
+            <span className="pointer-events-none relative z-[1] flex items-center gap-2">
+              Horizon Suite
+              <NewBadge feature="horizon" />
+            </span>
           )}
         </BogenHit>
       ) : era.id !== "live" || hideLocks ? null : (
@@ -492,6 +507,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             .map((item) => {
             const active = navIsActive(pathname, item.href);
             const compact = sidebarMode !== "expanded";
+            const badge = navNewFeature(item.label);
             const portfolioLocked =
               item.label === "Portfolio" && !showTvm10Labs();
             if (portfolioLocked) {
@@ -527,16 +543,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 />
                 <span className="pointer-events-none relative z-[1]">
                   <TVMIcon name={item.icon} />
-                  {compact && item.label === "Portfolio" ? (
+                  {compact && badge ? (
                     <span className="absolute -right-2 -top-1">
-                      <NewBadge feature="portfolio" />
+                      <NewBadge feature={badge} />
                     </span>
                   ) : null}
                 </span>
                 {!compact && (
                   <span className="pointer-events-none relative z-[1] flex items-center gap-2">
                     {item.label}
-                    {item.label === "Portfolio" ? <NewBadge feature="portfolio" /> : null}
+                    {badge ? <NewBadge feature={badge} /> : null}
                   </span>
                 )}
               </BogenHit>
@@ -631,6 +647,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             )
             .map((item) => {
                   const active = navIsActive(pathname, item.href);
+                  const badge = navNewFeature(item.label);
                   const portfolioLocked =
                     item.label === "Portfolio" && !showTvm10Labs();
                   if (portfolioLocked) {
@@ -667,9 +684,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       </span>
                       <span className="pointer-events-none relative z-[1] flex items-center gap-2">
                         {item.label}
-                        {item.label === "Portfolio" ? (
-                          <NewBadge feature="portfolio" />
-                        ) : null}
+                        {badge ? <NewBadge feature={badge} /> : null}
                       </span>
                     </BogenHit>
                   );

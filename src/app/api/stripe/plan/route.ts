@@ -87,7 +87,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (entitlement.plan === paid && entitlement.stripeCancelAtPeriodEnd) {
+    if (
+      entitlement.plan === paid &&
+      (entitlement.stripeCancelAtPeriodEnd || entitlement.stripePendingPlan)
+    ) {
       const subscription = await resumeSubscription(
         gate.uid,
         entitlement.stripeSubscriptionId,
@@ -96,6 +99,7 @@ export async function POST(request: NextRequest) {
         ok: true,
         plan: paid,
         cancelAtPeriodEnd: false,
+        pendingPlan: "",
         accessUntil: periodEndUnix(subscription),
       });
     }
@@ -120,11 +124,14 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+    const latest = await getEntitlementForUid(gate.uid);
     return NextResponse.json({
       ok: true,
-      plan: paid,
-      cancelAtPeriodEnd: updated.cancel_at_period_end,
-      accessUntil: periodEndUnix(updated),
+      plan: latest?.plan || paid,
+      cancelAtPeriodEnd: latest?.stripeCancelAtPeriodEnd || false,
+      pendingPlan: latest?.stripePendingPlan || "",
+      pendingUntil: latest?.stripePendingUntil || periodEndUnix(updated),
+      accessUntil: latest?.stripeAccessUntil || periodEndUnix(updated),
     });
   } catch (error) {
     const message =

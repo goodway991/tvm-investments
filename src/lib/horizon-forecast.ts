@@ -2,12 +2,28 @@ import type { ChartPoint } from "@/lib/chart-series";
 
 export const HORIZON_STARTING_CASH = 10_000;
 export const MAX_HORIZON_TRADING_DAYS = 10;
-export const HORIZON_HISTORY_BARS = 32;
+export const HORIZON_HISTORY_BARS = 63;
 
-export const Z_BAND = 1.28;
-export const MIN_SIGMA = 0.008;
-export const MAX_SIGMA = 0.06;
-export const MAX_DAILY_DRIFT = 0.03;
+export function formatHorizonLabel(days: number) {
+  if (days <= 0.05) return "Now";
+  const rounded = Math.round(days);
+  if (rounded === 5) return "1 week";
+  if (rounded >= MAX_HORIZON_TRADING_DAYS) return "2 weeks";
+  return rounded === 1 ? "1 trading day" : `${rounded} trading days`;
+}
+
+export const Z_BAND = 1.05;
+export const MIN_SIGMA = 0.006;
+export const MAX_SIGMA = 0.055;
+export const MAX_DAILY_DRIFT = 0.012;
+const EWMA_LAMBDA = 0.94;
+const MIN_KAPPA = 0.02;
+const MAX_KAPPA = 1.4;
+const DENOISE_CURRENT = 0.38;
+const ACCEL_WEIGHT = 0.28;
+const FLAT_ALPHA = 0.16;
+const MIN_DIFF_AR = -0.45;
+const MAX_DIFF_AR = 0.9;
 
 export type HorizonChartPoint = {
   label: string;
@@ -24,6 +40,16 @@ export type HorizonStats = {
   last: number;
   dailyDrift: number;
   dailyVol: number;
+  /** Positive when increment AR lag-1 is > 0; then ρ = e^{−κ}. */
+  kappa: number;
+  /** Mean denoised log-increment. */
+  thetaLog: number;
+  /** Latest denoised log-diff. */
+  lastDelta: number;
+  /** Increment AR(1) lag-1 on denoised log-diffs. 0 = constant drift. */
+  rho: number;
+  /** 0–1 blend toward the average of the path, not only the last tick. */
+  avgBlend?: number;
 };
 
 function mean(values: number[]) {
@@ -31,29 +57,26 @@ function mean(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function stdev(values: number[]) {
-  if (values.length < 2) return MIN_SIGMA;
-  const avg = mean(values);
-  const variance =
-    values.reduce((sum, value) => sum + (value - avg) ** 2, 0) /
-    (values.length - 1);
-  return Math.sqrt(Math.max(variance, 0));
-}
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function logReturns(closes: number[]) {
-  const returns: number[] = [];
-  for (let index = 1; index < closes.length; index += 1) {
-    const previous = closes[index - 1];
-    const next = closes[index];
-    if (previous > 0 && next > 0) {
-      returns.push(Math.log(next / previous));
-    }
+function firstDiff(values: number[]) {
+  const out: number[] = [];
+  for (let index = 1; index < values.length; index += 1) {
+    out.push(values[index] - values[index - 1]);
   }
-  return returns;
+  return out;
+}
+
+function causalSmooth(values: number[], currentWeight: number) {
+  if (values.length === 0) return [];
+  const priorWeight = 1 - currentWeight;
+  let level = values[0];
+  return values.map((value) => {
+    level = currentWeight * value + priorWeight * level;
+    return level;
+  });
 }
 
 export function nextTradingDays(fromTimestamp: number, count: number) {
@@ -69,26 +92,164 @@ export function nextTradingDays(fromTimestamp: number, count: number) {
   return days;
 }
 
+function ewmaVariance(returns: number[], lambda = EWMA_LAMBDA) {
+  if (returns.length === 0) return MIN_SIGMA ** 2;
+  let variance = returns[0] ** 2;
+  for (let index = 1; index < returns.length; index += 1) {
+    variance = lambda * variance + (1 - lambda) * returns[index] ** 2;
+  }
+  return Math.max(variance, 0);
+}
+
+function fitAr1(series: number[]) {
+  if (series.length < 12) return null;
+  const ys = series.slice(1);
+  const xs = series.slice(0, -1);
+  const meanX = mean(xs);
+  const meanY = mean(ys);
+  let cov = 0;
+  let varX = 0;
+  for (let index = 0; index < xs.length; index += 1) {
+    const dx = xs[index] - meanX;
+    cov += dx * (ys[index] - meanY);
+    varX += dx * dx;
+  }
+  if (!(varX > 0)) return null;
+  const slope = cov / varX;
+  const intercept = meanY - slope * meanX;
+  return { slope, intercept };
+}
+
+function expectedDeltaSum(lastDelta: number, meanDelta: number, rho: number, steps: number) {
+  if (steps <= 0) return 0;
+  if (Math.abs(rho) < 1e-6) return meanDelta * steps;
+  if (Math.abs(1 - rho) < 1e-6) return lastDelta * steps;
+  const pull = lastDelta - meanDelta;
+  return meanDelta * steps + pull * rho * (1 - rho ** steps) / (1 - rho);
+}
+
+function deltaSumVariance(sigma: number, rho: number, steps: number) {
+  if (steps <= 0) return 0;
+  const variance = sigma * sigma;
+  if (Math.abs(rho) < 1e-6) return variance * steps;
+  let sum = steps;
+  for (let lag = 1; lag < steps; lag += 1) {
+    sum += 2 * (steps - lag) * rho ** lag;
+  }
+  return Math.max(0, variance * sum);
+}
+
+function incrementRho(stats: HorizonStats) {
+  if (typeof stats.rho === "number" && Number.isFinite(stats.rho)) {
+    return clamp(stats.rho, MIN_DIFF_AR, MAX_DIFF_AR);
+  }
+  return stats.kappa > MIN_KAPPA ? Math.exp(-stats.kappa) : 0;
+}
+
+/**
+ * Smooth log closes, work in first diffs, AR(1) on those diffs, then integrate.
+ * A dead zone vs vol flattens noise-sized drift.
+ */
+function fitLogDifferential(closes: number[]): HorizonStats {
+  const series = closes.filter((price) => price > 0);
+  const last = series[series.length - 1] ?? 0;
+  const logs = series.map(Math.log);
+  const smooth = causalSmooth(logs, DENOISE_CURRENT);
+  const delta = firstDiff(smooth);
+  const accel = firstDiff(delta);
+  const dailyVol = clamp(Math.sqrt(ewmaVariance(delta)), MIN_SIGMA, MAX_SIGMA);
+  const lastDelta = delta[delta.length - 1] ?? 0;
+  const mu1 = mean(delta.length > 21 ? delta.slice(-21) : delta);
+  const mu2 = accel.length ? mean(accel.length > 8 ? accel.slice(-8) : accel) : 0;
+  let meanDelta = clamp(mu1 + ACCEL_WEIGHT * mu2, -MAX_DAILY_DRIFT, MAX_DAILY_DRIFT);
+  if (Math.abs(meanDelta) < FLAT_ALPHA * dailyVol) {
+    meanDelta *= 0.2;
+  }
+
+  const ar = fitAr1(delta);
+  let rho = 0;
+  if (ar && ar.slope > MIN_DIFF_AR && ar.slope < MAX_DIFF_AR && Math.abs(ar.slope) > 0.04) {
+    rho = ar.slope;
+    const arMean = Math.abs(1 - ar.slope) > 1e-6 ? ar.intercept / (1 - ar.slope) : meanDelta;
+    meanDelta = clamp(
+      0.65 * meanDelta + 0.35 * arMean,
+      -MAX_DAILY_DRIFT,
+      MAX_DAILY_DRIFT,
+    );
+  }
+
+  const nextDelta = rho === 0 ? meanDelta : meanDelta + rho * (lastDelta - meanDelta);
+  const dailyDrift = clamp(nextDelta, -MAX_DAILY_DRIFT, MAX_DAILY_DRIFT);
+  const kappa = rho > 0.04 ? clamp(-Math.log(rho), MIN_KAPPA, MAX_KAPPA) : 0;
+
+  return {
+    last,
+    dailyDrift,
+    dailyVol,
+    kappa,
+    thetaLog: meanDelta,
+    lastDelta,
+    rho,
+  };
+}
+
 export function horizonStats(closes: number[]): HorizonStats | null {
   if (closes.length < 3) return null;
   const last = closes[closes.length - 1];
   if (!(last > 0)) return null;
-  const returns = logReturns(closes.slice(-HORIZON_HISTORY_BARS));
-  return {
-    last,
-    dailyDrift: clamp(mean(returns), -MAX_DAILY_DRIFT, MAX_DAILY_DRIFT),
-    dailyVol: clamp(stdev(returns), MIN_SIGMA, MAX_SIGMA),
-  };
+  const fitted = fitLogDifferential(closes.slice(-HORIZON_HISTORY_BARS));
+  if (!(fitted.last > 0)) return null;
+  return fitted;
+}
+
+function meanLogAt(stats: HorizonStats, days: number) {
+  const x0 = Math.log(stats.last);
+  const rho = incrementRho(stats);
+  const meanDelta = clamp(
+    Math.abs(stats.thetaLog) > MAX_DAILY_DRIFT * 2
+      ? stats.dailyDrift
+      : stats.thetaLog,
+    -MAX_DAILY_DRIFT,
+    MAX_DAILY_DRIFT,
+  );
+  const lastDelta = Number.isFinite(stats.lastDelta) ? stats.lastDelta : 0;
+  const integrated = expectedDeltaSum(
+    lastDelta,
+    Math.abs(rho) < 1e-6 ? stats.dailyDrift : meanDelta,
+    rho,
+    days,
+  );
+  return x0 + integrated;
 }
 
 export function projectPrice(stats: HorizonStats, tradingDaysAhead: number) {
   const days = Math.max(0, tradingDaysAhead);
-  const predicted = stats.last * Math.exp(stats.dailyDrift * days);
-  const width = Z_BAND * stats.dailyVol * Math.sqrt(days);
+  const terminalLog = meanLogAt(stats, days);
+  if (days <= 0) {
+    return {
+      predicted: Math.exp(terminalLog),
+      low: Math.exp(terminalLog),
+      high: Math.exp(terminalLog),
+    };
+  }
+  const blend = clamp(stats.avgBlend ?? 0, 0, 1);
+  let meanLog = terminalLog;
+  if (blend > 0 && days > 1) {
+    const steps = Math.max(1, Math.round(days));
+    let logSum = 0;
+    for (let step = 1; step <= steps; step += 1) {
+      logSum += meanLogAt(stats, step);
+    }
+    meanLog = (1 - blend) * terminalLog + blend * (logSum / steps);
+  }
+  const rho = incrementRho(stats);
+  const n = Math.max(1, Math.round(days));
+  const variance = deltaSumVariance(stats.dailyVol, rho, n) * (days / n);
+  const width = Z_BAND * Math.sqrt(Math.max(0, variance));
   return {
-    predicted,
-    low: stats.last * Math.exp(stats.dailyDrift * days - width),
-    high: stats.last * Math.exp(stats.dailyDrift * days + width),
+    predicted: Math.exp(meanLog),
+    low: Math.exp(meanLog - width),
+    high: Math.exp(meanLog + width),
   };
 }
 
@@ -136,16 +297,39 @@ export function buildHorizonChart(
   history: ChartPoint[],
   tradingDaysAhead: number,
   override?: Partial<HorizonStats> | null,
+  windowDays = tradingDaysAhead,
 ): { points: HorizonChartPoint[]; stats: HorizonStats | null } {
-  const recent = history.slice(-HORIZON_HISTORY_BARS);
-  const computed = horizonStats(recent.map((point) => point.value));
+  const computed = horizonStats(
+    history.slice(-HORIZON_HISTORY_BARS).map((point) => point.value),
+  );
   const stats = computed
     ? {
         last: override?.last ?? computed.last,
-        dailyDrift: override?.dailyDrift ?? computed.dailyDrift,
-        dailyVol: override?.dailyVol ?? computed.dailyVol,
+        dailyDrift: clamp(
+          override?.dailyDrift ?? computed.dailyDrift,
+          -MAX_DAILY_DRIFT,
+          MAX_DAILY_DRIFT,
+        ),
+        dailyVol: clamp(
+          override?.dailyVol ?? computed.dailyVol,
+          MIN_SIGMA,
+          MAX_SIGMA,
+        ),
+        kappa: override?.kappa ?? computed.kappa,
+        thetaLog: clamp(
+          override?.thetaLog ?? override?.dailyDrift ?? computed.thetaLog,
+          -MAX_DAILY_DRIFT,
+          MAX_DAILY_DRIFT,
+        ),
+        lastDelta: override?.lastDelta ?? computed.lastDelta,
+        rho: override?.rho ?? computed.rho,
+        avgBlend: override?.avgBlend ?? computed.avgBlend,
       }
     : null;
+  const visible = Math.max(0, Math.round(windowDays));
+  const keep =
+    visible <= 0 ? Math.min(12, history.length) : Math.max(3, visible);
+  const recent = history.slice(-keep);
   const points: HorizonChartPoint[] = recent.map((point, index) => {
     const isLast = index === recent.length - 1;
     return {
@@ -160,28 +344,33 @@ export function buildHorizonChart(
     };
   });
 
-  if (!stats || tradingDaysAhead <= 0 || recent.length === 0) {
+  const last = recent[recent.length - 1];
+  const axisDays = Math.min(
+    MAX_HORIZON_TRADING_DAYS,
+    Math.max(0, Math.round(windowDays)),
+  );
+  if (!last || axisDays <= 0) {
     return { points, stats };
   }
 
-  const last = recent[recent.length - 1];
-  const horizon = Math.min(MAX_HORIZON_TRADING_DAYS, Math.max(0, tradingDaysAhead));
-  const futureDays = nextTradingDays(last.timestamp, MAX_HORIZON_TRADING_DAYS);
-  const samples = Math.max(1, Math.round(horizon * 10));
+  const pathHorizon = Math.min(axisDays, Math.max(0, tradingDaysAhead));
+  const futureDays = nextTradingDays(last.timestamp, axisDays);
+  const samples = Math.max(1, Math.round(axisDays * 10));
 
   for (let sample = 1; sample <= samples; sample += 1) {
-    const step = (sample / samples) * horizon;
-    const projection = projectPrice(stats, step);
+    const step = (sample / samples) * axisDays;
     const timestamp = timestampAtTradingDay(last.timestamp, futureDays, step);
+    const onPath = Boolean(stats) && pathHorizon > 0 && step <= pathHorizon + 1e-6;
+    const projection = onPath && stats ? projectPrice(stats, step) : null;
     points.push({
       label: formatDay(timestamp),
       timestamp,
       actual: null,
-      predicted: projection.predicted,
-      low: projection.low,
-      high: projection.high,
-      bandBase: projection.low,
-      bandSize: Math.max(0, projection.high - projection.low),
+      predicted: projection?.predicted ?? null,
+      low: projection?.low ?? null,
+      high: projection?.high ?? null,
+      bandBase: projection?.low ?? null,
+      bandSize: projection ? Math.max(0, projection.high - projection.low) : null,
     });
   }
 

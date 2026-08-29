@@ -58,7 +58,8 @@ import {
 } from "@/lib/customize-prompt";
 import {
   isNewBadgeActive,
-  missingNewSeenStamps,
+  mergeNewSeen,
+  NEW_BADGE_WAVE,
   parseNewSeen,
   publicNewFeatureIds,
   type NewFeatureId,
@@ -80,6 +81,7 @@ export interface AccountProfile {
   seenRelease: string;
   seenCustomize: string;
   newSeen: NewSeenMap;
+  newSeenWave: string;
   country: string;
   timeZone: string;
 }
@@ -93,6 +95,8 @@ export interface AccountEntitlement {
   stripeCustomerId: string;
   stripeCancelAtPeriodEnd: boolean;
   stripeAccessUntil: number;
+  stripePendingPlan: "" | "pro" | "ultra";
+  stripePendingUntil: number;
 }
 
 export interface AccountWatchlist {
@@ -151,6 +155,8 @@ const defaultEntitlement: AccountEntitlement = {
   stripeCustomerId: "",
   stripeCancelAtPeriodEnd: false,
   stripeAccessUntil: 0,
+  stripePendingPlan: "",
+  stripePendingUntil: 0,
 };
 
 function entitlementFromData(
@@ -182,6 +188,14 @@ function entitlementFromData(
     stripeCancelAtPeriodEnd: data.stripeCancelAtPeriodEnd === true,
     stripeAccessUntil:
       typeof data.stripeAccessUntil === "number" ? data.stripeAccessUntil : 0,
+    stripePendingPlan:
+      data.stripePendingPlan === "ultra"
+        ? "ultra"
+        : data.stripePendingPlan === "pro"
+          ? "pro"
+          : "",
+    stripePendingUntil:
+      typeof data.stripePendingUntil === "number" ? data.stripePendingUntil : 0,
   };
 }
 
@@ -304,7 +318,27 @@ function writeReleaseSeen(uid: string, releaseId: string) {
 }
 
 function newSeenKey(uid: string) {
-  return `tvm-new-seen:${uid}`;
+  return `tvm-new-seen:${uid}:${NEW_BADGE_WAVE}`;
+}
+
+function newSeenWaveKey(uid: string) {
+  return `tvm-new-seen-wave:${uid}`;
+}
+
+function readNewSeenWave(uid: string) {
+  try {
+    return window.localStorage.getItem(newSeenWaveKey(uid)) || "";
+  } catch {
+    return "";
+  }
+}
+
+function writeNewSeenWave(uid: string, wave: string) {
+  try {
+    window.localStorage.setItem(newSeenWaveKey(uid), wave);
+  } catch {
+    /* private mode */
+  }
 }
 
 function readNewSeen(uid: string): NewSeenMap {
@@ -341,6 +375,7 @@ function profileFrom(data: DocumentData): AccountProfile {
     seenRelease: typeof data.seenRelease === "string" ? data.seenRelease : "",
     seenCustomize: typeof data.seenCustomize === "string" ? data.seenCustomize : "",
     newSeen: parseNewSeen(data.newSeen),
+    newSeenWave: typeof data.newSeenWave === "string" ? data.newSeenWave : "",
     country: typeof data.country === "string" ? data.country : "",
     timeZone: typeof data.timeZone === "string" ? data.timeZone : "",
   };
@@ -366,6 +401,7 @@ function profileFromAuth(user: User): AccountProfile {
     seenRelease: "",
     seenCustomize: "",
     newSeen: {},
+    newSeenWave: "",
     country: "",
     timeZone: "",
   });
@@ -532,6 +568,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           stripeCustomerId: "",
           stripeCancelAtPeriodEnd: false,
           stripeAccessUntil: 0,
+          stripePendingPlan: "",
+          stripePendingUntil: 0,
         });
       }
       setLoading(false);
@@ -707,28 +745,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading || !user || !profile) return;
     const local = readNewSeen(user.uid);
-    const combined = { ...local, ...profile.newSeen };
-    const next = { ...combined, ...missingNewSeenStamps(combined) };
-    writeNewSeen(user.uid, next);
-    const cloudNeeds = Object.keys(next).filter(
-      (id) => next[id as NewFeatureId] && !profile.newSeen[id as NewFeatureId],
-    ) as NewFeatureId[];
-    if (JSON.stringify(next) !== JSON.stringify(profile.newSeen)) {
-      setProfile((current) => (current ? { ...current, newSeen: next } : current));
+    const merged = mergeNewSeen(
+      local,
+      profile.newSeen,
+      profile.newSeenWave,
+      readNewSeenWave(user.uid),
+    );
+    writeNewSeen(user.uid, merged.seen);
+    writeNewSeenWave(user.uid, merged.wave);
+    const seenChanged =
+      JSON.stringify(merged.seen) !== JSON.stringify(profile.newSeen);
+    const waveChanged = merged.wave !== profile.newSeenWave;
+    if (seenChanged || waveChanged) {
+      setProfile((current) =>
+        current
+          ? { ...current, newSeen: merged.seen, newSeenWave: merged.wave }
+          : current,
+      );
     }
-    if (cloudNeeds.length === 0) return;
-    const stampKey = `${user.uid}:${cloudNeeds.sort().join(",")}`;
+    if (!seenChanged && !waveChanged) return;
+    const stampKey = `${user.uid}:${merged.wave}:${Object.keys(merged.seen).sort().join(",")}`;
     if (newSeenStampKey.current === stampKey) return;
     newSeenStampKey.current = stampKey;
     const db = getClientFirestore();
     if (!db) return;
-    const payload: Record<string, string | ReturnType<typeof serverTimestamp>> = {
+    void updateDoc(doc(db, "users", user.uid), {
+      newSeen: merged.seen,
+      newSeenWave: merged.wave,
       updatedAt: serverTimestamp(),
-    };
-    for (const id of cloudNeeds) {
-      payload[`newSeen.${id}`] = next[id] as string;
-    }
-    void updateDoc(doc(db, "users", user.uid), payload).catch((stampError) => {
+    }).catch((stampError) => {
       console.error(stampError);
     });
   }, [loading, profile, user]);
@@ -785,6 +830,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
     writeReleaseSeen(user.uid, next);
     setReleasePending(false);
+    setProfile((current) =>
+      current ? { ...current, seenRelease: next } : current,
+    );
     if (!db) return;
     try {
       await updateDoc(doc(db, "users", user.uid), {

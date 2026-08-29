@@ -4,16 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import type { ScreenedStock, StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
-import { TVMIcon } from "@/components/TVMBrand";
-import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
+import { PredictButton, usePredictUsage } from "@/components/PredictButton";
+import { ProGlowPhrase } from "@/components/ProGlowText";
 import { NewBadge } from "@/components/NewBadge";
 import {
-  analyzePortfolio,
+  predictPortfolio,
   withConsidering,
   type AnalysisPosition,
   type AnalysisQuote,
   type PortfolioReview,
 } from "@/lib/portfolio-analysis";
+import { loadForecastStats } from "@/lib/load-forecast-stats";
 import { BogenHeading, BogenTip } from "@/components/BogenProvider";
 import { planHasPro } from "@/lib/plans";
 import type { BogenId } from "@/lib/bogen";
@@ -141,15 +142,19 @@ export function BookScoreCard({
   cash: number;
   considering?: AnalysisPosition[];
 }) {
-  const { entitlement, positions } = useAuth();
+  const { positions } = useAuth();
   const { openUpgrade } = useUpgrade();
-  const isPro = planHasPro(entitlement.plan);
+  const { usage, busy, consume, plan } = usePredictUsage("score");
   const [predicted, setPredicted] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [predictError, setPredictError] = useState("");
+  const [current, setCurrent] = useState<PortfolioReview | null>(null);
+  const [possible, setPossible] = useState<PortfolioReview | null>(null);
 
   const quotes = useMemo(() => {
     const map = new Map<string, AnalysisQuote>();
     for (const stock of screened) {
-      map.set(stock.symbol, {
+      map.set(stock.symbol.toUpperCase(), {
         name: stock.name,
         price: stock.price,
         sector: stock.sector,
@@ -159,7 +164,7 @@ export function BookScoreCard({
       });
     }
     for (const stock of stocks) {
-      map.set(stock.symbol, {
+      map.set(stock.symbol.toUpperCase(), {
         name: stock.name,
         price: stock.price,
         sector: stock.sector,
@@ -171,63 +176,90 @@ export function BookScoreCard({
     return map;
   }, [screened, stocks]);
 
-  const current = useMemo(
-    () => analyzePortfolio({ cash, positions, quotes }),
-    [cash, positions, quotes],
-  );
-  const possible = useMemo(
-    () =>
-      analyzePortfolio({
-        cash,
-        positions: withConsidering(positions, considering),
-        quotes,
-      }),
-    [cash, considering, positions, quotes],
-  );
-
   const consideringKey = considering
+    .map((row) => `${row.symbol}:${row.shares}:${row.averageCost}`)
+    .join("|");
+  const positionsKey = positions
     .map((row) => `${row.symbol}:${row.shares}:${row.averageCost}`)
     .join("|");
 
   useEffect(() => {
     setPredicted(false);
-  }, [consideringKey, cash, positions]);
+    setCurrent(null);
+    setPossible(null);
+    setPredictError("");
+  }, [consideringKey, cash, positionsKey]);
 
   const showingPossible = predicted && considering.some((row) => row.shares > 0);
   const added = considering.filter((row) => row.shares > 0).length;
   const delta =
-    current.overall != null && possible.overall != null
+    current?.overall != null && possible?.overall != null
       ? possible.overall - current.overall
       : null;
 
-  function onPredict() {
-    if (!isPro) {
-      openUpgrade();
+  async function onPredict() {
+    if (predicted) {
+      setPredicted(false);
       return;
     }
-    setPredicted(true);
+    setPredictError("");
+    setReading(true);
+    try {
+      const merged = withConsidering(positions, considering);
+      const symbols = merged.map((row) => row.symbol);
+      const forecasts = await loadForecastStats(symbols);
+      if (forecasts.size === 0 && merged.some((row) => row.shares > 0)) {
+        setPredictError("Could not read a path for these names. Try again in a moment.");
+        return;
+      }
+      const result = await consume();
+      if (!result.ok) {
+        openUpgrade(plan === "pro" ? "ultra" : "pro");
+        return;
+      }
+      setCurrent(predictPortfolio({ cash, positions, quotes, forecasts }));
+      setPossible(
+        predictPortfolio({
+          cash,
+          positions: merged,
+          quotes,
+          forecasts,
+        }),
+      );
+      setPredicted(true);
+    } catch {
+      setPredictError("Could not read a path for these names. Try again in a moment.");
+    } finally {
+      setReading(false);
+    }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={onPredict}
-          className="pro-profile-glow inline-flex items-center gap-2 rounded-full bg-transparent px-5 py-2.5 text-sm font-semibold"
-        >
-          {!isPro ? <TVMIcon name="lock" size={16} /> : null}
-          <ProGlowText>Predict score</ProGlowText>
-        </button>
+        <PredictButton
+          plan={plan}
+          kind="score"
+          used={usage.score}
+          busy={busy || reading}
+          predicted={predicted}
+          predictLabel="Predict score"
+          hideLabel="Hide score"
+          onPredict={() => void onPredict()}
+          onUpgrade={openUpgrade}
+        />
         <BogenTip id="portfolio-predict" />
       </div>
-      {showingPossible ? (
+      {predictError ? (
+        <p className="text-center text-sm text-coral">{predictError}</p>
+      ) : null}
+      {showingPossible && possible ? (
         <ScoreBar
           title="Possible score"
           bogenId="portfolio-score"
           review={possible}
           delta={delta}
-          caption={`If you added ${added} considering name${added === 1 ? "" : "s"} to the book. Current book is ${current.overall ?? "—"}.`}
+          caption={`If you added ${added} considering name${added === 1 ? "" : "s"} to the book. Current book is ${current?.overall ?? "—"}.`}
         />
       ) : null}
     </div>
@@ -243,15 +275,18 @@ export function PortfolioAnalysis({
   screened?: ScreenedStock[];
   cash: number;
 }) {
-  const { entitlement, positions } = useAuth();
+  const { positions } = useAuth();
   const { openUpgrade } = useUpgrade();
+  const { usage, busy, consume, plan } = usePredictUsage("addition");
   const [open, setOpen] = useState(false);
-  const isPro = planHasPro(entitlement.plan);
+  const [reading, setReading] = useState(false);
+  const [predictError, setPredictError] = useState("");
+  const [review, setReview] = useState<PortfolioReview | null>(null);
 
   const quotes = useMemo(() => {
     const map = new Map<string, AnalysisQuote>();
     for (const stock of screened) {
-      map.set(stock.symbol, {
+      map.set(stock.symbol.toUpperCase(), {
         name: stock.name,
         price: stock.price,
         sector: stock.sector,
@@ -261,7 +296,7 @@ export function PortfolioAnalysis({
       });
     }
     for (const stock of stocks) {
-      map.set(stock.symbol, {
+      map.set(stock.symbol.toUpperCase(), {
         name: stock.name,
         price: stock.price,
         sector: stock.sector,
@@ -273,22 +308,41 @@ export function PortfolioAnalysis({
     return map;
   }, [screened, stocks]);
 
-  const review = useMemo(
-    () =>
-      analyzePortfolio({
-        cash,
-        positions,
-        quotes,
-      }),
-    [cash, positions, quotes],
-  );
+  const positionsKey = positions
+    .map((row) => `${row.symbol}:${row.shares}:${row.averageCost}`)
+    .join("|");
 
-  function onAnalyze() {
-    if (!isPro) {
-      openUpgrade();
+  useEffect(() => {
+    setOpen(false);
+    setReview(null);
+    setPredictError("");
+  }, [cash, positionsKey]);
+
+  async function onAnalyze() {
+    if (open) {
+      setOpen(false);
       return;
     }
-    setOpen((value) => !value);
+    setPredictError("");
+    setReading(true);
+    try {
+      const forecasts = await loadForecastStats(positions.map((row) => row.symbol));
+      if (forecasts.size === 0 && positions.some((row) => row.shares > 0)) {
+        setPredictError("Could not read a path for these names. Try again in a moment.");
+        return;
+      }
+      const result = await consume();
+      if (!result.ok) {
+        openUpgrade(plan === "pro" ? "ultra" : "pro");
+        return;
+      }
+      setReview(predictPortfolio({ cash, positions, quotes, forecasts }));
+      setOpen(true);
+    } catch {
+      setPredictError("Could not read a path for these names. Try again in a moment.");
+    } finally {
+      setReading(false);
+    }
   }
 
   return (
@@ -302,30 +356,28 @@ export function PortfolioAnalysis({
           <BogenHeading id="portfolio-review">Analyze your portfolio</BogenHeading>
         </h3>
         <p className="mt-1 max-w-xl text-sm text-ink-soft">
-          A Pro read of mix, concentration, scan quality, and cash — with
-          next steps under each score.
+          A Pro read of the near-term path on your book — with next steps under
+          each score.
         </p>
       </div>
       <div className="mt-5 flex justify-center">
-        <button
-          type="button"
-          onClick={onAnalyze}
-          className="pro-profile-glow inline-flex items-center gap-2 rounded-full bg-transparent px-5 py-2.5 text-sm font-semibold"
-        >
-          {!isPro ? <TVMIcon name="lock" size={16} /> : null}
-          {isPro ? (
-            open ? (
-              "Hide review"
-            ) : (
-              <ProGlowText>Analyze book</ProGlowText>
-            )
-          ) : (
-            <ProGlowText>Analyze book</ProGlowText>
-          )}
-        </button>
+        <PredictButton
+          plan={plan}
+          kind="addition"
+          used={usage.addition}
+          busy={busy || reading}
+          predicted={open}
+          predictLabel="Analyze book"
+          hideLabel="Hide review"
+          onPredict={() => void onAnalyze()}
+          onUpgrade={openUpgrade}
+        />
       </div>
+      {predictError ? (
+        <p className="mt-4 text-center text-sm text-coral">{predictError}</p>
+      ) : null}
 
-      {open && isPro ? (
+      {open && planHasPro(plan) && review ? (
         <div className="mt-6 space-y-4">
           <ScoreBar
             title="Overall score"
@@ -368,7 +420,7 @@ export function PortfolioAnalysis({
         </div>
       ) : null}
 
-      {!isPro ? (
+      {!planHasPro(plan) ? (
         <p className="mt-4 text-sm text-ink-soft">
           <ProGlowPhrase>Pro</ProGlowPhrase> unlocks the full review. Free can
           still log holdings above.

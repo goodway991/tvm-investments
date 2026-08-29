@@ -497,6 +497,7 @@ export async function fetchYahooChartSeries(
   symbol: string,
   range: ChartRange,
   asOf?: string,
+  lookbackDays?: number,
 ): Promise<ChartPoint[]> {
   if (range === "day") return fetchYahooIntraday(symbol, asOf);
 
@@ -507,7 +508,7 @@ export async function fetchYahooChartSeries(
       ? new Date(`${asOf}T23:59:59-04:00`)
       : new Date();
   const start = new Date(end);
-  if (range === "month") start.setDate(start.getDate() - 40);
+  if (range === "month") start.setDate(start.getDate() - (lookbackDays ?? 40));
   else start.setFullYear(start.getFullYear() - 1);
 
   const result = await yahooFinance.chart(ticker, {
@@ -529,6 +530,28 @@ export async function fetchYahooChartSeries(
       value: +(bar.close as number).toFixed(2),
       timestamp: bar.date.getTime(),
     }));
+}
+
+export async function fetchYahooOhlcvSeries(
+  symbol: string,
+  lookbackDays = 90,
+  asOf?: string,
+): Promise<OHLCVBar[]> {
+  const yahooFinance = getYahoo();
+  const ticker = symbol.toUpperCase();
+  const end =
+    asOf && /^\d{4}-\d{2}-\d{2}$/.test(asOf)
+      ? new Date(`${asOf}T23:59:59-04:00`)
+      : new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - Math.max(40, Math.min(120, lookbackDays)));
+  const result = await yahooFinance.chart(ticker, {
+    period1: start,
+    period2: end,
+    interval: "1d",
+    includePrePost: false,
+  });
+  return barsFromChart(result.quotes);
 }
 
 export async function fetchYahooUniverse(): Promise<StockCandidate[]> {

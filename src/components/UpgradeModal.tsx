@@ -16,6 +16,7 @@ import {
 import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { authedFetch } from "@/lib/authed-fetch";
+import { REFUND_GRACE_DAYS } from "@/lib/refund-policy";
 
 const PLAN_RANK: Record<PlanId, number> = { free: 0, pro: 1, ultra: 2 };
 
@@ -41,7 +42,10 @@ export function UpgradeModal({
   const alreadyUltra = entitlement.plan === "ultra";
   const billed = entitlement.source === "stripe" && Boolean(entitlement.stripeCustomerId);
   const canceling = billed && entitlement.stripeCancelAtPeriodEnd;
-  const until = accessUntilLabel(entitlement.stripeAccessUntil);
+  const pendingPlan = entitlement.stripePendingPlan;
+  const until = accessUntilLabel(
+    entitlement.stripePendingUntil || entitlement.stripeAccessUntil,
+  );
   const [pickedPlan, setPickedPlan] = useState<PlanId>(() => {
     if (initialPlan === "ultra" && showUltra) return "ultra";
     if (initialPlan === "pro" || initialPlan === "free") return initialPlan;
@@ -75,6 +79,29 @@ export function UpgradeModal({
     }
   }
 
+  async function requestRefund() {
+    const confirmed = window.confirm(
+      `Request a full refund? Paid access ends now and this account returns to Free. This only works within ${REFUND_GRACE_DAYS} days of the latest charge.`,
+    );
+    if (!confirmed) return;
+    setError("");
+    setNotice("");
+    setLoading(true);
+    try {
+      const response = await authedFetch("/api/stripe/refund", { method: "POST" });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setError(payload.error || "Could not issue that refund.");
+        return;
+      }
+      setNotice("Refund issued. This account is back on Free.");
+    } catch {
+      setError("Could not issue that refund. Try again in a moment.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function startCheckout() {
     if (pickedPlan === "free") return;
     setError("");
@@ -86,7 +113,23 @@ export function UpgradeModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ interval: billing, plan: pickedPlan }),
       });
-      const payload = (await response.json()) as { url?: string; error?: string };
+      const payload = (await response.json()) as {
+        url?: string;
+        error?: string;
+        scheduled?: boolean;
+        pendingPlan?: string;
+        pendingUntil?: number;
+      };
+      if (payload.scheduled) {
+        const date = accessUntilLabel(payload.pendingUntil || 0);
+        const next = payload.pendingPlan === "ultra" ? "Ultra" : "Pro";
+        setNotice(
+          date
+            ? `You'll keep ${alreadyUltra ? "Ultra" : "Pro"} until ${date}. ${next} starts then.`
+            : `${next} is scheduled for the end of this billing period.`,
+        );
+        return;
+      }
       if (payload.url) {
         window.location.href = payload.url;
         return;
@@ -116,14 +159,18 @@ export function UpgradeModal({
         ok?: boolean;
         error?: string;
         cancelAtPeriodEnd?: boolean;
+        pendingPlan?: string;
+        pendingUntil?: number;
         accessUntil?: number;
       };
       if (!response.ok) {
         setError(payload.error || "Could not update that plan.");
         return;
       }
+      const date = accessUntilLabel(
+        payload.pendingUntil || payload.accessUntil || entitlement.stripeAccessUntil,
+      );
       if (pickedPlan === "free" || payload.cancelAtPeriodEnd) {
-        const date = accessUntilLabel(payload.accessUntil || entitlement.stripeAccessUntil);
         setNotice(
           date
             ? `You'll keep ${alreadyUltra ? "Ultra" : "Pro"} until ${date}, then this account goes back to Free.`
@@ -131,7 +178,22 @@ export function UpgradeModal({
         );
         return;
       }
-      setNotice(pickedPlan === "pro" ? "You're on Pro." : "Plan updated.");
+      if (payload.pendingPlan) {
+        const next = payload.pendingPlan === "ultra" ? "Ultra" : "Pro";
+        setNotice(
+          date
+            ? `You'll keep ${alreadyUltra ? "Ultra" : "Pro"} until ${date}. ${next} starts then.`
+            : `${next} is scheduled for the end of this billing period.`,
+        );
+        return;
+      }
+      setNotice(
+        pickedPlan === entitlement.plan
+          ? "You'll stay on the current plan through this billing period."
+          : pickedPlan === "pro"
+            ? "You're on Pro."
+            : "Plan updated.",
+      );
     } catch {
       setError("Could not update that plan. Try again in a moment.");
     } finally {
@@ -171,13 +233,16 @@ export function UpgradeModal({
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
                 {showUltra ? (
                   <ProGlowText>
-                    Tap Free, Pro, or Ultra in the table. You can move up or down.
+                    Tap Free, Pro, or Ultra in the table. Upgrades and
+                    downgrades take effect at the end of the billing period you
+                    already paid for.
                   </ProGlowText>
                 ) : (
                   <ProGlowText>
                     Pro unlocks separate short-term and long-term lists, richer culture
-                    write-ups, larger watchlists, and full backtests. Tap Free to
-                    schedule a downgrade.
+                    write-ups, larger watchlists, and full backtests. Plan changes
+                    wait until the end of the period you already paid for. Tap Free
+                    to turn off auto-renew.
                   </ProGlowText>
                 )}
               </p>
@@ -247,7 +312,11 @@ export function UpgradeModal({
                     : billed
                       ? "Cancels at the end of this billing period. You keep paid access until then."
                       : "The free desk: movers, screens, and a 10-name watchlist."
-                  : billing === "yearly"
+                    : pendingPlan && until && pendingPlan !== entitlement.plan
+                    ? `${pendingPlan === "ultra" ? "Ultra" : "Pro"} starts ${until}. You keep the current plan until then.`
+                    : pendingPlan && until
+                    ? `Scheduled change takes effect ${until}. You keep the current plan until then.`
+                    : billing === "yearly"
                     ? `$${price?.billed} billed once a year · $${price?.perMonth}/month effective`
                     : `$${price?.billed} billed each month`}
               </p>
@@ -261,10 +330,18 @@ export function UpgradeModal({
               >
                 Log in to upgrade
               </Link>
-            ) : samePlan && canceling ? (
+            ) : samePlan && (canceling || pendingPlan) ? (
               <div className="flex flex-col items-stretch gap-2">
                 <p className="rounded-full border border-ink/10 px-6 py-3 text-center text-sm font-semibold text-ink">
-                  {until ? `Cancels ${until}` : "Downgrade scheduled"}
+                  {canceling
+                    ? until
+                      ? `Cancels ${until}`
+                      : "Downgrade scheduled"
+                    : until
+                      ? pendingPlan && pendingPlan !== entitlement.plan
+                        ? `${pendingPlan === "ultra" ? "Ultra" : "Pro"} starts ${until}`
+                        : `Takes effect ${until}`
+                      : "Change scheduled"}
                 </p>
                 <button
                   type="button"
@@ -272,7 +349,19 @@ export function UpgradeModal({
                   disabled={loading}
                   className="rounded-full px-6 py-2 text-center text-sm font-semibold text-violet hover:bg-violet/10 disabled:opacity-60"
                 >
-                  {loading ? "Saving…" : alreadyUltra ? "Keep Ultra" : "Keep Pro"}
+                  {loading
+                    ? "Saving…"
+                    : alreadyUltra
+                      ? "Keep Ultra"
+                      : "Keep Pro"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void requestRefund()}
+                  disabled={loading}
+                  className="rounded-full px-6 py-2 text-center text-sm font-semibold text-coral hover:bg-coral/10 disabled:opacity-60"
+                >
+                  {loading ? "Refunding…" : "Request refund"}
                 </button>
               </div>
             ) : samePlan ? (
@@ -296,16 +385,41 @@ export function UpgradeModal({
                   )}
                 </p>
                 {billed ? (
-                  <button
-                    type="button"
-                    onClick={() => void openPortal()}
-                    disabled={loading}
-                    className="rounded-full px-6 py-2 text-center text-sm font-semibold text-violet hover:bg-violet/10 disabled:opacity-60"
-                  >
-                    {loading ? "Opening billing…" : "Manage billing"}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => void openPortal()}
+                      disabled={loading}
+                      className="rounded-full px-6 py-2 text-center text-sm font-semibold text-violet hover:bg-violet/10 disabled:opacity-60"
+                    >
+                      {loading ? "Opening billing…" : "Manage billing"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void requestRefund()}
+                      disabled={loading}
+                      className="rounded-full px-6 py-2 text-center text-sm font-semibold text-coral hover:bg-coral/10 disabled:opacity-60"
+                    >
+                      {loading ? "Refunding…" : "Request refund"}
+                    </button>
+                  </>
                 ) : null}
               </div>
+            ) : upgrading && billed ? (
+              <button
+                type="button"
+                onClick={() => void changePlan()}
+                disabled={loading}
+                className={`${glowClass} rounded-full bg-transparent px-7 py-3.5 text-sm font-semibold transition-transform hover:-translate-y-0.5 disabled:opacity-60`}
+              >
+                {loading ? (
+                  "Scheduling…"
+                ) : pickedPlan === "ultra" ? (
+                  <UltraShinePhrase>Schedule Ultra</UltraShinePhrase>
+                ) : (
+                  <ProGlowText>Schedule Pro</ProGlowText>
+                )}
+              </button>
             ) : upgrading ? (
               <button
                 type="button"
@@ -337,7 +451,7 @@ export function UpgradeModal({
                 disabled={loading}
                 className="rounded-full bg-transparent px-7 py-3.5 text-sm font-semibold text-violet transition-transform hover:-translate-y-0.5 disabled:opacity-60"
               >
-                {loading ? "Updating…" : "Switch to Pro"}
+                {loading ? "Scheduling…" : "Switch to Pro at period end"}
               </button>
             ) : downgrading ? (
               <p className="rounded-full border border-ink/10 px-6 py-3 text-center text-sm font-semibold text-ink-soft">
@@ -360,8 +474,13 @@ export function UpgradeModal({
       }
       footer={
         <p className="text-[11px] leading-relaxed text-ink-soft">
-          Secure checkout is powered by Stripe. Cancel anytime; paid access lasts
-          through the end of the period you already paid for.
+          Secure checkout is powered by Stripe. You have {REFUND_GRACE_DAYS} days
+          from purchase to request a full refund. After that, the interval you
+          paid for is locked in; upgrades and downgrades wait until that period
+          ends.{" "}
+          <Link href="/refunds" onClick={onClose} className="font-semibold text-violet">
+            Refund policy
+          </Link>
         </p>
       }
     >

@@ -10,21 +10,26 @@ service cloud.firestore {
     //   firstName, lastName (required on new client signups)
     //   tourCompletedAt: timestamp (set after the virtual tour)
     //   seenTour: string tour version, e.g. "tour-3" (re-shows when it changes)
+    //   seenCustomize: string customize prompt version, e.g. "customize-1"
     //   newSeen: optional map of feature id -> "YYYY-MM-DD" first-seen day
-    //     keys: bogen, portfolio, settings, density, appearance
+    //     keys: bogen, portfolio, settings, density, appearance,
+    //           horizon, workstation, pulse, sectors
+    //     newSeenWave: "beta-3" | "tvm-1" — changing it lets first-seen dates reset
     //     (New badges hide 3 calendar days after first login that sees them)
-    //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
     //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
     //   createdAt: timestamp (immutable), updatedAt: timestamp
     //
     // api_usage/{uid}
-    //   uid, date (YYYY-MM-DD ET), market, research, feedback, updatedAt
+    //   uid, date (YYYY-MM-DD ET), market, research, updatedAt
     //   Admin SDK only — daily counters for Yahoo/Gemini proxy limits
     //
     // entitlements/{uid}
-    //   uid: string, role: "client"|"admin", plan: "free"|"pro"
+    //   uid: string, role: "client"|"admin", plan: "free"|"pro"|"ultra"
     //   watchlistLimit: int, cooldownDays: int
-    //   Complimentary Pro is role "client" + plan "pro" (admin-granted, no Stripe)
+    //   Complimentary Pro is role "client" + plan "pro" + source "comp"
+    //   Paid plans are Admin SDK only: source "stripe", stripeCustomerId,
+    //     stripeSubscriptionId, optional stripeCancelAtPeriodEnd /
+    //     stripeAccessUntil. Clients cannot set role, plan, or source.
     //   createdAt: timestamp (immutable), updatedAt: timestamp
     //
     // watchlists/{uid}
@@ -81,8 +86,21 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/entitlements/$(uid)).data;
     }
 
-    function isPro(uid) {
-      return hasEntitlement(uid) && entitlement(uid).plan == "pro";
+    function isPaid(uid) {
+      return hasEntitlement(uid)
+        && (
+          entitlement(uid).plan == "pro"
+          || entitlement(uid).plan == "ultra"
+        );
+    }
+
+    // Labs overlay gives admin Ultra (500). Firestore entitlements stay
+    // plan "pro" / limit 100 so this cap is applied here, not on the doc.
+    function effectiveWatchlistLimit(uid) {
+      return isBootstrapAdmin()
+          || (hasEntitlement(uid) && entitlement(uid).plan == "ultra")
+        ? 500
+        : entitlement(uid).watchlistLimit;
     }
 
     function validEmail(value) {
@@ -104,7 +122,7 @@ service cloud.firestore {
           "uid", "email", "displayName", "createdAt", "updatedAt",
           "tosVersion", "tosAcceptedAt", "privacyAcceptedAt",
           "firstName", "lastName", "tourCompletedAt", "seenRelease", "seenTour",
-          "newSeen", "country", "timeZone"
+          "seenCustomize", "newSeen", "newSeenWave", "country", "timeZone"
         ])
         && data.keys().hasAll([
           "uid", "email", "displayName", "createdAt", "updatedAt"
@@ -158,8 +176,24 @@ service cloud.firestore {
           )
         )
         && (
+          !data.keys().hasAny(["seenCustomize"])
+          || (
+            data.seenCustomize is string
+            && data.seenCustomize.size() >= 1
+            && data.seenCustomize.size() <= 32
+          )
+        )
+        && (
           !data.keys().hasAny(["newSeen"])
           || validNewSeen(data.newSeen)
+        )
+        && (
+          !data.keys().hasAny(["newSeenWave"])
+          || (
+            data.newSeenWave is string
+            && data.newSeenWave.size() >= 1
+            && data.newSeenWave.size() <= 16
+          )
         )
         && (
           !data.keys().hasAny(["country"])
@@ -193,13 +227,18 @@ service cloud.firestore {
       return value is map
         && value.size() <= 24
         && value.keys().hasOnly([
-          "bogen", "portfolio", "settings", "density", "appearance"
+          "bogen", "portfolio", "settings", "density", "appearance",
+          "horizon", "workstation", "pulse", "sectors"
         ])
         && validNewSeenStamp(value, "bogen")
         && validNewSeenStamp(value, "portfolio")
         && validNewSeenStamp(value, "settings")
         && validNewSeenStamp(value, "density")
-        && validNewSeenStamp(value, "appearance");
+        && validNewSeenStamp(value, "appearance")
+        && validNewSeenStamp(value, "horizon")
+        && validNewSeenStamp(value, "workstation")
+        && validNewSeenStamp(value, "pulse")
+        && validNewSeenStamp(value, "sectors");
     }
 
     function newSeenKeyFrozen(prior, next, key) {
@@ -210,8 +249,15 @@ service cloud.firestore {
         );
     }
 
+    function newSeenWaveAdvanced(prior, next) {
+      return !prior.keys().hasAny(["newSeenWave"])
+        || !next.keys().hasAny(["newSeenWave"])
+        || next.newSeenWave != prior.newSeenWave;
+    }
+
     function newSeenFrozen(prior, next) {
-      return !prior.keys().hasAny(["newSeen"])
+      return newSeenWaveAdvanced(prior, next)
+        || !prior.keys().hasAny(["newSeen"])
         || (
           next.keys().hasAny(["newSeen"])
           && newSeenKeyFrozen(prior.newSeen, next.newSeen, "bogen")
@@ -219,6 +265,10 @@ service cloud.firestore {
           && newSeenKeyFrozen(prior.newSeen, next.newSeen, "settings")
           && newSeenKeyFrozen(prior.newSeen, next.newSeen, "density")
           && newSeenKeyFrozen(prior.newSeen, next.newSeen, "appearance")
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "horizon")
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "workstation")
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "pulse")
+          && newSeenKeyFrozen(prior.newSeen, next.newSeen, "sectors")
         );
     }
 
@@ -367,7 +417,7 @@ service cloud.firestore {
 
     function validSymbols(symbols, uid) {
       return symbols is list
-        && symbols.size() <= entitlement(uid).watchlistLimit
+        && symbols.size() <= effectiveWatchlistLimit(uid)
         && symbols.toSet().size() == symbols.size()
         && symbols.toSet().hasOnly(allowedSymbols());
     }
@@ -464,6 +514,30 @@ service cloud.firestore {
       return validHorizonSim(data, uid)
         && data.cash == 10000
         && data.totalValue == 10000;
+    }
+
+    function validPredictCount(value) {
+      return value is number && value >= 0 && value <= 100;
+    }
+
+    function validPredictUsage(data, uid) {
+      return data.keys().hasOnly([
+          "uid", "weekId", "review", "horizon", "pulse", "score",
+          "addition", "advanced", "updatedAt"
+        ])
+        && data.keys().hasAll(["uid", "weekId", "updatedAt"])
+        && data.uid is string
+        && data.uid == uid
+        && data.weekId is string
+        && data.weekId.size() >= 6
+        && data.weekId.size() <= 16
+        && (!("review" in data) || validPredictCount(data.review))
+        && (!("horizon" in data) || validPredictCount(data.horizon))
+        && (!("pulse" in data) || validPredictCount(data.pulse))
+        && (!("score" in data) || validPredictCount(data.score))
+        && (!("addition" in data) || validPredictCount(data.addition))
+        && (!("advanced" in data) || validPredictCount(data.advanced))
+        && data.updatedAt is timestamp;
     }
 
     function validPurchasedAt(value) {
@@ -591,8 +665,8 @@ service cloud.firestore {
         && request.resource.data.changedAt == request.time
         && request.resource.data.updatedAt == request.time
         && (
-          (isPro(uid) && validProCooldown(request.resource.data))
-          || (!isPro(uid) && validFreeCooldown(request.resource.data))
+          (isPaid(uid) && validProCooldown(request.resource.data))
+          || (!isPaid(uid) && validFreeCooldown(request.resource.data))
         );
       allow update: if (
           isOwner(uid)
@@ -603,12 +677,12 @@ service cloud.firestore {
           && request.resource.data.updatedAt == request.time
           && (
             (
-              isPro(uid)
+              isPaid(uid)
               && validProCooldown(request.resource.data)
             )
             ||
             (
-              !isPro(uid)
+              !isPaid(uid)
               && request.time >= resource.data.nextChangeAt
               && validFreeCooldown(request.resource.data)
             )
@@ -622,7 +696,7 @@ service cloud.firestore {
         )
         || (
           isOwner(uid)
-          && !isPro(uid)
+          && !isPaid(uid)
           && resource.data.symbols.size() > entitlement(uid).watchlistLimit
           && validWatchlistReset(request.resource.data, uid)
           && request.resource.data.uid == resource.data.uid
@@ -673,6 +747,14 @@ service cloud.firestore {
           && request.resource.data.updatedAt == request.time;
         allow delete: if isOwner(uid);
       }
+    }
+
+    match /predict_usage/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && validPredictUsage(request.resource.data, uid)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
     }
 
     // Daily API proxy counters. Admin SDK only — clients must not read or write.

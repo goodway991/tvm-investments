@@ -11,11 +11,12 @@ import {
 } from "react";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { showBeta3Labs } from "@/lib/beta-labs";
+import { LEGACY_CUSTOMIZE_KEY } from "@/lib/customize-prompt";
 
 export type Density = "clean" | "normal";
 
 const DENSITY_KEY = "tvm-density";
-const CUSTOMIZE_KEY = "tvm-customize-v1";
+const CUSTOMIZE_KEY = LEGACY_CUSTOMIZE_KEY;
 export const LOCAL_EXPERIMENT = "TVM 1.0 · local";
 
 type ExperienceContextValue = {

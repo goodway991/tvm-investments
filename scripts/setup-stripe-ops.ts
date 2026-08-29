@@ -16,6 +16,9 @@ const EVENTS: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   "customer.subscription.created",
   "customer.subscription.updated",
   "customer.subscription.deleted",
+  "subscription_schedule.updated",
+  "subscription_schedule.released",
+  "subscription_schedule.completed",
 ];
 
 function readEnvFile() {
@@ -46,7 +49,7 @@ function secretFromEnv() {
 async function ensurePortal(
   stripe: Stripe,
   name: string,
-  products: Array<{ product: string; prices: string[] }>,
+  _products: Array<{ product: string; prices: string[] }>,
 ) {
   const listed = await stripe.billingPortal.configurations.list({ limit: 20, active: true });
   const existing = listed.data.find((item) => item.business_profile?.headline === name);
@@ -70,10 +73,7 @@ async function ensurePortal(
         proration_behavior: "none",
       },
       subscription_update: {
-        enabled: true,
-        default_allowed_updates: ["price", "promotion_code"],
-        proration_behavior: "create_prorations",
-        products,
+        enabled: false,
       },
     },
   });

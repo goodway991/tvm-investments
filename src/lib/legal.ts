@@ -1,6 +1,8 @@
-export const TOS_VERSION = "2026-08-13";
+export const TOS_VERSION = "2026-08-26";
+export const PRIVACY_VERSION = "2026-08-26";
 export const LEGAL_STORAGE_KEY = "tvm-legal-acceptance";
-export const LEGAL_EFFECTIVE_DATE = "August 13, 2026";
+export const LEGAL_EFFECTIVE_DATE = "August 26, 2026";
+export const PRIVACY_EFFECTIVE_DATE = "August 26, 2026";
 
 export const LEGAL_ENTITY = "TVM Investments";
 export const LEGAL_JURISDICTION = "the State of New York";

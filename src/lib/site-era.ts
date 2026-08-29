@@ -106,5 +106,5 @@ export const RELEASE_ISO: Record<string, string> = {
   "beta-2": "2026-08-14",
   "beta-2.1": "2026-08-14",
   "beta-3": "2026-08-15",
-  "tvm-1": "2026-08-15",
+  "tvm-1": "2026-09-25",
 };

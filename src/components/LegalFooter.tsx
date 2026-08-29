@@ -20,6 +20,9 @@ export function LegalFooter() {
             <Link href="/terms" className="hover:text-violet">
               Terms of Service
             </Link>
+            <Link href="/refunds" className="hover:text-violet">
+              Refunds
+            </Link>
             <Link href="/disclaimer" className="hover:text-violet">
               Risk Disclaimer
             </Link>

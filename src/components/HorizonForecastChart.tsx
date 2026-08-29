@@ -1,6 +1,8 @@
 "use client";
 
-import { useId, useMemo } from "react";
+import { useId, useMemo, type ReactNode } from "react";
+import { BogenHeading } from "@/components/BogenProvider";
+import { BogenTerms } from "@/components/BogenTerms";
 import { useChartDrawKey, useHtmlDark } from "@/lib/use-chart-draw";
 import {
   Area,
@@ -17,6 +19,7 @@ import type { ChartPoint } from "@/lib/chart-series";
 import { formatPrice } from "@/lib/chart-series";
 import {
   buildHorizonChart,
+  formatHorizonLabel,
   MAX_HORIZON_TRADING_DAYS,
   type HorizonStats,
 } from "@/lib/horizon-forecast";
@@ -51,6 +54,9 @@ export function HorizonForecastChart({
   history,
   horizonDays,
   onHorizonChange,
+  committedDays,
+  predictAction,
+  forecastPlan,
   averageCost,
   height = 280,
   tone = "light",
@@ -61,6 +67,9 @@ export function HorizonForecastChart({
   history: ChartPoint[];
   horizonDays: number;
   onHorizonChange: (days: number) => void;
+  committedDays?: number;
+  predictAction?: ReactNode;
+  forecastPlan?: "pro" | "ultra";
   averageCost?: number;
   height?: number;
   tone?: "light" | "dark";
@@ -77,34 +86,93 @@ export function HorizonForecastChart({
   const tooltipBorder =
     htmlDark || tone === "dark" ? DARK.tooltipBorder : LIGHT.tooltipBorder;
   const fillId = `forecastFill-${useId().replace(/:/g, "")}`;
+  const strokeId = `forecastStroke-${useId().replace(/:/g, "")}`;
   const drawKey = useChartDrawKey(
     `${history[0]?.label}-${history[history.length - 1]?.label}-${history.length}`,
   );
+  const windowDays = Math.max(0, horizonDays);
+  const pathDays =
+    committedDays && committedDays > 0
+      ? Math.min(windowDays, committedDays)
+      : 0;
+  const sliderMax =
+    committedDays && committedDays > 0
+      ? committedDays
+      : MAX_HORIZON_TRADING_DAYS;
   const { points, stats } = useMemo(
-    () => buildHorizonChart(history, horizonDays, statsOverride),
-    [history, horizonDays, statsOverride],
+    () => buildHorizonChart(history, pathDays, statsOverride, windowDays),
+    [history, pathDays, windowDays, statsOverride],
   );
   const lastForecast = [...points].reverse().find((point) => point.predicted != null);
   const projected = lastForecast?.predicted ?? stats?.last ?? 0;
+  const maxLabel = formatHorizonLabel(sliderMax);
+  const showMidLabel =
+    horizonDays > 0.05 && formatHorizonLabel(horizonDays) !== maxLabel;
   const low = lastForecast?.low ?? projected;
   const high = lastForecast?.high ?? projected;
   const muted = tone === "dark" ? "text-white/55" : "text-ink-soft";
   const title = tone === "dark" ? "text-white" : "text-ink";
+  const ultraPath = forecastPlan === "ultra";
+  const peachPath = forecastPlan === "pro";
+  const predictedStroke = ultraPath
+    ? `url(#${strokeId})`
+    : peachPath
+      ? `url(#${strokeId})`
+      : palette.line;
+  const predictedDot = ultraPath
+    ? "#7aa6ff"
+    : peachPath
+      ? "#ffc48a"
+      : palette.line;
+  const predictedFill = ultraPath
+    ? "#7aa6ff"
+    : peachPath
+      ? "#ffd2b0"
+      : palette.line;
+  const bandStroke = ultraPath
+    ? "rgba(255,255,255,0.2)"
+    : peachPath
+      ? "rgba(255, 210, 176, 0.5)"
+      : palette.dash;
+  const predictedClass = ultraPath
+    ? "horizon-path-ultra"
+    : peachPath
+      ? "horizon-path-pro"
+      : undefined;
 
   if (history.length < 3) {
     return (
-      <div className={`grid place-items-center text-sm ${muted}`} style={{ height }}>
-        Need a bit more price history to project this name.
+      <div>
+        <div className={`grid place-items-center text-sm ${muted}`} style={{ height }}>
+          Pick a ticker and a horizon, then Predict.
+        </div>
+        <label className="mt-3 block">
+          <span className={`flex items-center justify-between text-xs ${muted}`}>
+            <span>Now</span>
+            <span>{maxLabel}</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={sliderMax}
+            step={1}
+            value={Math.min(horizonDays, sliderMax)}
+            onChange={(event) =>
+              onHorizonChange(Math.min(Number(event.target.value), sliderMax))
+            }
+            className={`horizon-slider mt-2 w-full ${tone === "light" ? "horizon-slider-light" : ""}`}
+            aria-label="Forecast horizon"
+          />
+        </label>
+        {predictAction ? (
+          <div className="mt-4 flex justify-center">{predictAction}</div>
+        ) : null}
       </div>
     );
   }
 
-  const horizonLabel =
-    horizonDays <= 0.05
-      ? "Now"
-      : horizonDays >= MAX_HORIZON_TRADING_DAYS - 0.05
-        ? "2 weeks"
-        : `${horizonDays.toFixed(1)} trading days`;
+  const horizonLabel = formatHorizonLabel(horizonDays);
+  const projectedLabel = formatHorizonLabel(pathDays);
 
   return (
     <div>
@@ -118,9 +186,9 @@ export function HorizonForecastChart({
               {formatPrice(projected)}
             </p>
             <p className={`mt-1 text-xs ${muted}`}>
-              {horizonDays <= 0.05
-                ? "Last close. Slide forward to open the two-week cone."
-                : `Range ${formatPrice(low)} – ${formatPrice(high)}`}
+              {pathDays <= 0.05
+                ? "Last close. Pick a horizon, then Predict to draw the path."
+                : `Range ${formatPrice(low)} – ${formatPrice(high)} · ${projectedLabel}`}
             </p>
           </div>
           <p
@@ -137,16 +205,30 @@ export function HorizonForecastChart({
 
       <div
         key={drawKey}
-        className={compact ? "chart-stage" : "chart-stage mt-4"}
+        className={compact ? "chart-stage-static" : "chart-stage-static mt-4"}
         style={{ height }}
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={palette.line} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={palette.line} stopOpacity={0} />
+                <stop offset="0%" stopColor={predictedFill} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={predictedFill} stopOpacity={0} />
               </linearGradient>
+              {ultraPath ? (
+                <linearGradient id={strokeId} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#6ea2ff" />
+                  <stop offset="48%" stopColor="#ffffff" />
+                  <stop offset="100%" stopColor="#ffc48a" />
+                </linearGradient>
+              ) : null}
+              {peachPath && !ultraPath ? (
+                <linearGradient id={strokeId} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#e8b48a" />
+                  <stop offset="46%" stopColor="#ffc48a" />
+                  <stop offset="100%" stopColor="#ffe0c4" />
+                </linearGradient>
+              ) : null}
             </defs>
             <CartesianGrid stroke={palette.grid} vertical={false} />
             <XAxis
@@ -209,6 +291,8 @@ export function HorizonForecastChart({
               fill="transparent"
               connectNulls
               isAnimationActive={false}
+              legendType="none"
+              tooltipType="none"
             />
             <Area
               type="monotone"
@@ -218,6 +302,8 @@ export function HorizonForecastChart({
               fill={palette.band}
               connectNulls
               isAnimationActive={false}
+              legendType="none"
+              tooltipType="none"
             />
             <Area
               type="monotone"
@@ -226,13 +312,16 @@ export function HorizonForecastChart({
               fill={`url(#${fillId})`}
               connectNulls
               isAnimationActive={false}
+              legendType="none"
+              tooltipType="none"
             />
             <Line
               type="monotone"
               dataKey="high"
-              stroke={palette.dash}
+              stroke={bandStroke}
               strokeDasharray="4 5"
               strokeWidth={1.2}
+              strokeOpacity={0.45}
               dot={false}
               connectNulls
               isAnimationActive={false}
@@ -240,9 +329,10 @@ export function HorizonForecastChart({
             <Line
               type="monotone"
               dataKey="low"
-              stroke={palette.dash}
+              stroke={bandStroke}
               strokeDasharray="4 5"
               strokeWidth={1.2}
+              strokeOpacity={0.45}
               dot={false}
               connectNulls
               isAnimationActive={false}
@@ -255,27 +345,82 @@ export function HorizonForecastChart({
               dot={false}
               isAnimationActive={false}
             />
+            {(ultraPath || peachPath) && pathDays > 0 ? (
+              <Line
+                type="monotone"
+                dataKey="predicted"
+                stroke={predictedStroke}
+                strokeWidth={9}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                dot={false}
+                connectNulls
+                isAnimationActive={false}
+                className={ultraPath ? "horizon-path-ultra-halo" : "horizon-path-pro-halo"}
+                legendType="none"
+                tooltipType="none"
+              />
+            ) : null}
             <Line
               type="monotone"
               dataKey="predicted"
-              stroke={palette.line}
-              strokeWidth={2.4}
+              stroke={predictedStroke}
+              strokeWidth={2.6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
               dot={false}
               connectNulls
               isAnimationActive={false}
-              activeDot={{ r: 4, fill: palette.line }}
+              className={predictedClass}
+              activeDot={{ r: 4, fill: predictedDot }}
             />
+            {ultraPath && pathDays > 0 ? (
+              <Line
+                type="monotone"
+                dataKey="predicted"
+                stroke="#ffffff"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                dot={false}
+                connectNulls
+                isAnimationActive={false}
+                className="horizon-ultra-spark"
+                legendType="none"
+                tooltipType="none"
+              />
+            ) : null}
+            {peachPath && !ultraPath && pathDays > 0 ? (
+              <Line
+                type="monotone"
+                dataKey="predicted"
+                stroke="#fff3e6"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                dot={false}
+                connectNulls
+                isAnimationActive={false}
+                className="horizon-pro-spark"
+                legendType="none"
+                tooltipType="none"
+              />
+            ) : null}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
       <label className="mt-3 block">
         <span className={`flex items-center justify-between text-xs ${muted}`}>
-          <span>Now</span>
-          <span>{horizonLabel}</span>
-          <span>2 weeks</span>
+          <BogenHeading id="horizon-preset" className="gap-1">
+            <BogenTerms text="Now" />
+          </BogenHeading>
+          {showMidLabel ? (
+            <span>
+              <BogenTerms text={horizonLabel} />
+            </span>
+          ) : null}
+          <span>{maxLabel}</span>
         </span>
-        {compact && horizonDays > 0.05 && (
+        {compact && pathDays > 0.05 && (
           <span className={`mt-1 block text-center text-xs ${muted}`}>
             Range {formatPrice(low)} – {formatPrice(high)}
           </span>
@@ -283,16 +428,21 @@ export function HorizonForecastChart({
         <input
           type="range"
           min={0}
-          max={MAX_HORIZON_TRADING_DAYS}
-          step={0.05}
-          value={horizonDays}
-          onChange={(event) => onHorizonChange(Number(event.target.value))}
+          max={sliderMax}
+          step={1}
+          value={Math.min(horizonDays, sliderMax)}
+          onChange={(event) =>
+            onHorizonChange(Math.min(Number(event.target.value), sliderMax))
+          }
           className={`horizon-slider mt-2 w-full ${tone === "light" ? "horizon-slider-light" : ""}`}
           aria-label="Forecast horizon"
         />
       </label>
+      {predictAction ? <div className="mt-4 flex justify-center">{predictAction}</div> : null}
       {note && (
-        <p className={`mt-2 text-xs leading-relaxed ${muted}`}>{note}</p>
+        <p className={`mt-2 text-xs leading-relaxed ${muted}`}>
+          <BogenTerms text={note} />
+        </p>
       )}
     </div>
   );

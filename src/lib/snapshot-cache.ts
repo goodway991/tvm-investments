@@ -26,9 +26,12 @@ export async function readDiskSnapshot(): Promise<DailySnapshot | null> {
 }
 
 export function newerLive(...snapshots: Array<DailySnapshot | null | undefined>) {
-  return snapshots
-    .filter((snapshot): snapshot is DailySnapshot => snapshot?.dataMode === "live")
-    .sort((left, right) => right.generatedAt.localeCompare(left.generatedAt))[0];
+  const rows = snapshots.filter((snapshot): snapshot is DailySnapshot => Boolean(snapshot));
+  const live = rows.filter((snapshot) => snapshot.dataMode === "live");
+  const pool = live.length ? live : rows;
+  return pool.sort((left, right) =>
+    `${right.date}${right.generatedAt}`.localeCompare(`${left.date}${left.generatedAt}`),
+  )[0];
 }
 
 export async function persistSnapshot(snapshot: DailySnapshot): Promise<boolean> {

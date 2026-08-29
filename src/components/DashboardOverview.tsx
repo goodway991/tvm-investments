@@ -499,7 +499,7 @@ export function DashboardOverview({ snapshot }: { snapshot: DailySnapshot }) {
         <StockDetailModal
           stock={selectedStock}
           report={selectedReport}
-          sessionDate={snapshot.date}
+          sessionDate={rewind ? snapshot.date : undefined}
           onClose={() => setSelectedSymbol(null)}
         />
       )}

@@ -12,6 +12,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { VirtualTour } from "@/components/VirtualTour";
 import { useExperience } from "@/components/ExperienceProvider";
 import { showCustomizeExperience } from "@/lib/beta-labs";
+import { customizeAutoAction } from "@/lib/customize-prompt";
 
 interface TourContextValue {
   isOpen: boolean;
@@ -28,7 +29,7 @@ export function useTour() {
 }
 
 export function TourProvider({ children }: { children: ReactNode }) {
-  const { completeTour, giftPending, entitlement } = useAuth();
+  const { completeTour, giftPending, entitlement, profile, user, loading } = useAuth();
   const { openCustomize } = useExperience();
   const [open, setOpen] = useState(false);
   const [required, setRequired] = useState(false);
@@ -42,10 +43,36 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setOpen(false);
     setRequired(false);
     await completeTour();
-    if (!giftPending && showCustomizeExperience(entitlement.role)) {
+    const action = customizeAutoAction({
+      uid: user?.uid,
+      loading,
+      tourPending: false,
+      profileReady: Boolean(profile?.createdAt),
+      seenCustomize: profile?.seenCustomize,
+      country: profile?.country,
+      timeZone: profile?.timeZone,
+      role: entitlement.role,
+      createdAt: profile?.createdAt,
+    });
+    if (
+      !giftPending &&
+      showCustomizeExperience(entitlement.role) &&
+      action === "open"
+    ) {
       openCustomize();
     }
-  }, [completeTour, entitlement.role, giftPending, openCustomize]);
+  }, [
+    completeTour,
+    entitlement.role,
+    giftPending,
+    loading,
+    openCustomize,
+    profile?.country,
+    profile?.createdAt,
+    profile?.seenCustomize,
+    profile?.timeZone,
+    user?.uid,
+  ]);
 
   const dismiss = useCallback(() => {
     if (required) return;

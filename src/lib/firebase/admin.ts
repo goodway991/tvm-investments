@@ -1,6 +1,6 @@
 import type { DailySnapshot, BacktestEntry, BacktestSummary, ScreenedStock } from "@/types";
 import { etDateString } from "@/lib/archive-window";
-import { ARCHIVE_KEEP_DAYS, watchlistLimitForPlan, type PlanId } from "@/lib/plans";
+import { ARCHIVE_KEEP_DAYS, watchlistLimitForPlan, type PaidPlanId, type PlanId } from "@/lib/plans";
 import { slimSnapshot } from "@/lib/snapshot-view";
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -506,7 +506,7 @@ export async function setComplimentaryPro(uid: string, grant: boolean) {
 export async function saveFeedback(entry: {
   uid: string;
   email: string;
-  kind: "bug" | "feature";
+  kind: "bug" | "feature" | "support";
   rating: number;
   message: string;
   emailed?: boolean;
@@ -524,7 +524,7 @@ export async function saveFeedback(entry: {
 export type FeedbackRow = {
   id: string;
   email: string;
-  kind: "bug" | "feature";
+  kind: "bug" | "feature" | "support";
   rating: number;
   message: string;
   createdAt: string;
@@ -541,7 +541,12 @@ export async function listFeedback(limitN = 40): Promise<FeedbackRow[]> {
     .get();
   return snap.docs.map((doc) => {
     const data = doc.data();
-    const kind = data.kind === "feature" ? "feature" : "bug";
+    const kind =
+      data.kind === "feature"
+        ? "feature"
+        : data.kind === "support"
+          ? "support"
+          : "bug";
     return {
       id: doc.id,
       email: String(data.email || "unknown"),
@@ -621,6 +626,14 @@ export async function getEntitlementForUid(uid: string) {
     stripeCancelAtPeriodEnd: data.stripeCancelAtPeriodEnd === true,
     stripeAccessUntil:
       typeof data.stripeAccessUntil === "number" ? data.stripeAccessUntil : 0,
+    stripePendingPlan:
+      data.stripePendingPlan === "ultra"
+        ? "ultra"
+        : data.stripePendingPlan === "pro"
+          ? "pro"
+          : "",
+    stripePendingUntil:
+      typeof data.stripePendingUntil === "number" ? data.stripePendingUntil : 0,
     source:
       data.source === "stripe" || data.source === "paid"
         ? ("stripe" as const)
@@ -637,6 +650,8 @@ export async function applyStripeEntitlement(input: {
   stripeSubscriptionId?: string;
   cancelAtPeriodEnd?: boolean;
   accessUntil?: number;
+  pendingPlan?: PaidPlanId;
+  pendingUntil?: number;
 }) {
   const db = await getAdminDb();
   const auth = await getAdminAuth();
@@ -677,6 +692,10 @@ export async function applyStripeEntitlement(input: {
         paid && input.cancelAtPeriodEnd ? true : FieldValue.delete(),
       stripeAccessUntil:
         paid && input.accessUntil ? input.accessUntil : FieldValue.delete(),
+      stripePendingPlan:
+        paid && input.pendingPlan ? input.pendingPlan : FieldValue.delete(),
+      stripePendingUntil:
+        paid && input.pendingUntil ? input.pendingUntil : FieldValue.delete(),
     },
     { merge: true },
   );

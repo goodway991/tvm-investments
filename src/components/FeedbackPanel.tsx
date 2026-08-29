@@ -6,7 +6,7 @@ import { BogenHeading } from "@/components/BogenProvider";
 
 export function FeedbackPanel() {
   const { user } = useAuth();
-  const [kind, setKind] = useState<"bug" | "feature">("bug");
+  const [kind, setKind] = useState<"bug" | "feature" | "support">("bug");
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [message, setMessage] = useState("");
@@ -68,11 +68,11 @@ export function FeedbackPanel() {
         Feedback
       </p>
       <h2 className="mt-2 font-display text-2xl font-bold text-ink">
-        <BogenHeading id="feedback">Report a bug or request a feature</BogenHeading>
+        <BogenHeading id="feedback">Bug report, feature request, or support</BogenHeading>
       </h2>
       <p className="mt-2 text-sm text-ink-soft">
-        Sent from {user?.email ?? "your account"}. Rate the issue or idea up to 5
-        stars.
+        Sent from {user?.email ?? "your account"}. Use Support for billing,
+        refunds, and account help. Rate the note up to 5 stars.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -80,6 +80,7 @@ export function FeedbackPanel() {
           [
             ["bug", "Bug report"],
             ["feature", "Feature request"],
+            ["support", "Support"],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -129,7 +130,9 @@ export function FeedbackPanel() {
           placeholder={
             kind === "bug"
               ? "What happened, and what did you expect?"
-              : "What should TVM add or change?"
+              : kind === "support"
+                ? "What do you need help with? Include the date of a charge if this is about a refund."
+                : "What should TVM add or change?"
           }
           className="field mt-1 w-full rounded-2xl px-4 py-3 text-sm text-ink"
         />

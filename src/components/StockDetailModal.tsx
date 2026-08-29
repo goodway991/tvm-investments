@@ -8,6 +8,8 @@ import { OverlaySheet } from "@/components/OverlaySheet";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import { TVMIcon } from "@/components/TVMBrand";
 import { BogenHeading } from "@/components/BogenProvider";
+import { BogenTerms } from "@/components/BogenTerms";
+import { AddToWatchlistButton } from "@/components/AddToWatchlistButton";
 import { sparklineValues, type ChartRange } from "@/lib/chart-series";
 import { authedFetch } from "@/lib/authed-fetch";
 import { planHasPro } from "@/lib/plans";
@@ -113,14 +115,17 @@ export function StockDetailModal({
             </h2>
             <p className="truncate text-sm text-ink-soft">{detail.name}</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-violet/10 hover:text-violet"
-          >
-            <TVMIcon name="close" size={16} />
-            Close
-          </button>
+          <div className="flex shrink-0 items-start gap-1">
+            <AddToWatchlistButton symbol={detail.symbol} />
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-violet/10 hover:text-violet"
+            >
+              <TVMIcon name="close" size={16} />
+              Close
+            </button>
+          </div>
         </div>
       }
       footer={
@@ -256,13 +261,13 @@ export function StockDetailModal({
             <div className="glass rounded-2xl p-4">
               <h3 className="text-sm font-semibold text-violet">Short-term</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                {detailReport.shortTermOutlook}
+                <BogenTerms text={detailReport.shortTermOutlook} />
               </p>
             </div>
             <div className="glass rounded-2xl p-4">
               <h3 className="text-sm font-semibold text-violet">Long-term</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                {detailReport.longTermOutlook}
+                <BogenTerms text={detailReport.longTermOutlook} />
               </p>
             </div>
             <div className="glass rounded-2xl p-4 sm:col-span-2">
@@ -301,7 +306,9 @@ export function StockDetailModal({
                   rel={item.url ? "noreferrer" : undefined}
                   className="glass block rounded-2xl p-4 transition-transform hover:-translate-y-0.5"
                 >
-                  <p className="text-sm font-medium text-ink">{item.headline}</p>
+                  <p className="text-sm font-medium text-ink">
+                    <BogenTerms text={item.headline} />
+                  </p>
                   <p className="mt-1 text-xs text-ink-soft">
                     {item.source}
                     {item.datetime

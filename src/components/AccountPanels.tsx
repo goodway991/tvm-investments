@@ -13,7 +13,12 @@ import { useUpgrade } from "@/components/UpgradeProvider";
 import { CURRENT_RELEASE_ID, RELEASES } from "@/lib/release-notes";
 import { showBeta3Labs, showCustomizeExperience, showTvm10Labs } from "@/lib/beta-labs";
 import { LocalePicker } from "@/components/LocalePicker";
-import { guessLocale } from "@/lib/locales";
+import {
+  countryByCode,
+  guessLocale,
+  isValidCountry,
+  isValidTimeZone,
+} from "@/lib/locales";
 import { RELEASE_ISO, releaseVisibleOn } from "@/lib/site-era";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading, useBogen } from "@/components/BogenProvider";
@@ -385,6 +390,18 @@ export function SettingsPanel() {
   const [country, setCountry] = useState(profile?.country || guess.country);
   const [timeZone, setTimeZone] = useState(profile?.timeZone || guess.timeZone);
   const [localeBusy, setLocaleBusy] = useState(false);
+  const [localeError, setLocaleError] = useState("");
+  const [editingLocale, setEditingLocale] = useState(false);
+  const locationSaved =
+    isValidCountry(profile?.country || "") &&
+    isValidTimeZone(profile?.timeZone || "");
+  const showLocalePicker = !locationSaved || editingLocale;
+  const savedCountry = countryByCode(profile?.country || "");
+
+  useEffect(() => {
+    if (profile?.country) setCountry(profile.country);
+    if (profile?.timeZone) setTimeZone(profile.timeZone);
+  }, [profile?.country, profile?.timeZone]);
 
   function startEditName() {
     setFirstName(profile?.firstName || "");
@@ -559,6 +576,15 @@ export function SettingsPanel() {
           ) : (
             <span className="font-semibold capitalize text-ink">{entitlement.plan}</span>
           )}
+          {entitlement.stripeCancelAtPeriodEnd && entitlement.stripeAccessUntil
+            ? ` · paid access through ${new Date(
+                entitlement.stripeAccessUntil * 1000,
+              ).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}`
+            : ""}
           .
         </p>
         <button
@@ -573,30 +599,72 @@ export function SettingsPanel() {
       {showTvm10Labs() ? (
         <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
           <p className="font-semibold text-ink">Country and time zone</p>
-          <p className="mt-1">
-            Saved to your account. Ultra uses 9:00 in this zone for good morning.
-          </p>
-          <div className="mt-4">
-            <LocalePicker
-              country={country}
-              timeZone={timeZone}
-              onCountry={setCountry}
-              onTimeZone={setTimeZone}
-            />
-          </div>
-          <button
-            type="button"
-            disabled={localeBusy}
-            onClick={() => {
-              setLocaleBusy(true);
-              void updateLocale(country, timeZone).finally(() =>
-                setLocaleBusy(false),
-              );
-            }}
-            className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {localeBusy ? "Saving…" : "Save location"}
-          </button>
+          {showLocalePicker ? (
+            <>
+              <p className="mt-1">
+                <ProGlowText>
+                  Saved to your account. Ultra uses 6:00 in this zone for good
+                  morning, including the first login after 6:00 if you missed it.
+                </ProGlowText>
+              </p>
+              <div className="mt-4">
+                <LocalePicker
+                  country={country}
+                  timeZone={timeZone}
+                  onCountry={setCountry}
+                  onTimeZone={setTimeZone}
+                />
+              </div>
+              {localeError ? (
+                <p className="mt-2 text-sm text-coral" role="alert">
+                  {localeError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                disabled={localeBusy}
+                onClick={() => {
+                  setLocaleBusy(true);
+                  setLocaleError("");
+                  void updateLocale(country, timeZone)
+                    .then(() => setEditingLocale(false))
+                    .catch((saveError: unknown) => {
+                      setLocaleError(
+                        saveError instanceof Error
+                          ? saveError.message
+                          : "Unable to save your location.",
+                      );
+                    })
+                    .finally(() => setLocaleBusy(false));
+                }}
+                className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {localeBusy ? "Saving…" : "Save location"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="mt-1">
+                {savedCountry?.name || profile?.country}
+                {profile?.timeZone
+                  ? ` · ${profile.timeZone.replaceAll("_", " ")}`
+                  : ""}
+              </p>
+              <p className="glass-violet mt-3 inline-flex rounded-full px-5 py-2.5 text-sm font-semibold text-white">
+                Location set!
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setLocaleError("");
+                  setEditingLocale(true);
+                }}
+                className="mt-2 block text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
+              >
+                change location
+              </button>
+            </>
+          )}
         </div>
       ) : null}
 
@@ -761,6 +829,7 @@ export function SettingsPanel() {
         <nav className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-violet">
           <Link href="/terms">Terms of Service</Link>
           <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/refunds">Refunds</Link>
           <Link href="/disclaimer">Risk Disclaimer</Link>
         </nav>
       </div>

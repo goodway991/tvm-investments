@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSignedIn } from "@/lib/api-guard";
 import { getEntitlementForUid } from "@/lib/firebase/admin";
-import {
-  appOrigin,
-  getStripe,
-  portalConfigurationId,
-  stripeConfigured,
-} from "@/lib/stripe";
+import { appOrigin, getStripe, stripeConfigured } from "@/lib/stripe";
+import { periodLockedPortalConfigurationId } from "@/lib/stripe-entitlements";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +26,11 @@ export async function POST(request: NextRequest) {
   }
 
   const stripe = getStripe();
-  const configuration = portalConfigurationId();
+  const configuration = await periodLockedPortalConfigurationId();
   const session = await stripe.billingPortal.sessions.create({
     customer: entitlement.stripeCustomerId,
     return_url: `${appOrigin(request)}/dashboard/settings`,
-    ...(configuration ? { configuration } : {}),
+    configuration,
   });
 
   return NextResponse.json({ url: session.url });

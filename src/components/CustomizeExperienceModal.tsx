@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { OverlaySheet } from "@/components/OverlaySheet";
 import { ReleaseFeatureVisual } from "@/components/ReleaseFeatureVisual";
 import { useBogen } from "@/components/BogenProvider";
@@ -10,7 +10,9 @@ import { useAuth } from "@/components/AuthProvider";
 import { useTour } from "@/components/TourProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { showCustomizeExperience, showTvm10Labs } from "@/lib/beta-labs";
+import { customizeAutoAction } from "@/lib/customize-prompt";
 import { LocalePicker } from "@/components/LocalePicker";
+import { ProGlowText } from "@/components/ProGlowText";
 import { guessLocale, isValidCountry, isValidTimeZone } from "@/lib/locales";
 
 function MiniChrome({
@@ -93,7 +95,6 @@ function NormalDashboardPreview() {
 export function CustomizeExperienceModal() {
   const {
     customizeOpen,
-    customizeSeen,
     finishCustomize,
     openCustomize,
     density,
@@ -110,6 +111,7 @@ export function CustomizeExperienceModal() {
     entitlement,
     profile,
     updateLocale,
+    acknowledgeCustomize,
   } = useAuth();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
@@ -117,47 +119,63 @@ export function CustomizeExperienceModal() {
   const guessed = guessLocale();
   const [country, setCountry] = useState(guessed.country);
   const [timeZone, setTimeZone] = useState(guessed.timeZone);
+  const autoOpenedRef = useRef(false);
 
   useEffect(() => {
     if (customizeOpen) {
       const guess = guessLocale();
       setCountry(profile?.country || guess.country);
       setTimeZone(profile?.timeZone || guess.timeZone);
-      if (!customizeSeen) setStep(0);
-      else if (showTvm10Labs() && !profile?.timeZone) setStep(3);
-      else setStep(0);
+      setStep(0);
     }
-  }, [customizeOpen, customizeSeen, profile?.country, profile?.timeZone]);
+  }, [customizeOpen, profile?.country, profile?.timeZone]);
 
   useEffect(() => {
     if (
       !showCustomizeExperience(entitlement.role) ||
-      !user ||
-      loading ||
-      tourPending ||
       tourOpen ||
       rewind ||
       giftPending ||
-      releasePending ||
-      customizeOpen
+      releasePending
     ) {
       return;
     }
-    if (customizeSeen && (!showTvm10Labs() || profile?.timeZone)) return;
+    const action = customizeAutoAction({
+      uid: user?.uid,
+      loading,
+      tourPending,
+      profileReady: Boolean(profile?.createdAt),
+      seenCustomize: profile?.seenCustomize,
+      country: profile?.country,
+      timeZone: profile?.timeZone,
+      role: entitlement.role,
+      createdAt: profile?.createdAt,
+    });
+    if (action === "ack") {
+      void acknowledgeCustomize();
+      if (customizeOpen) finishCustomize();
+      return;
+    }
+    if (action !== "open" || customizeOpen || autoOpenedRef.current) return;
+    autoOpenedRef.current = true;
     openCustomize();
   }, [
+    acknowledgeCustomize,
     customizeOpen,
-    customizeSeen,
     entitlement.role,
+    finishCustomize,
     giftPending,
     loading,
     openCustomize,
-    releasePending,
+    profile?.country,
+    profile?.createdAt,
+    profile?.seenCustomize,
     profile?.timeZone,
+    releasePending,
     rewind,
     tourOpen,
     tourPending,
-    user,
+    user?.uid,
   ]);
 
   if (!customizeOpen || rewind || releasePending) return null;
@@ -201,9 +219,14 @@ export function CustomizeExperienceModal() {
             onClick={() => {
               if (last) {
                 if (tvm10) {
-                  if (!isValidCountry(country) || !isValidTimeZone(timeZone)) return;
-                  void updateLocale(country, timeZone);
+                  const guess = guessLocale();
+                  const nextCountry = isValidCountry(country) ? country : guess.country;
+                  const nextZone = isValidTimeZone(timeZone) ? timeZone : guess.timeZone;
+                  if (isValidCountry(nextCountry) && isValidTimeZone(nextZone)) {
+                    void updateLocale(nextCountry, nextZone);
+                  }
                 }
+                void acknowledgeCustomize();
                 finishCustomize();
                 setStep(0);
                 return;
@@ -347,8 +370,11 @@ export function CustomizeExperienceModal() {
         <div>
           <h3 className="font-display text-lg font-bold text-ink">Where are you?</h3>
           <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-            Country and time zone are for every account. Ultra uses this for a
-            9:00am good morning in your local time.
+            <ProGlowText>
+              Country and time zone are for every account. Ultra uses this for a
+              6:00am good morning in your account time zone — and if you log in
+              later, it still waits for that first visit after 6:00.
+            </ProGlowText>
           </p>
           <div className="mt-4">
             <LocalePicker

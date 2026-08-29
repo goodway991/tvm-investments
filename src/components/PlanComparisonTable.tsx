@@ -155,9 +155,12 @@ export function PlanComparisonTable({
       {showUltra ? (
         <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">
           <ProGlowText>
-            *99% is an Ultra research-read target, not a guarantee. Horizon
-            prediction caps apply when that suite ships. Pro’s 5/week is reviews
-            and prediction scores combined.
+            *99% is an Ultra research-read target, not a guarantee. Pulse Predict
+            is the watchlist short-term path (Free 2/week, Pro 5/week). Portfolio
+            Score Predictions are 3/week on Pro. Portfolio Addition Predictions
+            are 1/week on Pro. Horizon Suite stays 5/week on Pro. Advanced
+            Predictions are Ultra-only on the workstation. Ultra is unlimited on
+            all of them.
           </ProGlowText>
         </p>
       ) : null}

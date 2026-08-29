@@ -51,6 +51,20 @@ export async function POST(request: NextRequest) {
         await clearPaidPlan(event.data.object as Stripe.Subscription);
         break;
       }
+      case "subscription_schedule.updated":
+      case "subscription_schedule.released":
+      case "subscription_schedule.completed": {
+        const schedule = event.data.object as Stripe.SubscriptionSchedule;
+        const subscriptionId =
+          typeof schedule.subscription === "string"
+            ? schedule.subscription
+            : schedule.subscription?.id;
+        if (subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          await applySubscription(subscription);
+        }
+        break;
+      }
       default:
         break;
     }

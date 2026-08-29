@@ -4,9 +4,9 @@ import { cache } from "react";
 import type { DailySnapshot, StockCandidate } from "@/types";
 import { getLatestSnapshot, getSnapshotByDate } from "@/lib/firebase/admin";
 import { buildArchiveDemoSnapshot, isArchiveDemoDate } from "@/lib/archive-demo";
-import { etDateString } from "@/lib/archive-window";
+import { etDateString, lastCompletedSessionDate } from "@/lib/archive-window";
 import { hydrateSectorDives } from "@/lib/sector-dives";
-import { readDiskSnapshot } from "@/lib/snapshot-cache";
+import { newerLive, readDiskSnapshot, writeDiskSnapshot } from "@/lib/snapshot-cache";
 import { slimSnapshot } from "@/lib/snapshot-view";
 
 const SNAPSHOT_MEMORY_TTL_MS = 15 * 60_000;
@@ -148,15 +148,36 @@ export const getDashboardSnapshot = cache(async function getDashboardSnapshot(
     return slimSnapshot(normalizeSnapshot(buildArchiveDemoSnapshot(date), { freeze: true }));
   }
 
-  if (latestMemory && Date.now() - latestMemory.at < SNAPSHOT_MEMORY_TTL_MS) {
+  const session = lastCompletedSessionDate();
+
+  if (
+    latestMemory &&
+    Date.now() - latestMemory.at < SNAPSHOT_MEMORY_TTL_MS &&
+    latestMemory.snapshot.date >= session
+  ) {
     return latestMemory.snapshot;
   }
 
-  const disk = await firstSettled(readDiskSnapshot(), DISK_WAIT_MS);
-  if (disk) return serveSnapshot(disk);
+  const [disk, cached] = await Promise.all([
+    firstSettled(readDiskSnapshot(), DISK_WAIT_MS),
+    firstSettled(getLatestSnapshot(), FIRESTORE_WAIT_MS),
+  ]);
+  const dated =
+    disk && disk.date < session
+      ? await firstSettled(getSnapshotByDate(session), FIRESTORE_WAIT_MS)
+      : null;
+  const newest =
+    newerLive(dated, cached, disk) ||
+    [dated, cached, disk].filter((row): row is DailySnapshot => Boolean(row)).sort(
+      (left, right) => `${right.date}${right.generatedAt}`.localeCompare(`${left.date}${left.generatedAt}`),
+    )[0];
 
-  const cached = await firstSettled(getLatestSnapshot(), FIRESTORE_WAIT_MS);
-  if (cached) return serveSnapshot(cached);
+  if (newest) {
+    if (newest.date > (disk?.date || "")) {
+      void writeDiskSnapshot(slimSnapshot(newest)).catch(() => undefined);
+    }
+    return serveSnapshot(newest);
+  }
 
   return serveSnapshot(buildArchiveDemoSnapshot(etDateString()), { freeze: true });
 });

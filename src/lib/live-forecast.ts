@@ -22,6 +22,10 @@ export type LiveForecast = {
   last: number;
   dailyDrift: number;
   dailyVol: number;
+  kappa: number;
+  thetaLog: number;
+  lastDelta: number;
+  rho: number;
   source: "yahoo" | "yahoo+gemini";
   targetMean: number | null;
   targetLow: number | null;
@@ -46,7 +50,21 @@ function blendDrift(stats: HorizonStats, targetMean: number | null) {
   if (!(targetMean && targetMean > 0 && stats.last > 0)) return stats.dailyDrift;
   const analystDaily = Math.log(targetMean / stats.last) / ANALYST_YEAR_DAYS;
   return clamp(
-    stats.dailyDrift * 0.65 + analystDaily * 0.35,
+    stats.dailyDrift * 0.88 + analystDaily * 0.12,
+    -MAX_DAILY_DRIFT,
+    MAX_DAILY_DRIFT,
+  );
+}
+
+function blendGeminiDrift(
+  statistical: number,
+  gemini: number,
+  dailyVol: number,
+) {
+  const cap = Math.max(dailyVol, 0.004);
+  const bounded = clamp(gemini, statistical - cap, statistical + cap);
+  return clamp(
+    statistical * 0.75 + bounded * 0.25,
     -MAX_DAILY_DRIFT,
     MAX_DAILY_DRIFT,
   );
@@ -67,11 +85,11 @@ async function geminiShortTermDrift(input: {
   const news =
     input.headlines.slice(0, 6).map((line) => `- ${line}`).join("\n") ||
     "- No recent headlines";
-  const prompt = `Estimate a 10-trading-day price drift from live market data. JSON only:
+  const prompt = `Estimate expected daily log return for the NEXT 5 to 10 trading days only. JSON only:
 {"dailyDrift": number, "note": "one sentence"}
-dailyDrift is the expected daily log return for the next 10 trading days, between -0.03 and 0.03.
+dailyDrift must stay close to the historical daily drift below (within about one daily vol). Do not treat the 12-month analyst target as a 2-week price destination. Typical short-term dailyDrift is between -0.012 and 0.012.
 
-${input.symbol} last close ${input.last}. Historical daily drift ${input.dailyDrift.toFixed(5)}, daily vol ${input.dailyVol.toFixed(5)}. Yahoo 12-month mean target ${input.targetMean ?? "n/a"}, recommendation ${input.recommendation ?? "n/a"}.
+${input.symbol} last close ${input.last}. Short-term daily log increment ${input.dailyDrift.toFixed(5)}, daily vol ${input.dailyVol.toFixed(5)}. Yahoo 12-month mean target ${input.targetMean ?? "n/a"} (context only), recommendation ${input.recommendation ?? "n/a"}.
 Headlines:
 ${news}`;
 
@@ -126,7 +144,7 @@ ${news}`;
         note:
           typeof parsed.note === "string" && parsed.note.trim()
             ? parsed.note.trim().slice(0, 220)
-            : "Path blends recent closes with the live analyst target.",
+            : "Short-term path from recent closes.",
       };
     } catch {
       continue;
@@ -147,7 +165,7 @@ export async function buildLiveForecast(
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
   const [history, analyst, headlines] = await Promise.all([
-    fetchYahooChartSeries(symbol, "month", asOf),
+    fetchYahooChartSeries(symbol, "month", asOf, 90),
     asOf ? Promise.resolve({
       targetMean: null,
       targetLow: null,
@@ -166,8 +184,8 @@ export async function buildLiveForecast(
   let dailyDrift = blendDrift(stats, analyst.targetMean);
   let source: LiveForecast["source"] = "yahoo";
   let note = analyst.targetMean
-        ? `12-month mean target ${analyst.targetMean.toFixed(2)}${analyst.recommendation ? ` · ${analyst.recommendation.replace(/_/g, " ")}` : ""}.`
-    : "Path uses recent daily drift and volatility.";
+        ? `Short-term path from recent closes. 12-month mean target ${analyst.targetMean.toFixed(2)}${analyst.recommendation ? ` · ${analyst.recommendation.replace(/_/g, " ")}` : ""}.`
+    : "Short-term path from recent closes.";
 
   if (!asOf) {
     try {
@@ -181,7 +199,11 @@ export async function buildLiveForecast(
         headlines: headlines.map((item) => `${item.headline} (${item.source})`),
       });
       if (gemini) {
-        dailyDrift = gemini.dailyDrift;
+        dailyDrift = blendGeminiDrift(
+          dailyDrift,
+          gemini.dailyDrift,
+          stats.dailyVol,
+        );
         note = gemini.note;
         source = "yahoo+gemini";
       }
@@ -196,6 +218,14 @@ export async function buildLiveForecast(
     last: stats.last,
     dailyDrift,
     dailyVol: clamp(stats.dailyVol, MIN_SIGMA, MAX_SIGMA),
+    kappa: stats.kappa,
+    thetaLog: clamp(
+      stats.thetaLog * 0.7 + dailyDrift * 0.3,
+      -MAX_DAILY_DRIFT,
+      MAX_DAILY_DRIFT,
+    ),
+    lastDelta: stats.lastDelta,
+    rho: stats.rho,
     source,
     targetMean: analyst.targetMean,
     targetLow: analyst.targetLow,

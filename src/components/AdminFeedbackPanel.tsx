@@ -6,7 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 type FeedbackRow = {
   id: string;
   email: string;
-  kind: "bug" | "feature";
+  kind: "bug" | "feature" | "support";
   rating: number;
   message: string;
   createdAt: string;
@@ -59,7 +59,7 @@ export function AdminFeedbackPanel() {
         Inbox
       </p>
       <h2 className="mt-2 font-display text-2xl font-bold text-ink">
-        Bug reports and feature requests
+        Bug reports, feature requests, and support
       </h2>
       <p className="mt-2 text-sm text-ink-soft">
         Signed-in notes land here even if mail is delayed.
@@ -82,7 +82,11 @@ export function AdminFeedbackPanel() {
             >
               <p className="text-sm font-semibold text-ink">{row.email}</p>
               <p className="mt-1 text-xs text-ink-soft">
-                {row.kind === "bug" ? "Bug report" : "Feature request"}
+                {row.kind === "bug"
+                  ? "Bug report"
+                  : row.kind === "support"
+                    ? "Support"
+                    : "Feature request"}
                 {" · "}
                 {row.rating}/5 stars
                 {row.createdAt ? ` · ${row.createdAt.slice(0, 10)}` : ""}

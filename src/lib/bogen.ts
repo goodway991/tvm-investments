@@ -7,6 +7,7 @@ export type BogenId =
   | "nav-portfolio"
   | "nav-archive"
   | "nav-horizon"
+  | "nav-workstation"
   | "nav-maintenance"
   | "nav-upgrade"
   | "nav-account"
@@ -47,6 +48,16 @@ export type BogenId =
   | "stock-sheet"
   | "archive"
   | "horizon"
+  | "horizon-preset"
+  | "predict"
+  | "pulse-predict"
+  | "workstation"
+  | "workstation-filters"
+  | "workstation-compare"
+  | "workstation-notes"
+  | "workstation-recipes"
+  | "advanced-predict"
+  | "good-morning"
   | "settings"
   | "feedback"
   | "virtual-tour"
@@ -67,7 +78,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   "nav-brief": {
     title: "Daily Brief",
     what: "The session write-up: market headlines and sector notes from today’s scan of about 1,500 liquid US names.",
-    how: "Open Daily Brief in the sidebar. Tap a headline to open its sheet. Flip sector cards for the rest. Pro unlocks extra sector dives.",
+    how: "Open Daily Brief in the sidebar. Tap a headline to open its sheet. Flip sector cards for the rest — all six sleeves are on every plan.",
   },
   "nav-screener": {
     title: "Screener",
@@ -162,7 +173,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   brief: {
     title: "Daily Brief",
     what: "Headlines and sector notes for this session, not leftover copy from a prior day.",
-    how: "Tap a headline card to open the full article sheet, like a stock sheet. Then flip sector dives. Pro unlocks additional sectors.",
+    how: "Tap a headline card to open the full article sheet, like a stock sheet. Then flip all six sector dives.",
   },
   "market-events": {
     title: "Market-moving events",
@@ -172,7 +183,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   "sector-dives": {
     title: "Sector dives",
     what: "A flip-through of sector notes with example names, scores, and headlines from the scan.",
-    how: "Use the arrows. Free includes the first dive; Pro unlocks the rest of the deck.",
+    how: "Use the arrows. Every plan flips all six sleeves — tech, financials, healthcare, consumer, industrials, and energy.",
   },
   screener: {
     title: "Stock filter",
@@ -211,18 +222,18 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "portfolio-review": {
     title: "Analyze book",
-    what: "A Pro read of mix, concentration, scan quality, valuation, cash, and breadth — plus what to try next.",
-    how: "Tap Analyze book. Each score card opens for a longer note. Pro unlocks the full review.",
+    what: "A Pro 99%* read of the near-term path on your book — plus what to try next.",
+    how: "Tap Analyze book. Each score card opens for a longer note. Pro gets 1 Portfolio Addition Prediction a week; Ultra is unlimited.",
   },
   "portfolio-score": {
     title: "Overall score",
-    what: "A 0–100 snapshot of the saved book. Predict score, under Considering, opens a second bar for the mix if those names were added.",
+    what: "A 0–100 snapshot of the saved book’s near-term path. Predict score, under Considering, opens a second bar if those names were added.",
     how: "Tap Analyze book for the current score. Fill Considering, then Predict score. The chip is possible minus the current book.",
   },
   "portfolio-predict": {
     title: "Predict score",
-    what: "Re-runs the book review as if the considering names were already holdings.",
-    how: "Fill Considering first. Tap Predict score. A green chip means the mix improved; coral means it slipped.",
+    what: "Re-runs the 99%* book read as if the considering names were already holdings.",
+    how: "Fill Considering first. Tap Predict score. Pro gets 3 Portfolio Score Predictions a week; Ultra is unlimited. A green chip means the mix improved; coral means it slipped.",
   },
   "portfolio-diversity": {
     title: "Sector mix",
@@ -235,13 +246,13 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     how: "Tap More. If one name is most of the value, size it down or grow the other lines.",
   },
   "portfolio-quality": {
-    title: "Scan quality",
-    what: "The weekday composite of the names you hold, weighted by position size.",
+    title: "Band tightness",
+    what: "How wide the high/low band is around the sketched path. Tighter means the overall number is more concentrated.",
     how: "Tap More. Lagging lines are worth opening on Reports — the write-up sits behind the score.",
   },
   "portfolio-value": {
-    title: "Valuation mix",
-    what: "A value-weighted P/E read of the book when the scan has multiples on file.",
+    title: "Near-term path",
+    what: "Whether the book is sketched up, down, or mostly flat over about a week. It is not a target price.",
     how: "Tap More. High multiples are not a sell signal by themselves — they tell you a reset would hit this sleeve first.",
   },
   "portfolio-buffer": {
@@ -299,6 +310,61 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     what: "Paper trading with a cash book and positions. No live brokerage, no real P&L.",
     how: "Pick a quoted name, enter a paper order, and use Reset book to start over.",
   },
+  "horizon-preset": {
+    title: "Horizon slider",
+    what: "How many trading days ahead the cone looks. Now is the last close; the far end is about two weeks.",
+    how: "Slide, then Predict. The cone is a short sketch from recent closes, not a target price.",
+  },
+  predict: {
+    title: "Predict",
+    what: "Draws a short path from recent closes, with a light headline check when the model is available. Reads at the 99%* research-read target.",
+    how: "Slide the horizon first, then tap Predict. Pro has a weekly cap; Ultra is unlimited. Hide clears the cone.",
+  },
+  "pulse-predict": {
+    title: "Pulse Predict",
+    what: "The short-term path from Watchlist pulse. Reads at the 99%* research-read target. Free gets 2 a week; Pro gets 5; Ultra is unlimited. Portfolio predictions are a separate weekly cap.",
+    how: "Pick a watched name, slide the horizon, then tap Pulse Predict. Hide clears the cone without using another run.",
+  },
+  workstation: {
+    title: "Workstation",
+    what: "Ultra’s tape desk: heatmap, filters, compare, notes, recipes, and Advanced Predictions.",
+    how: "Move the filters or tap a recipe. The heatmap updates. Click a tile to start a note on that ticker.",
+  },
+  "workstation-filters": {
+    title: "Workstation filters",
+    what: "Score, quiet-move, watchlist, sort, and signal weights that re-rank the heatmap.",
+    how: "Raise min score to keep only strong composites. Quiet names caps how far a name moved. Weights tilt short-term vs long-term.",
+  },
+  "workstation-compare": {
+    title: "Compare",
+    what: "Up to four tickers side by side with score and session move. Names not in the scan still pull a live quote.",
+    how: "Type a ticker and press Enter. Remove drops it. This is a glance, not a full sheet.",
+  },
+  "workstation-notes": {
+    title: "Tags & notes",
+    what: "Private Ultra notes, one row per save, so you can keep several notes on the same ticker.",
+    how: "Fill ticker, tag, and text, then Add note. The list under the form is everything you have saved on this browser.",
+  },
+  "workstation-recipes": {
+    title: "Recipes",
+    what: "Named screens. Built-ins actually filter the heatmap; Save stores the filters you have set right now.",
+    how: "Tap High score quiet names or Watchlist only to apply. Save recipe keeps your current filters under a name.",
+  },
+  "advanced-predict": {
+    title: "Advanced Predictions",
+    what: "Ultra-only 99%* reads on the workstation. You pick the name and tune the knobs, then Predict.",
+    how: "Tap a heatmap tile or type a ticker. Quiet / Balanced / Push sets a starting mix. Slide, then Advanced Predict. Hide clears the path.",
+  },
+  "good-morning": {
+    title: "Good morning",
+    what: "Ultra’s 6:00am recap in the account time zone: last session tape, headlines, and names the screen is watching.",
+    how: "It waits until 6:00 in your saved zone, then shows once that local day. Open the desk dismisses it.",
+  },
+  "nav-workstation": {
+    title: "Workstation",
+    what: "Ultra-only desk for the live tape: heatmap, compare, notes, and recipes.",
+    how: "Open it from the sidebar when you are on Ultra. Filters and recipes change the grid immediately.",
+  },
   settings: {
     title: "Settings",
     what: "Your account card: name, plan, appearance, Bogen mode, version history, tour, and legal links.",
@@ -306,8 +372,8 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   feedback: {
     title: "Feedback",
-    what: "Send a bug report or a feature idea from this account, with a 1–5 star rating.",
-    how: "Choose Bug or Feature, tap stars, write at least a short note, then send.",
+    what: "Send a bug report, feature idea, or support note from this account, with a 1–5 star rating.",
+    how: "Choose Bug report, Feature request, or Support, tap stars, write at least a short note, then send.",
   },
   "virtual-tour": {
     title: "Virtual tour",

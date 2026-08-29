@@ -5,13 +5,16 @@ import { PaywallLock } from "@/components/PaywallLock";
 import { TopPicks } from "@/components/TopPicks";
 import { useAuth } from "@/components/AuthProvider";
 import { BogenHeading } from "@/components/BogenProvider";
+import { useSiteEra } from "@/components/SiteEraProvider";
 import { ProGlowText } from "@/components/ProGlowText";
 import { planHasPro } from "@/lib/plans";
 import type { DailySnapshot } from "@/types";
 
 export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
   const { entitlement } = useAuth();
+  const { rewind } = useSiteEra();
   const isPro = planHasPro(entitlement.plan);
+  const asOf = rewind ? snapshot.date : undefined;
 
   return (
     <div className="dashboard-research space-y-8">
@@ -19,7 +22,7 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
         picks={snapshot.topPicks}
         reports={snapshot.reports}
         isPro={isPro}
-        sessionDate={snapshot.date}
+        sessionDate={asOf}
       />
 
       {isPro ? (
@@ -29,7 +32,7 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
             isPro
             picks={snapshot.shortTermPicks}
             reports={snapshot.shortTermReports}
-            sessionDate={snapshot.date}
+            sessionDate={asOf}
             title="Best short-term setups"
             subtitle="Pro list ranked by short-term weights: dips, oversold RSI, volume, and support."
           />
@@ -38,7 +41,7 @@ export function ReportsClient({ snapshot }: { snapshot: DailySnapshot }) {
             isPro
             picks={snapshot.longTermPicks}
             reports={snapshot.longTermReports}
-            sessionDate={snapshot.date}
+            sessionDate={asOf}
             title="Best long-term setups"
             subtitle="Pro list ranked by long-term weights: relative strength, catalysts, and fundamentals."
           />

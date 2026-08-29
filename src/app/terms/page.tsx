@@ -132,17 +132,27 @@ export default function TermsPage() {
           to charge the payment method on file.
         </li>
         <li>
-          <strong>Cancellation.</strong> You may cancel for the end of the
-          current paid period through the method we provide (account settings or
-          the processor’s customer portal). Cancellation stops the next renewal;
-          it does not, unless required by law, refund the current period.
+          <strong>Cancellation.</strong> You may cancel auto-renew for the end of
+          the current paid period through Settings (View plan → Downgrade to
+          Free) or the processor’s customer portal. Cancellation stops the next
+          renewal. You keep the paid plan until that period ends.
         </li>
         <li>
-          <strong>Refunds.</strong> Fees are non-refundable except where we
-          state otherwise or where mandatory law requires a refund (including
-          any applicable cooling-off right you do not waive). If we withdraw a
-          paid feature for a prolonged period, we may, at our discretion, extend
-          time or refund a pro-rata amount.
+          <strong>Plan changes.</strong> Upgrades, downgrades, and switches
+          between paid plans (including monthly and yearly) do not take effect
+          until the current paid period ends. You keep the plan you already paid
+          for until then. The new plan, and its charge, start at the next period.
+          The processor’s customer portal does not switch plans mid-cycle.
+        </li>
+        <li>
+          <strong>Refunds.</strong> You may request a full refund of your most
+          recent paid charge within 7 days of that purchase. After 7 days, that
+          charge is non-refundable and you remain paid for the interval you
+          selected until it ends. Turning off auto-renew stops the next charge;
+          it does not refund time already paid after the 7-day window. Mandatory
+          consumer-law cooling-off rights, where they apply and are not waived,
+          still apply. See{" "}
+          <a href="/refunds">Cancellation and refunds</a>.
         </li>
         <li>
           <strong>Failed payments.</strong> If a charge fails, we may retry,

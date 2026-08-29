@@ -4,13 +4,9 @@ export function showBeta3Labs() {
   return true;
 }
 
-/** TVM 1.0 (Ultra, country/time zone, workstation) stays on localhost. */
+/** TVM 1.0 is live. Set NEXT_PUBLIC_TVM_10_LABS=0 only to roll it back. */
 export function showTvm10Labs() {
-  if (process.env.NEXT_PUBLIC_TVM_10_LABS === "1") return true;
   if (process.env.NEXT_PUBLIC_TVM_10_LABS === "0") return false;
-  const vercel =
-    process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV || "";
-  if (vercel === "production" || vercel === "preview") return false;
   return true;
 }
 

@@ -4,7 +4,9 @@ import { useState } from "react";
 import type { SectorDive } from "@/types";
 import { PaywallLock } from "@/components/PaywallLock";
 import { BogenHeading } from "@/components/BogenProvider";
-import { FREE_SECTOR_DIVE_LIMIT } from "@/lib/plans";
+import { NewBadge } from "@/components/NewBadge";
+import { BogenTerms } from "@/components/BogenTerms";
+import { sectorDiveLimit } from "@/lib/plans";
 
 type StockStat = {
   symbol: string;
@@ -101,14 +103,18 @@ function padLines(lines: string[], empty: string) {
 }
 
 function leftoverCopy(block: DiveBlock) {
-  return scrubCopy(
+  const cleaned = scrubCopy(
     block.body
       .replace(new RegExp(STOCK_PATTERN, "g"), "")
       .replace(new RegExp(SCORE_PATTERN, "g"), "")
       .replace(/Highest composite scores:\s*/i, "")
       .replace(/Latest headlines\s*[—–-]\s*.*$/i, "")
+      .replace(/[;,]+\s*/g, " ")
+      .replace(/\s+\./g, ".")
+      .replace(/^[;,.]\s*/, "")
       .replace(/[;,]?\s*$/, ""),
   ).replace(/^—$/, "");
+  return /^[;,.]*$/.test(cleaned) ? "" : cleaned;
 }
 
 function layoutDive(body: string): DiveBlock[] {
@@ -177,7 +183,13 @@ function changeTone(change: string) {
   return "text-ink-soft";
 }
 
-function DiveWidget({ block }: { block: DiveBlock }) {
+function DiveWidget({
+  block,
+  onOpenSymbol,
+}: {
+  block: DiveBlock;
+  onOpenSymbol?: (symbol: string) => void;
+}) {
   const leftover = leftoverCopy(block);
 
   return (
@@ -193,7 +205,17 @@ function DiveWidget({ block }: { block: DiveBlock }) {
               key={`${stat.symbol}-${index}`}
               className="sheet-well flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-3 py-2.5"
             >
-              <span className="font-display text-sm font-bold text-ink">{stat.symbol}</span>
+              {stat.symbol !== "—" && onOpenSymbol ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenSymbol(stat.symbol)}
+                  className="font-display text-sm font-bold text-violet hover:underline"
+                >
+                  {stat.symbol}
+                </button>
+              ) : (
+                <span className="font-display text-sm font-bold text-ink">{stat.symbol}</span>
+              )}
               <span className="font-display text-sm font-semibold text-ink">
                 {stat.price === "—" ? "—" : `$${stat.price}`}
               </span>
@@ -213,15 +235,27 @@ function DiveWidget({ block }: { block: DiveBlock }) {
 
       {block.scores.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          {block.scores.map((chip, index) => (
-            <span
-              key={`${chip.symbol}-${index}`}
-              className="rounded-full bg-violet/10 px-3 py-1 font-display text-sm font-bold text-violet"
-            >
-              {chip.symbol}
-              <span className="ml-1.5 font-semibold text-ink">{chip.score}/100</span>
-            </span>
-          ))}
+          {block.scores.map((chip, index) =>
+            chip.symbol !== "—" && onOpenSymbol ? (
+              <button
+                key={`${chip.symbol}-${index}`}
+                type="button"
+                onClick={() => onOpenSymbol(chip.symbol)}
+                className="rounded-full bg-violet/10 px-3 py-1 font-display text-sm font-bold text-violet hover:bg-violet/20"
+              >
+                {chip.symbol}
+                <span className="ml-1.5 font-semibold text-ink">{chip.score}/100</span>
+              </button>
+            ) : (
+              <span
+                key={`${chip.symbol}-${index}`}
+                className="rounded-full bg-violet/10 px-3 py-1 font-display text-sm font-bold text-violet"
+              >
+                {chip.symbol}
+                <span className="ml-1.5 font-semibold text-ink">{chip.score}/100</span>
+              </span>
+            ),
+          )}
         </div>
       ) : null}
 
@@ -232,7 +266,7 @@ function DiveWidget({ block }: { block: DiveBlock }) {
               key={`${headline}-${index}`}
               className="sheet-well rounded-xl px-3 py-2 text-sm leading-relaxed text-ink"
             >
-              {headline}
+              <BogenTerms text={headline} />
             </li>
           ))}
         </ul>
@@ -246,18 +280,24 @@ function DiveWidget({ block }: { block: DiveBlock }) {
               : "mt-2"
           }`}
         >
-          {leftover}
+          <BogenTerms text={leftover} />
         </p>
       ) : null}
     </article>
   );
 }
 
-function DiveBody({ body }: { body: string }) {
+function DiveBody({
+  body,
+  onOpenSymbol,
+}: {
+  body: string;
+  onOpenSymbol?: (symbol: string) => void;
+}) {
   return (
     <div className="grid gap-3">
       {layoutDive(body).map((block) => (
-        <DiveWidget key={block.title} block={block} />
+        <DiveWidget key={block.title} block={block} onOpenSymbol={onOpenSymbol} />
       ))}
     </div>
   );
@@ -267,10 +307,12 @@ export function TechSector({
   dives,
   analysis,
   isPro,
+  onOpenSymbol,
 }: {
   dives?: SectorDive[];
   analysis?: string;
   isPro: boolean;
+  onOpenSymbol?: (symbol: string) => void;
 }) {
   const deck =
     dives && dives.length > 0
@@ -286,7 +328,7 @@ export function TechSector({
         ];
   const [index, setIndex] = useState(0);
   const current = deck[Math.min(index, deck.length - 1)] ?? deck[0];
-  const locked = !isPro && index >= FREE_SECTOR_DIVE_LIMIT;
+  const locked = index >= sectorDiveLimit(isPro ? "pro" : "free");
   const atStart = index <= 0;
   const atEnd = index >= deck.length - 1;
 
@@ -297,8 +339,9 @@ export function TechSector({
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
             {current.sector}
           </p>
-          <h2 className="mt-1 font-display text-2xl font-bold text-ink">
+          <h2 className="mt-1 flex flex-wrap items-center gap-2 font-display text-2xl font-bold text-ink">
             <BogenHeading id="sector-dives">{current.title}</BogenHeading>
+            <NewBadge feature="sectors" />
           </h2>
           <p className="mt-1 text-sm text-ink-soft">{scrubCopy(current.subtitle)}</p>
         </div>
@@ -356,10 +399,10 @@ export function TechSector({
       <div className="relative mt-5 min-h-[280px] flex-1 overflow-y-auto overflow-x-hidden rounded-[22px] pr-0.5">
         {locked ? (
           <PaywallLock locked placeholder>
-            <DiveBody body={current.body} />
+            <DiveBody body={current.body} onOpenSymbol={onOpenSymbol} />
           </PaywallLock>
         ) : (
-          <DiveBody body={current.body} />
+          <DiveBody body={current.body} onOpenSymbol={onOpenSymbol} />
         )}
       </div>
     </div>

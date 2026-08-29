@@ -45,12 +45,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const kind = body.kind === "feature" ? "feature" : body.kind === "bug" ? "bug" : null;
+  const kind =
+    body.kind === "feature"
+      ? "feature"
+      : body.kind === "support"
+        ? "support"
+        : body.kind === "bug"
+          ? "bug"
+          : null;
   const rating = Number(body.rating);
   const message = String(body.message ?? "").trim();
 
   if (!kind) {
-    return NextResponse.json({ error: "Choose a bug report or feature request." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Choose a bug report, feature request, or support." },
+      { status: 400 },
+    );
   }
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return NextResponse.json({ error: "Pick a rating from 1 to 5 stars." }, { status: 400 });
@@ -110,6 +120,7 @@ function ratingLine(rating: number) {
 }
 
 function kindLabel(kind: string) {
+  if (kind === "support") return "Support";
   return kind === "bug" ? "Bug report" : "Feature request";
 }
 
@@ -128,7 +139,7 @@ async function sendFeedbackEmail({
 }): Promise<boolean> {
   const stars = ratingLine(rating);
   const label = kindLabel(kind);
-  const subject = `[TVM ${kind === "bug" ? "bug" : "feature"}] ${rating}/5 stars from ${email}`;
+  const subject = `[TVM ${kind === "bug" ? "bug" : kind === "support" ? "support" : "feature"}] ${rating}/5 stars from ${email}`;
   const text = [
     `From: ${email}`,
     `Type: ${label}`,

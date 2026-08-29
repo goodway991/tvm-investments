@@ -5,13 +5,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { HorizonForecastChart } from "@/components/HorizonForecastChart";
+import { PredictButton, usePredictUsage } from "@/components/PredictButton";
 import { YahooPriceChart } from "@/components/TimeSeriesChart";
 import type { ChartPoint, ChartRange } from "@/lib/chart-series";
-import type { HorizonStats } from "@/lib/horizon-forecast";
+import {
+  MAX_HORIZON_TRADING_DAYS,
+  type HorizonStats,
+} from "@/lib/horizon-forecast";
 import { compactCompanyName } from "@/components/StockDetailModal";
 import { BogenHeading } from "@/components/BogenProvider";
-import { ProGlowText } from "@/components/ProGlowText";
-import { planHasPro } from "@/lib/plans";
+import { NewBadge } from "@/components/NewBadge";
+import { useSiteEra } from "@/components/SiteEraProvider";
 import { authedFetch } from "@/lib/authed-fetch";
 import type { DailySnapshot, OHLCVBar, StockCandidate } from "@/types";
 
@@ -112,12 +116,14 @@ export function MarketPulse({
   onOpenStock?: (symbol: string) => void;
 }) {
   const { entitlement, watchlist, portfolio } = useAuth();
+  const { rewind } = useSiteEra();
   const { openUpgrade } = useUpgrade();
-  const isPro = planHasPro(entitlement.plan);
+  const { usage, busy: predictBusy, consume, plan } = usePredictUsage("pulse");
   const [index, setIndex] = useState(0);
   const [range, setRange] = useState<ChartRange>("month");
   const [predicting, setPredicting] = useState(false);
-  const [horizonDays, setHorizonDays] = useState(5);
+  const [horizonDays, setHorizonDays] = useState(MAX_HORIZON_TRADING_DAYS);
+  const [committedDays, setCommittedDays] = useState(0);
   const [forecastBySymbol, setForecastBySymbol] = useState<Record<string, PulseForecast>>(
     {},
   );
@@ -146,15 +152,13 @@ export function MarketPulse({
   useEffect(() => {
     setIndex(0);
     setPredicting(false);
+    setCommittedDays(0);
   }, [watchlist.symbols.join("|")]);
 
   useEffect(() => {
     setPredicting(false);
+    setCommittedDays(0);
   }, [index]);
-
-  useEffect(() => {
-    if (!isPro) setPredicting(false);
-  }, [isPro]);
 
   const current = deck[Math.min(index, Math.max(deck.length - 1, 0))];
 
@@ -165,13 +169,17 @@ export function MarketPulse({
     setForecastError("");
     try {
       const params = new URLSearchParams({ symbol });
-      if (snapshot.date) params.set("date", snapshot.date);
+      if (rewind && snapshot.date) params.set("date", snapshot.date);
       const response = await authedFetch(`/api/forecast?${params}`);
       const payload = (await response.json()) as {
         history?: ChartPoint[];
         last?: number;
         dailyDrift?: number;
         dailyVol?: number;
+        kappa?: number;
+        thetaLog?: number;
+        lastDelta?: number;
+        rho?: number;
         note?: string | null;
         error?: string;
       };
@@ -184,6 +192,10 @@ export function MarketPulse({
           last: payload.last,
           dailyDrift: payload.dailyDrift ?? 0,
           dailyVol: payload.dailyVol ?? 0.02,
+          kappa: payload.kappa ?? 0,
+          thetaLog: payload.thetaLog ?? payload.dailyDrift ?? 0,
+          lastDelta: payload.lastDelta ?? 0,
+          rho: payload.rho ?? 0,
         },
         note: payload.note ?? null,
       };
@@ -201,16 +213,41 @@ export function MarketPulse({
 
   async function onPredict() {
     if (!current) return;
-    if (!isPro) {
-      openUpgrade();
+    if (committedDays > 0) {
+      setPredicting(false);
+      setCommittedDays(0);
+      setHorizonDays(MAX_HORIZON_TRADING_DAYS);
       return;
     }
-    if (predicting) {
+    if (predicting && horizonDays <= 0) {
       setPredicting(false);
+      setHorizonDays(MAX_HORIZON_TRADING_DAYS);
+      return;
+    }
+    if (horizonDays <= 0) return;
+    const result = await consume();
+    if (!result.ok) {
+      openUpgrade(plan === "pro" ? "ultra" : "pro");
       return;
     }
     const forecast = await loadForecast(current.symbol);
-    if (forecast) setPredicting(true);
+    if (forecast) {
+      setCommittedDays(horizonDays);
+      setPredicting(true);
+    }
+  }
+
+  function onHorizonChange(days: number) {
+    if (days <= 0) {
+      setCommittedDays(0);
+      setHorizonDays(0);
+      return;
+    }
+    if (committedDays > 0) {
+      setHorizonDays(Math.min(days, committedDays));
+      return;
+    }
+    setHorizonDays(days);
   }
 
   const activeForecast = current ? forecastBySymbol[current.symbol] : undefined;
@@ -220,8 +257,9 @@ export function MarketPulse({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="font-display text-lg font-semibold text-ink">
+            <h2 className="flex flex-wrap items-center gap-2 font-display text-lg font-semibold text-ink">
               <BogenHeading id="watchlist-pulse">{WATCHLIST_PULSE_TITLE}</BogenHeading>
+              <NewBadge feature="pulse" />
             </h2>
             {current ? (
               <button
@@ -292,8 +330,9 @@ export function MarketPulse({
             onChange={(event) => {
               setRange(event.target.value as ChartRange);
               setPredicting(false);
+              setCommittedDays(0);
             }}
-            disabled={predicting}
+            disabled={predicting && committedDays > 0}
             className="glass cursor-pointer rounded-full px-3 py-1.5 text-xs text-ink-soft outline-none disabled:opacity-50"
           >
             <option value="day">Day</option>
@@ -301,23 +340,19 @@ export function MarketPulse({
             <option value="year">Year</option>
           </select>
         </label>
-        <button
-          type="button"
-          onClick={() => void onPredict()}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-            predicting
-              ? "bg-ink text-white"
-              : "bg-violet text-white hover:bg-violet/90"
-          }`}
-        >
-          {predicting ? (
-            "Hide prediction"
-          ) : isPro ? (
-            "Short term predict"
-          ) : (
-            <ProGlowText>Short term predict · Pro</ProGlowText>
-          )}
-        </button>
+        <PredictButton
+          plan={plan}
+          kind="pulse"
+          used={usage.pulse}
+          busy={predictBusy || forecastLoading}
+          predicted={
+            committedDays > 0 || (predicting && horizonDays <= 0)
+          }
+          predictLabel="Pulse Predict"
+          hideLabel="Hide prediction"
+          onPredict={() => void onPredict()}
+          onUpgrade={openUpgrade}
+        />
       </div>
 
       <div className="mt-3 overflow-hidden">
@@ -344,7 +379,11 @@ export function MarketPulse({
               statsOverride={activeForecast.stats}
               note={activeForecast.note}
               horizonDays={horizonDays}
-              onHorizonChange={setHorizonDays}
+              committedDays={committedDays}
+              onHorizonChange={onHorizonChange}
+              forecastPlan={
+                plan === "ultra" ? "ultra" : plan === "pro" ? "pro" : undefined
+              }
               height={190}
               tone="light"
               compact
@@ -360,7 +399,7 @@ export function MarketPulse({
             ohlcv={current.ohlcv}
             yearCloses={current.yearCloses}
             range={range}
-            sessionDate={snapshot.date}
+            sessionDate={rewind ? snapshot.date : undefined}
             height={190}
           />
         ) : (

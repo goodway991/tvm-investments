@@ -47,7 +47,7 @@ export default async function WatchlistPage({
         )}
         screened={snapshot.screenedStocks}
         reports={snapshot.reports}
-        sessionDate={snapshot.date}
+        sessionDate={archive}
         externalQuery={q ?? ""}
       />
     </div>
