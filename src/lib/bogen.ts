@@ -108,8 +108,8 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "nav-horizon": {
     title: "Horizon Suite",
-    what: "A paper trading book for trying ideas without live money. Still being built for most accounts.",
-    how: "If you have access, pick a name, place a paper trade, and reset the book when you want a clean start.",
+    what: "A paper trading book for trying ideas without live money. Pro unlocks it; Ultra is unlimited.",
+    how: "Pick a name, place a paper trade, then Predict. Free sees the upgrade sheet instead of the desk.",
   },
   "nav-maintenance": {
     title: "Maintenance",

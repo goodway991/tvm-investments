@@ -72,8 +72,8 @@ export function overlayLabsPlan(
 /** Flip these to true when a coming-soon feature ships for everyone. */
 export const PREVIEW_UNLOCK = {
   archiveCalendar: false,
-  horizonSuite: false,
-  portfolio: false,
+  horizonSuite: true,
+  portfolio: true,
 } as const;
 
 export type PreviewFeature = keyof typeof PREVIEW_UNLOCK;
@@ -96,7 +96,7 @@ export const PLAN_FEATURES: Array<{
   { name: "8-signal screener", free: true, pro: true },
   { name: "Top 10 daily movers", free: true, pro: true },
   { name: "Top 20 daily movers", free: false, pro: true },
-  { name: "Archive Calendar", free: false, pro: true },
+  { name: "Archive Calendar", free: false, pro: true, hideInLabs: true },
   { name: "Flagged-pick research reports", free: true, pro: true },
   { name: "Short-term and long-term scores on each pick", free: true, pro: true },
   {
@@ -119,7 +119,7 @@ export const PLAN_FEATURES: Array<{
     labsOnly: true,
   },
   { name: "Ticker news on watched names", free: true, pro: true },
-  { name: "Portfolio (under construction)", free: true, pro: true },
+  { name: "Portfolio", free: false, pro: true },
   {
     name: "Portfolio book review",
     free: false,
@@ -181,7 +181,7 @@ export const PLAN_FEATURES: Array<{
     pro: true,
     hideInLabs: true,
   },
-  { name: "Horizon Suite (coming soon)", free: false, pro: true },
+  { name: "Horizon Suite", free: false, pro: true },
   {
     name: "5 Horizon Suite predictions / week",
     free: false,

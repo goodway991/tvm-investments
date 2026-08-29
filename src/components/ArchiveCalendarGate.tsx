@@ -1,29 +1,21 @@
 "use client";
 
 import { ArchiveCalendar } from "@/components/ArchiveCalendar";
-import { ArchiveCalendarLock } from "@/components/TestingSuiteLock";
 import { useAuth } from "@/components/AuthProvider";
-import { canUsePreviewFeature } from "@/lib/plans";
 import { BogenHeading } from "@/components/BogenProvider";
 
 export function ArchiveCalendarGate() {
   const { entitlement } = useAuth();
-  if (!canUsePreviewFeature(entitlement.role, "archiveCalendar")) {
+  if (entitlement.role !== "admin") {
     return (
       <div className="dashboard-research">
-        <div className="glass-strong mx-auto max-w-4xl rounded-[28px] p-6 text-center sm:p-10">
-          <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-            Coming soon
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-bold text-ink sm:text-4xl">
-            <BogenHeading id="archive">Archive Calendar</BogenHeading>
+        <div className="glass-strong max-w-xl rounded-[24px] p-6">
+          <h1 className="font-display text-3xl font-bold text-ink">
+            Page not available
           </h1>
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
-            Archive Calendar is still being built.
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            Archive Calendar is not part of the live desk.
           </p>
-          <div className="mx-auto mt-5 max-w-xs">
-            <ArchiveCalendarLock />
-          </div>
         </div>
       </div>
     );
@@ -33,7 +25,7 @@ export function ArchiveCalendarGate() {
     <div className="dashboard-research">
       <div className="glass-strong mx-auto max-w-4xl rounded-[32px] p-6 text-center sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-          Research rewind
+          Admin
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold text-ink sm:text-4xl">
           <BogenHeading id="archive">Archive Calendar</BogenHeading>

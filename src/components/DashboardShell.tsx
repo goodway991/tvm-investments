@@ -10,13 +10,12 @@ import {
 } from "@/components/ArchiveBar";
 import { BillingNotice } from "@/components/BillingNotice";
 import { TVMBrand, TVMIcon } from "@/components/TVMBrand";
-import { ArchiveCalendarLock, PortfolioLock, TestingSuiteLock } from "@/components/TestingSuiteLock";
 import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useAuth } from "@/components/AuthProvider";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
-import { showTvm10Labs, showUltraDesk } from "@/lib/beta-labs";
+import { showUltraDesk } from "@/lib/beta-labs";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
@@ -261,16 +260,12 @@ function PreviewSidebar({
 }) {
   const { entitlement } = useAuth();
   const { era } = useSiteEra();
-  const { density } = useExperience();
-  const clean = density === "clean";
   const outline = era.features.navOutlineGlow;
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const archive = searchParams.get("archive");
   const showArchive = canUsePreviewFeature(entitlement.role, "archiveCalendar");
-  const showHorizon =
-    era.id === "live" && canUsePreviewFeature(entitlement.role, "horizonSuite");
-  const hideLocks = clean;
+  const showHorizon = era.id === "live";
   const archiveRoute = navIsActive(pathname, "/dashboard/archive");
   const horizonActive = navIsActive(pathname, "/dashboard/horizon");
   const archiveLive = Boolean(archive);
@@ -308,17 +303,7 @@ function PreviewSidebar({
             </span>
           )}
         </BogenHit>
-      ) : hideLocks ? null : (
-        <BogenHit
-          id="nav-archive"
-          compact={compact}
-          className={`w-full ${compact ? "justify-center" : ""}`}
-        >
-          <div className="min-w-0 w-full flex-1">
-            <ArchiveCalendarLock compact={compact} />
-          </div>
-        </BogenHit>
-      )}
+      ) : null}
       {showHorizon ? (
         <BogenHit
           id="nav-horizon"
@@ -349,17 +334,7 @@ function PreviewSidebar({
             </span>
           )}
         </BogenHit>
-      ) : era.id !== "live" || hideLocks ? null : (
-        <BogenHit
-          id="nav-horizon"
-          compact={compact}
-          className={`w-full ${compact ? "justify-center" : ""}`}
-        >
-          <div className="min-w-0 w-full flex-1">
-            <TestingSuiteLock compact={compact} />
-          </div>
-        </BogenHit>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -502,24 +477,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             const active = navIsActive(pathname, item.href);
             const compact = sidebarMode !== "expanded";
             const badge = navNewFeature(item.label);
-            const portfolioLocked =
-              item.label === "Portfolio" && !showTvm10Labs();
-            if (portfolioLocked) {
-              return (
-                <BogenHit
-                  key={item.href}
-                  id={item.bogen}
-                  compact={compact}
-                  className={`rounded-2xl py-3 text-left text-[15px] font-medium ${
-                    compact ? "justify-center px-2" : "gap-3.5 px-4"
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <PortfolioLock compact={compact} />
-                  </div>
-                </BogenHit>
-              );
-            }
             return (
               <BogenHit
                 key={item.href}
@@ -642,21 +599,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             .map((item) => {
                   const active = navIsActive(pathname, item.href);
                   const badge = navNewFeature(item.label);
-                  const portfolioLocked =
-                    item.label === "Portfolio" && !showTvm10Labs();
-                  if (portfolioLocked) {
-                    return (
-                      <BogenHit
-                        key={item.href}
-                        id={item.bogen}
-                        className="gap-3.5 rounded-2xl px-4 py-3 text-[15px] font-medium"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <PortfolioLock />
-                        </div>
-                      </BogenHit>
-                    );
-                  }
                   return (
                     <BogenHit
                       key={item.href}
