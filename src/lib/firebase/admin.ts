@@ -862,6 +862,75 @@ export async function connectDiscordStatus(uid: string, email: string) {
   return getBetaStatus(uid);
 }
 
+type DiscordLinkInput = {
+  discordId: string;
+  discordUsername: string;
+  discordGlobalName: string | null;
+  discordAvatar: string | null;
+};
+
+async function assertDiscordAvailable(db: FirebaseFirestore.Firestore, discordId: string, uid: string) {
+  const existing = await db
+    .collection("beta_status")
+    .where("discordId", "==", discordId)
+    .limit(1)
+    .get();
+  if (!existing.empty && existing.docs[0].id !== uid) {
+    throw new Error("This Discord account is already linked to another TVM account.");
+  }
+}
+
+export async function linkDiscordAccount(
+  uid: string,
+  email: string,
+  discord: DiscordLinkInput,
+  options?: { joinWaitlist?: boolean },
+) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Discord linking is not available.");
+  await assertDiscordAvailable(db, discord.discordId, uid);
+  const { FieldValue } = await import("firebase-admin/firestore");
+  await db.collection("beta_status").doc(uid).set(
+    {
+      uid,
+      email,
+      discordConnected: true,
+      discordId: discord.discordId,
+      discordUsername: discord.discordUsername,
+      discordGlobalName: discord.discordGlobalName,
+      discordAvatar: discord.discordAvatar,
+      discordConnectedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  if (options?.joinWaitlist) {
+    await joinBetaWaitlist(uid, email);
+  }
+  return getBetaStatus(uid);
+}
+
+export async function unlinkDiscordAccount(uid: string, email: string) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Discord linking is not available.");
+  const { FieldValue } = await import("firebase-admin/firestore");
+  await db.collection("beta_status").doc(uid).set(
+    {
+      uid,
+      email,
+      discordConnected: false,
+      discordId: FieldValue.delete(),
+      discordUsername: FieldValue.delete(),
+      discordGlobalName: FieldValue.delete(),
+      discordAvatar: FieldValue.delete(),
+      discordConnectedAt: FieldValue.delete(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  return getBetaStatus(uid);
+}
+
 export async function admitBetaTester(uid: string) {
   const db = await getAdminDb();
   if (!db) throw new Error("Waitlist is not available.");

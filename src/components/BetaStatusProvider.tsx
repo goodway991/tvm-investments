@@ -13,7 +13,6 @@ import { useAuth } from "@/components/AuthProvider";
 import { authedFetch } from "@/lib/authed-fetch";
 import { getClientFirestore } from "@/lib/firebase/client";
 import {
-  DISCORD_PENDING_KEY,
   EMPTY_BETA_STATUS,
   SHOW_BETA_WAITLIST,
   deskPhase,
@@ -55,26 +54,6 @@ export function useDeskAccess() {
     phase: beta.phase,
     show: beta.show,
   };
-}
-
-function readDiscordPending() {
-  try {
-    return window.localStorage.getItem(DISCORD_PENDING_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function writeDiscordPending() {
-  try {
-    window.localStorage.setItem(DISCORD_PENDING_KEY, "1");
-  } catch {
-    /* private mode */
-  }
-}
-
-export function markDiscordPending() {
-  writeDiscordPending();
 }
 
 export function BetaStatusProvider({ children }: { children: React.ReactNode }) {
@@ -121,21 +100,6 @@ export function BetaStatusProvider({ children }: { children: React.ReactNode }) 
     );
   }, [refresh, user]);
 
-  useEffect(() => {
-    if (!user || !SHOW_BETA_WAITLIST) return;
-    if (!readDiscordPending() || status.discordConnected) return;
-    void authedFetch("/api/beta/status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "discord" }),
-    })
-      .then(async (response) => {
-        const payload = (await response.json()) as BetaStatus;
-        if (response.ok) setStatus(payload);
-      })
-      .catch(() => undefined);
-  }, [status.discordConnected, user]);
-
   const joinWaitlist = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -154,18 +118,19 @@ export function BetaStatusProvider({ children }: { children: React.ReactNode }) 
   }, [user]);
 
   const connectDiscord = useCallback(async () => {
-    writeDiscordPending();
     if (!user) return;
     setLoading(true);
     try {
-      const response = await authedFetch("/api/beta/status", {
+      const response = await authedFetch("/api/discord/authorize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "discord" }),
+        body: JSON.stringify({ returnTo: window.location.pathname || "/dashboard" }),
       });
-      const payload = (await response.json()) as BetaStatus & { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to save Discord.");
-      setStatus(payload);
+      const payload = (await response.json()) as { url?: string; error?: string };
+      if (!response.ok || !payload.url) {
+        throw new Error(payload.error || "Unable to start Discord linking.");
+      }
+      window.location.href = payload.url;
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,4 @@
+import { parseDiscordProfile, type DiscordProfile } from "@/lib/discord-profile";
 import { planHasPro, type PlanId } from "@/lib/plans";
 
 /** Flip to false when Varish says the beta period is over. */
@@ -13,12 +14,14 @@ export type BetaStatus = {
   waitlistStatus: WaitlistStatus;
   betaTester: boolean;
   discordConnected: boolean;
+  discord: DiscordProfile | null;
 };
 
 export const EMPTY_BETA_STATUS: BetaStatus = {
   waitlistStatus: "none",
   betaTester: false,
   discordConnected: false,
+  discord: null,
 };
 
 export function parseBetaStatus(data: Record<string, unknown> | undefined): BetaStatus {
@@ -30,6 +33,7 @@ export function parseBetaStatus(data: Record<string, unknown> | undefined): Beta
     waitlistStatus,
     betaTester: data?.betaTester === true || waitlistStatus === "admitted",
     discordConnected: data?.discordConnected === true,
+    discord: parseDiscordProfile(data),
   };
 }
 

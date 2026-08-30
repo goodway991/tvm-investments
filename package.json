@@ -9,7 +9,8 @@
     "lint": "next lint",
     "snapshot": "tsx scripts/run-daily-snapshot.ts",
     "setup:admin": "tsx scripts/apply-firebase-admin.ts",
-    "sync:firestore-rules": "tsx scripts/sync-firestore-watchlist-rules.ts"
+    "sync:firestore-rules": "tsx scripts/sync-firestore-watchlist-rules.ts",
+    "setup:discord": "node scripts/setup-discord-oauth.mjs"
   },
   "dependencies": {
     "firebase": "^11.0.0",

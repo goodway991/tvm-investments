@@ -12,8 +12,9 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { MiniChart } from "@/components/MiniChart";
+import { DiscordConnectPanel, linkPendingDiscordAccount } from "@/components/DiscordConnectPanel";
 import { PublicShell } from "@/components/PublicShell";
 import { TVMBrand } from "@/components/TVMBrand";
 import { SHOW_BETA_WAITLIST } from "@/lib/beta-waitlist";
@@ -49,6 +50,26 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const firebaseConfigured = isFirebaseConfigured();
+  const authReturnTo = initialMode === "signup" ? "/signup" : "/login";
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const discord = params.get("discord");
+    const reason = params.get("discord_reason");
+    if (discord === "ready") {
+      setMessage("Discord connected. Sign in or create your account to finish linking.");
+    } else if (discord === "linked") {
+      setMessage("Discord account linked.");
+    } else if (discord === "error") {
+      setError(reason || "Discord connection failed. Try again.");
+    }
+    if (discord) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("discord");
+      url.searchParams.delete("discord_reason");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+    }
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,6 +152,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
           displayName: fullDisplayName(first, last),
         });
       }
+      await linkPendingDiscordAccount();
       router.push("/dashboard");
     } catch (authError) {
       if (authError instanceof FirebaseError) {
@@ -445,6 +467,17 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                         : "Create account"}
                 </button>
               </form>
+
+              <div className="relative my-7">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase tracking-wide text-ink-soft">
+                  <span className="bg-transparent px-3">or</span>
+                </div>
+              </div>
+
+              <DiscordConnectPanel variant="auth" returnTo={authReturnTo} />
 
               <button
                 type="button"
