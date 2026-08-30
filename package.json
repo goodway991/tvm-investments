@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "snapshot": "tsx scripts/run-daily-snapshot.ts",
-    "setup:admin": "tsx scripts/apply-firebase-admin.ts"
+    "setup:admin": "tsx scripts/apply-firebase-admin.ts",
+    "sync:firestore-rules": "tsx scripts/sync-firestore-watchlist-rules.ts"
   },
   "dependencies": {
     "firebase": "^11.0.0",

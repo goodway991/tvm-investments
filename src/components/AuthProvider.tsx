@@ -44,6 +44,8 @@ import {
 } from "@/lib/person-name";
 import { isValidCountry, isValidTimeZone } from "@/lib/locales";
 import { parseTicker } from "@/lib/ticker";
+import { WATCHLIST_ALLOWED_SYMBOLS } from "@/lib/watchlist-symbols";
+import { friendlyFirestoreError } from "@/lib/firebase/client-errors";
 import { overlayLabsPlan, planHasPro, watchlistLimitForPlan, type PlanId } from "@/lib/plans";
 import {
   laterReleaseAck,
@@ -69,6 +71,7 @@ import {
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const ALLOWED_WATCHLIST = new Set(WATCHLIST_ALLOWED_SYMBOLS);
 
 export interface AccountProfile {
   uid: string;
@@ -965,6 +968,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           `Your ${entitlement.plan} plan allows ${entitlement.watchlistLimit} watched stocks.`,
         );
       }
+      const disallowed = normalized.filter((symbol) => !ALLOWED_WATCHLIST.has(symbol));
+      if (disallowed.length) {
+        throw new Error(
+          `These tickers aren't in TVM's research universe yet: ${disallowed.join(", ")}. Remove them and try again.`,
+        );
+      }
       if (
         entitlement.plan === "free" &&
         watchlist.exists &&
@@ -983,27 +992,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           : Timestamp.fromMillis(now + WEEK_MS);
       const reference = doc(db, "watchlists", user.uid);
 
-      if (watchlist.exists) {
-        await setDoc(
-          reference,
-          {
+      try {
+        if (watchlist.exists) {
+          await setDoc(
+            reference,
+            {
+              uid: user.uid,
+              symbols: normalized,
+              changedAt: serverTimestamp(),
+              nextChangeAt,
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true },
+          );
+        } else {
+          await setDoc(reference, {
             uid: user.uid,
             symbols: normalized,
             changedAt: serverTimestamp(),
             nextChangeAt,
+            createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-          },
-          { merge: true },
+          });
+        }
+      } catch (error) {
+        throw new Error(
+          friendlyFirestoreError(
+            error,
+            "Could not save your watchlist. Try again in a moment.",
+          ),
         );
-      } else {
-        await setDoc(reference, {
-          uid: user.uid,
-          symbols: normalized,
-          changedAt: serverTimestamp(),
-          nextChangeAt,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
       }
       setWatchlist({
         symbols: normalized,

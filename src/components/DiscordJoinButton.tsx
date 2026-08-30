@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { markDiscordPending, useBetaStatus } from "@/components/BetaStatusProvider";
-import { DISCORD_INVITE_URL } from "@/lib/community";
+import { DISCORD_INVITE_URL, JOIN_DISCORD_LABEL } from "@/lib/community";
 import { DISCORD_PENDING_KEY, SHOW_BETA_WAITLIST } from "@/lib/beta-waitlist";
 
 export function DiscordJoinButton() {
@@ -21,7 +21,7 @@ export function DiscordJoinButton() {
 
   if (!SHOW_BETA_WAITLIST) return null;
 
-  const connected = discordConnected || localJoined;
+  const linked = discordConnected || localJoined;
 
   async function join() {
     markDiscordPending();
@@ -36,21 +36,20 @@ export function DiscordJoinButton() {
     }
   }
 
-  if (connected) {
-    return (
-      <p className="mt-3 w-full rounded-full border border-emerald-500/30 bg-emerald-500/10 px-6 py-3 text-center text-[15px] font-medium text-emerald-700">
-        Discord connected
-      </p>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      onClick={() => void join()}
-      className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-violet/20 bg-violet/8 px-6 py-3.5 text-[15px] font-medium text-violet transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/12"
-    >
-      Join Discord
-    </button>
+    <div className="mt-4">
+      <button
+        type="button"
+        onClick={() => void join()}
+        className="glass-violet inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[15px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50"
+      >
+        {JOIN_DISCORD_LABEL}
+      </button>
+      {linked ? (
+        <p className="mt-2 text-center text-xs font-medium text-emerald-400/90">
+          Linked to your account
+        </p>
+      ) : null}
+    </div>
   );
 }

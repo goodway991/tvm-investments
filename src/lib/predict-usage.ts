@@ -143,8 +143,8 @@ export async function consumePredictUsage(
         },
         { merge: true },
       );
-    } catch {
-      /* local count still stands */
+    } catch (error) {
+      console.error("[predict_usage] write failed", error);
     }
   }
   return { ok: true, usage: next };

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DISCORD_INVITE_URL } from "@/lib/community";
+import { DISCORD_INVITE_URL, JOIN_DISCORD_LABEL } from "@/lib/community";
 
 export function LegalFooter() {
   const year = new Date().getFullYear();
@@ -20,7 +20,7 @@ export function LegalFooter() {
             rel="noopener noreferrer"
             className="hover:text-violet"
           >
-            Discord
+            {JOIN_DISCORD_LABEL}
           </a>
           {isLanding ? (
             <>

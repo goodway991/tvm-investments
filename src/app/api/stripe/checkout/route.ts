@@ -5,6 +5,7 @@ import {
   appOrigin,
   checkoutPlanAllowed,
   getStripe,
+  managedPaymentsCheckoutOptions,
   stripeConfigured,
   stripePriceId,
 } from "@/lib/stripe";
@@ -165,6 +166,7 @@ export async function POST(request: NextRequest) {
         priceId,
         ...customerFields,
       }),
+      managedPaymentsCheckoutOptions(),
     );
 
     if (!session.url) {
@@ -194,6 +196,7 @@ export async function POST(request: NextRequest) {
             priceId,
             ...customerFields,
           }),
+          managedPaymentsCheckoutOptions(),
         );
         if (session.url) {
           return NextResponse.json({ url: session.url });

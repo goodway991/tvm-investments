@@ -4,12 +4,15 @@ import Stripe from "stripe";
 import { showTvm10Labs } from "@/lib/beta-labs";
 import type { BillingInterval, PaidPlanId } from "@/lib/plans";
 
+/** Managed Payments checkout requires this preview version or later (Stripe blueprint). */
+export const MANAGED_PAYMENTS_CHECKOUT_API_VERSION = "2026-02-25.preview";
+
 let client: Stripe | null = null;
 
 /**
  * Stripe client for Checkout, Billing Portal, and webhooks.
- * Leave apiVersion unset so the account/SDK default applies (Managed Payments
- * needs basil/2025-03-31 or later; account default on live is fine).
+ * Leave the global apiVersion unset so the account default applies everywhere
+ * except Managed Payments checkout, which passes managedPaymentsCheckoutOptions().
  */
 export function getStripe() {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -20,6 +23,11 @@ export function getStripe() {
     client = new Stripe(secret);
   }
   return client;
+}
+
+/** Request options for Checkout Sessions with Managed Payments enabled. */
+export function managedPaymentsCheckoutOptions(): Stripe.RequestOptions {
+  return { apiVersion: MANAGED_PAYMENTS_CHECKOUT_API_VERSION };
 }
 
 export function stripeConfigured() {

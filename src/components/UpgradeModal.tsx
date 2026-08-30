@@ -501,7 +501,7 @@ export function UpgradeModal({
       />
       {user && upgrading && !billed && usePricingTable ? (
         <StripePricingTable
-          className="mt-6 w-full"
+          className="mt-8"
           clientReferenceId={user.uid}
           customerEmail={user.email ?? undefined}
         />

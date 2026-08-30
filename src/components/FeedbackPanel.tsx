@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { BogenHeading } from "@/components/BogenProvider";
-import { DISCORD_INVITE_URL } from "@/lib/community";
+import { DISCORD_INVITE_URL, JOIN_DISCORD_LABEL } from "@/lib/community";
 
 export function FeedbackPanel() {
   const { user } = useAuth();
@@ -81,7 +81,7 @@ export function FeedbackPanel() {
           rel="noopener noreferrer"
           className="font-semibold text-violet hover:underline"
         >
-          Discord
+          {JOIN_DISCORD_LABEL}
         </a>
         .
       </p>

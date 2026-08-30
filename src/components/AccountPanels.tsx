@@ -27,7 +27,7 @@ import { NewBadge } from "@/components/NewBadge";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
-import { DISCORD_INVITE_URL } from "@/lib/community";
+import { DISCORD_INVITE_URL, JOIN_DISCORD_LABEL } from "@/lib/community";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -832,7 +832,7 @@ export function SettingsPanel() {
           rel="noopener noreferrer"
           className="glass-violet mt-3 inline-flex rounded-full px-5 py-2.5 text-sm font-semibold text-white"
         >
-          Join Discord
+          {JOIN_DISCORD_LABEL}
         </a>
       </div>
 

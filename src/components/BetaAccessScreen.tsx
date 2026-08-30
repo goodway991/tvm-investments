@@ -115,7 +115,7 @@ function Paywall() {
       </p>
       {usePricingTable ? (
         <StripePricingTable
-          className="mt-5 w-full"
+          className="mt-6"
           clientReferenceId={user?.uid}
           customerEmail={user?.email ?? undefined}
         />
@@ -200,10 +200,15 @@ function Paywall() {
 
 export function BetaAccessScreen({ phase }: { phase: "join" | "pending" | "pay" }) {
   const { logout } = useAuth();
+  const paywall = phase === "pay";
 
   return (
-    <div className="grid min-h-screen place-items-center bg-surface px-5">
-      <div className="glass-strong w-full max-w-2xl rounded-[28px] p-8">
+    <div className="grid min-h-screen place-items-center bg-surface px-5 py-8">
+      <div
+        className={`glass-strong w-full rounded-[28px] p-8 ${
+          paywall ? "max-w-4xl" : "max-w-2xl"
+        }`}
+      >
         <TVMBrand />
         <div className="mt-6">
           {phase === "pay" ? <Paywall /> : <JoinOrPending phase={phase} />}
