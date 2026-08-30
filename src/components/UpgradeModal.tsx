@@ -17,6 +17,10 @@ import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { authedFetch } from "@/lib/authed-fetch";
 import { REFUND_GRACE_DAYS } from "@/lib/refund-policy";
+import {
+  StripePricingTable,
+  stripePricingTableConfigured,
+} from "@/components/StripePricingTable";
 
 const PLAN_RANK: Record<PlanId, number> = { free: 0, pro: 1, ultra: 2 };
 
@@ -60,6 +64,7 @@ export function UpgradeModal({
   const savePercent = paidPick ? yearlySavingsPercent(pickedPlan) : 0;
   const glowClass =
     pickedPlan === "ultra" ? "ultra-profile-glow-move" : "pro-profile-glow-move";
+  const usePricingTable = stripePricingTableConfigured();
 
   async function openPortal() {
     setError("");
@@ -420,6 +425,10 @@ export function UpgradeModal({
                   <ProGlowText>Schedule Pro</ProGlowText>
                 )}
               </button>
+            ) : upgrading && usePricingTable ? (
+              <p className="text-sm text-ink-soft">
+                Choose a plan in the Stripe table below to checkout.
+              </p>
             ) : upgrading ? (
               <button
                 type="button"
@@ -490,6 +499,13 @@ export function UpgradeModal({
         selectedPlan={pickedPlan}
         onSelectPlan={setPickedPlan}
       />
+      {user && upgrading && !billed && usePricingTable ? (
+        <StripePricingTable
+          className="mt-6 w-full"
+          clientReferenceId={user.uid}
+          customerEmail={user.email ?? undefined}
+        />
+      ) : null}
     </OverlaySheet>
   );
 }

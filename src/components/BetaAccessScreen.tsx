@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import {
+  StripePricingTable,
+  stripePricingTableConfigured,
+} from "@/components/StripePricingTable";
 import { useBetaStatus } from "@/components/BetaStatusProvider";
 import { DiscordJoinButton } from "@/components/DiscordJoinButton";
 import { ProGlowText } from "@/components/ProGlowText";
@@ -10,6 +13,7 @@ import { UltraShinePhrase } from "@/components/UltraText";
 import { authedFetch } from "@/lib/authed-fetch";
 import { priceFor, yearlySavingsPercent, type BillingInterval, type PaidPlanId } from "@/lib/plans";
 import { showTvm10Labs } from "@/lib/beta-labs";
+import { useState } from "react";
 
 function JoinOrPending({
   phase,
@@ -64,7 +68,9 @@ function JoinOrPending({
 }
 
 function Paywall() {
+  const { user } = useAuth();
   const showUltra = showTvm10Labs();
+  const usePricingTable = stripePricingTableConfigured();
   const [plan, setPlan] = useState<PaidPlanId>("pro");
   const [interval, setInterval] = useState<BillingInterval>("monthly");
   const [loading, setLoading] = useState(false);
@@ -103,81 +109,91 @@ function Paywall() {
         Pick Pro or Ultra to open the desk
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-        Beta testers need a paid plan. On the Stripe page, tap{" "}
-        <span className="font-semibold text-ink">Add promotion code</span> if you
-        have a beta discount.
+        {usePricingTable
+          ? "Pick Pro or Ultra below. Stripe handles checkout, tax, and promo codes."
+          : "Beta testers need a paid plan. On the Stripe page, tap Add promotion code if you have a beta discount."}
       </p>
-      <div className="mt-5 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setPlan("pro")}
-          className={`rounded-2xl px-3 py-3 text-sm font-semibold ${
-            plan === "pro" ? "glass-violet text-white" : "bg-surface text-ink"
-          }`}
-        >
-          <ProGlowText>Pro</ProGlowText>
-        </button>
-        {showUltra ? (
+      {usePricingTable ? (
+        <StripePricingTable
+          className="mt-5 w-full"
+          clientReferenceId={user?.uid}
+          customerEmail={user?.email ?? undefined}
+        />
+      ) : (
+        <>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPlan("pro")}
+              className={`rounded-2xl px-3 py-3 text-sm font-semibold ${
+                plan === "pro" ? "glass-violet text-white" : "bg-surface text-ink"
+              }`}
+            >
+              <ProGlowText>Pro</ProGlowText>
+            </button>
+            {showUltra ? (
+              <button
+                type="button"
+                onClick={() => setPlan("ultra")}
+                className={`rounded-2xl px-3 py-3 text-sm font-semibold ${
+                  plan === "ultra" ? "glass-violet text-white" : "bg-surface text-ink"
+                }`}
+              >
+                <UltraShinePhrase>Ultra</UltraShinePhrase>
+              </button>
+            ) : (
+              <div />
+            )}
+          </div>
+          <div className="mt-3 flex rounded-full bg-surface p-1 text-sm font-medium">
+            <button
+              type="button"
+              onClick={() => setInterval("monthly")}
+              className={`flex-1 rounded-full py-2 ${
+                interval === "monthly" ? "glass-violet text-white" : "text-ink-soft"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setInterval("yearly")}
+              className={`flex-1 rounded-full py-2 ${
+                interval === "yearly" ? "glass-violet text-white" : "text-ink-soft"
+              }`}
+            >
+              Yearly · save {savePercent}%
+            </button>
+          </div>
+          <p className="mt-4 text-center font-display text-2xl font-bold text-ink">
+            ${price.perMonth}
+            <span className="text-sm font-medium text-ink-soft"> / month</span>
+          </p>
+          {interval === "yearly" ? (
+            <p className="text-center text-xs text-ink-soft">
+              Billed ${price.billed} once a year
+            </p>
+          ) : null}
           <button
             type="button"
-            onClick={() => setPlan("ultra")}
-            className={`rounded-2xl px-3 py-3 text-sm font-semibold ${
-              plan === "ultra" ? "glass-violet text-white" : "bg-surface text-ink"
-            }`}
+            disabled={loading}
+            onClick={() => void checkout()}
+            className="glass-violet mt-5 inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
           >
-            <UltraShinePhrase>Ultra</UltraShinePhrase>
+            {loading
+              ? "Opening Stripe…"
+              : plan === "ultra"
+                ? "Continue to Ultra checkout"
+                : "Continue to Pro checkout"}
           </button>
-        ) : (
-          <div />
-        )}
-      </div>
-      <div className="mt-3 flex rounded-full bg-surface p-1 text-sm font-medium">
-        <button
-          type="button"
-          onClick={() => setInterval("monthly")}
-          className={`flex-1 rounded-full py-2 ${
-            interval === "monthly" ? "glass-violet text-white" : "text-ink-soft"
-          }`}
-        >
-          Monthly
-        </button>
-        <button
-          type="button"
-          onClick={() => setInterval("yearly")}
-          className={`flex-1 rounded-full py-2 ${
-            interval === "yearly" ? "glass-violet text-white" : "text-ink-soft"
-          }`}
-        >
-          Yearly · save {savePercent}%
-        </button>
-      </div>
-      <p className="mt-4 text-center font-display text-2xl font-bold text-ink">
-        ${price.perMonth}
-        <span className="text-sm font-medium text-ink-soft"> / month</span>
-      </p>
-      {interval === "yearly" ? (
-        <p className="text-center text-xs text-ink-soft">
-          Billed ${price.billed} once a year
-        </p>
-      ) : null}
-      <button
-        type="button"
-        disabled={loading}
-        onClick={() => void checkout()}
-        className="glass-violet mt-5 inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
-      >
-        {loading
-          ? "Opening Stripe…"
-          : plan === "ultra"
-            ? "Continue to Ultra checkout"
-            : "Continue to Pro checkout"}
-      </button>
+          {error ? (
+            <p className="mt-4 text-sm text-coral" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </>
+      )}
       <DiscordJoinButton />
-      {error ? (
-        <p className="mt-4 text-sm text-coral" role="alert">
-          {error}
-        </p>
-      ) : null}
     </>
   );
 }
@@ -187,7 +203,7 @@ export function BetaAccessScreen({ phase }: { phase: "join" | "pending" | "pay" 
 
   return (
     <div className="grid min-h-screen place-items-center bg-surface px-5">
-      <div className="glass-strong w-full max-w-md rounded-[28px] p-8">
+      <div className="glass-strong w-full max-w-2xl rounded-[28px] p-8">
         <TVMBrand />
         <div className="mt-6">
           {phase === "pay" ? <Paywall /> : <JoinOrPending phase={phase} />}
