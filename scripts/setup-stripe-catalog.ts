@@ -2,13 +2,21 @@
  * One-shot: create TVM Pro / Ultra products and prices in the Stripe account
  * from STRIPE_SECRET_KEY. Prints env lines (price ids only) to stdout.
  *
+ * Tax code txcd_10103001 (SaaS — business use) is eligible for Stripe Managed
+ * Payments. Do not invent tax codes; see Stripe’s Managed Payments eligibility list.
+ *
  *   npx tsx scripts/setup-stripe-catalog.ts
+ *
+ * Requires STRIPE_SECRET_KEY from the Stripe Dashboard (live or test).
  */
 import Stripe from "stripe";
 
+/** SaaS — business use; eligible for Managed Payments. */
+const MANAGED_PAYMENTS_TAX_CODE = "txcd_10103001";
+
 const secret = process.env.STRIPE_SECRET_KEY;
 if (!secret) {
-  console.error("STRIPE_SECRET_KEY is missing.");
+  console.error("STRIPE_SECRET_KEY is missing. Set it from the Stripe Dashboard.");
   process.exit(1);
 }
 
@@ -18,11 +26,19 @@ async function ensureProduct(name: string, metadata: Record<string, string>) {
   const existing = await stripe.products.search({
     query: `name:'${name}' AND active:'true'`,
   });
-  if (existing.data[0]) return existing.data[0];
+  if (existing.data[0]) {
+    const product = existing.data[0];
+    if (product.tax_code !== MANAGED_PAYMENTS_TAX_CODE) {
+      return stripe.products.update(product.id, {
+        tax_code: MANAGED_PAYMENTS_TAX_CODE,
+      });
+    }
+    return product;
+  }
   return stripe.products.create({
     name,
     metadata,
-    tax_code: "txcd_10103001",
+    tax_code: MANAGED_PAYMENTS_TAX_CODE,
   });
 }
 

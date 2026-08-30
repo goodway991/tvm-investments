@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSignedIn } from "@/lib/api-guard";
-import { getEntitlementForUid } from "@/lib/firebase/admin";
+import { clearStaleStripeBilling, getEntitlementForUid } from "@/lib/firebase/admin";
 import { appOrigin, getStripe, stripeConfigured } from "@/lib/stripe";
-import { periodLockedPortalConfigurationId } from "@/lib/stripe-entitlements";
+import {
+  checkoutCustomerFields,
+  isStripeResourceMissing,
+  periodLockedPortalConfigurationId,
+} from "@/lib/stripe-entitlements";
 
 export const dynamic = "force-dynamic";
 
@@ -26,12 +30,39 @@ export async function POST(request: NextRequest) {
   }
 
   const stripe = getStripe();
-  const configuration = await periodLockedPortalConfigurationId();
-  const session = await stripe.billingPortal.sessions.create({
-    customer: entitlement.stripeCustomerId,
-    return_url: `${appOrigin(request)}/dashboard/settings`,
-    configuration,
-  });
+  const customerFields = await checkoutCustomerFields(
+    stripe,
+    entitlement.stripeCustomerId,
+    gate.email || undefined,
+  );
+  if (!customerFields.customer) {
+    await clearStaleStripeBilling(gate.uid);
+    return NextResponse.json(
+      { error: "No Stripe billing account is on file for this login." },
+      { status: 400 },
+    );
+  }
 
-  return NextResponse.json({ url: session.url });
+  try {
+    const configuration = await periodLockedPortalConfigurationId();
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerFields.customer,
+      return_url: `${appOrigin(request)}/dashboard/settings`,
+      configuration,
+    });
+    return NextResponse.json({ url: session.url });
+  } catch (error) {
+    if (isStripeResourceMissing(error)) {
+      await clearStaleStripeBilling(gate.uid);
+      return NextResponse.json(
+        { error: "No Stripe billing account is on file for this login." },
+        { status: 400 },
+      );
+    }
+    console.error("[stripe/portal] session create failed", error);
+    return NextResponse.json(
+      { error: "Billing portal is not available yet." },
+      { status: 502 },
+    );
+  }
 }

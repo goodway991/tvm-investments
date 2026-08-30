@@ -16,6 +16,37 @@ function customerId(value: string | Stripe.Customer | Stripe.DeletedCustomer | n
   return typeof value === "string" ? value : value.id;
 }
 
+export function isStripeResourceMissing(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const stripeError = error as Stripe.errors.StripeError;
+  if (stripeError.code === "resource_missing") return true;
+  const message = stripeError.message || "";
+  return /no such (customer|price|subscription)/i.test(message);
+}
+
+/** Reuse a saved customer only if it exists in the connected Stripe account. */
+export async function checkoutCustomerFields(
+  stripe: ReturnType<typeof getStripe>,
+  customerId: string | undefined,
+  email: string | undefined,
+): Promise<{ customer?: string; customer_email?: string }> {
+  if (!customerId) {
+    return email ? { customer_email: email } : {};
+  }
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    if ("deleted" in customer && customer.deleted) {
+      return email ? { customer_email: email } : {};
+    }
+    return { customer: customerId };
+  } catch (error) {
+    if (isStripeResourceMissing(error)) {
+      return email ? { customer_email: email } : {};
+    }
+    throw error;
+  }
+}
+
 function priceIdFromSubscription(subscription: Stripe.Subscription) {
   const item = subscription.items.data[0];
   const price = item?.price;

@@ -655,6 +655,34 @@ export async function getEntitlementForUid(uid: string) {
   };
 }
 
+/** Drop Stripe ids from a prior account so checkout can start fresh on the live account. */
+export async function clearStaleStripeBilling(uid: string) {
+  const db = await getAdminDb();
+  if (!db) return;
+  const ref = db.collection("entitlements").doc(uid);
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const data = snap.data() || {};
+  if (data.role === "admin") return;
+  const { FieldValue } = await import("firebase-admin/firestore");
+  await ref.set(
+    {
+      plan: "free",
+      watchlistLimit: watchlistLimitForPlan("free"),
+      cooldownDays: 7,
+      source: FieldValue.delete(),
+      stripeCustomerId: FieldValue.delete(),
+      stripeSubscriptionId: FieldValue.delete(),
+      stripeCancelAtPeriodEnd: FieldValue.delete(),
+      stripeAccessUntil: FieldValue.delete(),
+      stripePendingPlan: FieldValue.delete(),
+      stripePendingUntil: FieldValue.delete(),
+      updatedAt: new Date(),
+    },
+    { merge: true },
+  );
+}
+
 export async function applyStripeEntitlement(input: {
   uid: string;
   plan: PlanId;

@@ -6,6 +6,11 @@ import type { BillingInterval, PaidPlanId } from "@/lib/plans";
 
 let client: Stripe | null = null;
 
+/**
+ * Stripe client for Checkout, Billing Portal, and webhooks.
+ * Leave apiVersion unset so the account/SDK default applies (Managed Payments
+ * needs basil/2025-03-31 or later; account default on live is fine).
+ */
 export function getStripe() {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) {
