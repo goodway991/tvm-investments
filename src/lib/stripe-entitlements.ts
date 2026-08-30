@@ -2,6 +2,7 @@ import "server-only";
 import type Stripe from "stripe";
 import {
   applyStripeEntitlement,
+  admitBetaTester,
 } from "@/lib/firebase/admin";
 import { getStripe, planFromPriceId } from "@/lib/stripe";
 import { isWithinRefundGrace, REFUND_GRACE_DAYS } from "@/lib/refund-policy";
@@ -146,6 +147,7 @@ export async function applySubscription(subscription: Stripe.Subscription) {
     pendingPlan: pending.plan || undefined,
     pendingUntil: pending.until || undefined,
   });
+  await admitBetaTester(uid);
 }
 
 export async function clearPaidPlan(subscription: Stripe.Subscription) {
@@ -213,6 +215,7 @@ export async function applyCheckoutSessionObject(session: Stripe.Checkout.Sessio
     stripeCustomerId: customerId(session.customer),
     stripeSubscriptionId: "",
   });
+  await admitBetaTester(uid);
 }
 
 export async function changeSubscriptionPrice(input: {

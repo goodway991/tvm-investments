@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { requireAdmittedBeta, requireSignedIn } from "@/lib/api-guard";
+import { requireSignedIn } from "@/lib/api-guard";
 import {
   appOrigin,
   checkoutPlanAllowed,
@@ -14,7 +14,6 @@ import {
   checkoutCustomerFields,
   isStripeResourceMissing,
 } from "@/lib/stripe-entitlements";
-import { REFUND_POLICY_CHECKOUT } from "@/lib/refund-policy";
 import type { BillingInterval, PaidPlanId } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
@@ -47,11 +46,6 @@ function checkoutSessionParams(input: {
     customer_email: input.customer ? undefined : input.customer_email,
     allow_promotion_codes: true,
     billing_address_collection: "required",
-    custom_text: {
-      submit: {
-        message: REFUND_POLICY_CHECKOUT,
-      },
-    },
     metadata: {
       firebaseUid: input.uid,
       plan: input.plan,
@@ -104,9 +98,6 @@ export async function POST(request: NextRequest) {
       { status: 503 },
     );
   }
-
-  const admitted = await requireAdmittedBeta(gate.uid, gate.email);
-  if (!admitted.ok) return admitted.response;
 
   let entitlement = await getEntitlementForUid(gate.uid);
   if (entitlement?.role === "admin") {
