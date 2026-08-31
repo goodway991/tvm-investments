@@ -28,6 +28,8 @@ import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
 import { DiscordConnectPanel } from "@/components/DiscordConnectPanel";
+import { authedFetch } from "@/lib/authed-fetch";
+import { ULTRA_BETA_EXPIRES_LABEL } from "@/lib/beta-codes";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -393,6 +395,10 @@ export function SettingsPanel() {
   const [localeBusy, setLocaleBusy] = useState(false);
   const [localeError, setLocaleError] = useState("");
   const [editingLocale, setEditingLocale] = useState(false);
+  const [betaCode, setBetaCode] = useState("");
+  const [betaBusy, setBetaBusy] = useState(false);
+  const [betaError, setBetaError] = useState("");
+  const [betaMessage, setBetaMessage] = useState("");
   const locationSaved =
     isValidCountry(profile?.country || "") &&
     isValidTimeZone(profile?.timeZone || "");
@@ -595,7 +601,84 @@ export function SettingsPanel() {
         >
           View plan
         </button>
+        {entitlement.source === "beta_code" &&
+        entitlement.plan === "ultra" &&
+        entitlement.betaExpiresAt > 0 ? (
+          <p className="mt-3 text-sm font-medium text-ink">
+            Ultra Beta Tester — Expires {ULTRA_BETA_EXPIRES_LABEL}
+          </p>
+        ) : null}
       </div>
+
+      {entitlement.role !== "admin" &&
+      entitlement.source !== "stripe" &&
+      !(entitlement.source === "beta_code" && entitlement.plan === "ultra") ? (
+        <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+          <p className="font-semibold text-ink">Beta test code</p>
+          <p className="mt-1">
+            Have an Ultra beta code? Enter it here for Ultra access through{" "}
+            {ULTRA_BETA_EXPIRES_LABEL}.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input
+              value={betaCode}
+              onChange={(event) => setBetaCode(event.target.value)}
+              placeholder="Enter code"
+              className="field min-w-[180px] flex-1 rounded-2xl px-4 py-2.5 text-sm text-ink"
+              autoComplete="off"
+            />
+            <button
+              type="button"
+              disabled={betaBusy || !betaCode.trim()}
+              onClick={() => {
+                setBetaBusy(true);
+                setBetaError("");
+                setBetaMessage("");
+                void authedFetch("/api/beta/redeem", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ code: betaCode }),
+                })
+                  .then(async (response) => {
+                    const payload = (await response.json()) as {
+                      error?: string;
+                      label?: string;
+                    };
+                    if (!response.ok) {
+                      throw new Error(payload.error || "Unable to redeem that code.");
+                    }
+                    setBetaMessage(
+                      payload.label ||
+                        `Ultra Beta Tester — Expires ${ULTRA_BETA_EXPIRES_LABEL}`,
+                    );
+                    setBetaCode("");
+                  })
+                  .catch((redeemError: unknown) => {
+                    setBetaError(
+                      redeemError instanceof Error
+                        ? redeemError.message
+                        : "Unable to redeem that code.",
+                    );
+                  })
+                  .finally(() => setBetaBusy(false));
+              }}
+              className="glass-violet rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {betaBusy ? "Applying…" : "Apply code"}
+            </button>
+          </div>
+          {betaError ? (
+            <p className="mt-2 text-sm text-coral" role="alert">
+              {betaError}
+            </p>
+          ) : null}
+          {betaMessage ? (
+            <p className="mt-2 text-sm text-emerald-400" role="status">
+              {betaMessage}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {showTvm10Labs() ? (
         <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">

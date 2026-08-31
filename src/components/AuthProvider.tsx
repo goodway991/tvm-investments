@@ -94,7 +94,8 @@ export interface AccountEntitlement {
   plan: PlanId;
   watchlistLimit: number;
   cooldownDays: number;
-  source: "none" | "comp" | "stripe";
+  source: "none" | "comp" | "stripe" | "beta_code";
+  betaExpiresAt: number;
   stripeCustomerId: string;
   stripeCancelAtPeriodEnd: boolean;
   stripeAccessUntil: number;
@@ -155,6 +156,7 @@ const defaultEntitlement: AccountEntitlement = {
   watchlistLimit: 10,
   cooldownDays: 7,
   source: "none",
+  betaExpiresAt: 0,
   stripeCustomerId: "",
   stripeCancelAtPeriodEnd: false,
   stripeAccessUntil: 0,
@@ -170,22 +172,37 @@ function entitlementFromData(
     data.role === "admin" || email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
       ? "admin"
       : "client";
-  const plan = overlayLabsPlan(
-    role,
-    typeof data.plan === "string" ? data.plan : undefined,
-  );
+  const betaExpiresAt =
+    typeof data.betaExpiresAt === "number"
+      ? data.betaExpiresAt
+      : typeof data.betaExpiresAt?.toMillis === "function"
+        ? data.betaExpiresAt.toMillis()
+        : 0;
   const source =
     data.source === "stripe" || data.source === "paid"
       ? "stripe"
       : data.source === "comp"
         ? "comp"
-        : "none";
+        : data.source === "beta_code"
+          ? "beta_code"
+          : "none";
+  const storedPlan = typeof data.plan === "string" ? data.plan : undefined;
+  const betaActive =
+    source === "beta_code" &&
+    storedPlan === "ultra" &&
+    betaExpiresAt > 0 &&
+    Date.now() <= betaExpiresAt;
+  const plan = overlayLabsPlan(
+    role,
+    betaActive ? "ultra" : source === "beta_code" ? "free" : storedPlan,
+  );
   return {
     role,
     plan,
     watchlistLimit: watchlistLimitForPlan(plan),
     cooldownDays: Number(data.cooldownDays) || 0,
-    source,
+    source: betaActive ? "beta_code" : source === "beta_code" ? "none" : source,
+    betaExpiresAt: betaActive ? betaExpiresAt : 0,
     stripeCustomerId:
       typeof data.stripeCustomerId === "string" ? data.stripeCustomerId : "",
     stripeCancelAtPeriodEnd: data.stripeCancelAtPeriodEnd === true,
@@ -568,6 +585,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           watchlistLimit: watchlistLimitForPlan(plan),
           cooldownDays: 0,
           source: "none",
+          betaExpiresAt: 0,
           stripeCustomerId: "",
           stripeCancelAtPeriodEnd: false,
           stripeAccessUntil: 0,

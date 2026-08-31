@@ -1276,6 +1276,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Ultra beta invite codes. Admin SDK only.
+    match /beta_codes/{codeId} {
+      allow read, write: if false;
+    }
+
     match /site/maintenance {
       allow read: if true;
       allow write: if false;

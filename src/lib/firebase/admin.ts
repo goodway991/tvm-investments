@@ -498,6 +498,8 @@ export async function setAdminPlan(uid: string, plan: PlanId) {
       source: paid ? "comp" : FieldValue.delete(),
       giftedAt: paid ? now : FieldValue.delete(),
       giftAckedAt: FieldValue.delete(),
+      betaExpiresAt: FieldValue.delete(),
+      betaCodeId: FieldValue.delete(),
       stripeSubscriptionId: FieldValue.delete(),
       stripeCancelAtPeriodEnd: FieldValue.delete(),
       stripeAccessUntil: FieldValue.delete(),
@@ -590,12 +592,235 @@ export async function getPlanForUser(uid: string, email: string): Promise<PlanId
   if (!db) return "free";
   try {
     const snap = await db.collection("entitlements").doc(uid).get();
-    const plan = snap.data()?.plan;
-    if (plan === "ultra" || plan === "pro") return plan;
+    const data = snap.data() || {};
+    const plan = data.plan;
+    if (plan !== "ultra" && plan !== "pro") return "free";
+
+    if (data.source === "beta_code") {
+      const { ultraBetaStillActive } = await import("@/lib/beta-codes");
+      const expiresAt =
+        typeof data.betaExpiresAt === "number"
+          ? data.betaExpiresAt
+          : data.betaExpiresAt?.toMillis?.() ?? 0;
+      if (!ultraBetaStillActive(expiresAt)) {
+        await expireBetaCodeEntitlement(uid).catch(() => undefined);
+        return "free";
+      }
+      return "ultra";
+    }
+
+    return plan;
   } catch {
     /* treat as free */
   }
   return "free";
+}
+
+async function expireBetaCodeEntitlement(uid: string) {
+  const db = await getAdminDb();
+  if (!db) return;
+  const { FieldValue } = await import("firebase-admin/firestore");
+  const { watchlistLimitForPlan } = await import("@/lib/plans");
+  await db.collection("entitlements").doc(uid).set(
+    {
+      plan: "free",
+      watchlistLimit: watchlistLimitForPlan("free"),
+      cooldownDays: 7,
+      source: FieldValue.delete(),
+      betaExpiresAt: FieldValue.delete(),
+      betaCodeId: FieldValue.delete(),
+      updatedAt: new Date(),
+    },
+    { merge: true },
+  );
+}
+
+export type BetaCodeRow = {
+  id: string;
+  code: string;
+  active: boolean;
+  maxRedemptions: number;
+  timesRedeemed: number;
+  expiresAt: number;
+  createdAt: string;
+};
+
+export async function listBetaCodes(): Promise<BetaCodeRow[]> {
+  const db = await getAdminDb();
+  if (!db) return [];
+  const snap = await db.collection("beta_codes").orderBy("createdAt", "desc").limit(50).get();
+  return snap.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      code: String(data.code || ""),
+      active: data.active !== false,
+      maxRedemptions: Number(data.maxRedemptions) || 0,
+      timesRedeemed: Number(data.timesRedeemed) || 0,
+      expiresAt:
+        typeof data.expiresAt === "number"
+          ? data.expiresAt
+          : data.expiresAt?.toMillis?.() ?? 0,
+      createdAt:
+        typeof data.createdAt === "string"
+          ? data.createdAt
+          : data.createdAt?.toDate?.()?.toISOString?.() || "",
+    };
+  });
+}
+
+export async function createBetaCode(input: {
+  code?: string;
+  maxRedemptions?: number;
+  createdBy: string;
+}) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Beta codes are not available.");
+  const {
+    generateBetaCode,
+    hashBetaCode,
+    normalizeBetaCode,
+    ULTRA_BETA_EXPIRES_AT_MS,
+    ultraBetaStillActive,
+  } = await import("@/lib/beta-codes");
+  if (!ultraBetaStillActive(ULTRA_BETA_EXPIRES_AT_MS)) {
+    throw new Error("Ultra beta codes expired on September 24.");
+  }
+
+  const code = normalizeBetaCode(input.code || generateBetaCode());
+  if (code.length < 4 || code.length > 32) {
+    throw new Error("Use a code between 4 and 32 characters.");
+  }
+  if (!/^[A-Z0-9-]+$/.test(code)) {
+    throw new Error("Codes can only use letters, numbers, and hyphens.");
+  }
+
+  const id = hashBetaCode(code);
+  const ref = db.collection("beta_codes").doc(id);
+  const existing = await ref.get();
+  if (existing.exists) throw new Error("That code already exists.");
+
+  const maxRedemptions = Math.max(0, Math.floor(Number(input.maxRedemptions) || 0));
+  const now = new Date();
+  await ref.set({
+    code,
+    codeHash: id,
+    active: true,
+    maxRedemptions,
+    timesRedeemed: 0,
+    expiresAt: ULTRA_BETA_EXPIRES_AT_MS,
+    createdAt: now.toISOString(),
+    createdBy: input.createdBy,
+  });
+
+  return {
+    id,
+    code,
+    active: true,
+    maxRedemptions,
+    timesRedeemed: 0,
+    expiresAt: ULTRA_BETA_EXPIRES_AT_MS,
+    createdAt: now.toISOString(),
+  } satisfies BetaCodeRow;
+}
+
+export async function deactivateBetaCode(id: string) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Beta codes are not available.");
+  const ref = db.collection("beta_codes").doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error("Code not found.");
+  await ref.set({ active: false, updatedAt: new Date().toISOString() }, { merge: true });
+}
+
+export async function redeemBetaCode(uid: string, email: string, rawCode: string) {
+  const db = await getAdminDb();
+  if (!db) throw new Error("Beta codes are not available.");
+  if (isAdminEmail(email)) {
+    throw new Error("Admin already has Ultra.");
+  }
+
+  const {
+    hashBetaCode,
+    normalizeBetaCode,
+    ULTRA_BETA_EXPIRES_AT_MS,
+    ultraBetaStillActive,
+  } = await import("@/lib/beta-codes");
+  if (!ultraBetaStillActive(ULTRA_BETA_EXPIRES_AT_MS)) {
+    throw new Error("Ultra beta codes expired on September 24.");
+  }
+
+  const code = normalizeBetaCode(rawCode);
+  if (!code) throw new Error("Enter a beta test code.");
+  const id = hashBetaCode(code);
+  const codeRef = db.collection("beta_codes").doc(id);
+  const entitlementRef = db.collection("entitlements").doc(uid);
+  const { FieldValue } = await import("firebase-admin/firestore");
+
+  await db.runTransaction(async (tx) => {
+    const codeSnap = await tx.get(codeRef);
+    if (!codeSnap.exists) throw new Error("That code is not valid.");
+    const codeData = codeSnap.data() || {};
+    if (codeData.active === false) throw new Error("That code is turned off.");
+    const expiresAt =
+      typeof codeData.expiresAt === "number"
+        ? codeData.expiresAt
+        : codeData.expiresAt?.toMillis?.() ?? ULTRA_BETA_EXPIRES_AT_MS;
+    if (!ultraBetaStillActive(expiresAt)) {
+      throw new Error("That code has expired.");
+    }
+    const max = Number(codeData.maxRedemptions) || 0;
+    const used = Number(codeData.timesRedeemed) || 0;
+    if (max > 0 && used >= max) {
+      throw new Error("That code has no redemptions left.");
+    }
+
+    const entitlementSnap = await tx.get(entitlementRef);
+    const data = entitlementSnap.data() || {};
+    if (data.role === "admin") throw new Error("Admin already has Ultra.");
+    if (data.source === "stripe" && (data.plan === "pro" || data.plan === "ultra")) {
+      throw new Error("You already have a paid plan. Manage it under View plan.");
+    }
+
+    const now = new Date();
+    tx.set(
+      entitlementRef,
+      {
+        uid,
+        role: "client",
+        plan: "ultra",
+        watchlistLimit: watchlistLimitForPlan("ultra"),
+        cooldownDays: 0,
+        createdAt: data.createdAt || now,
+        updatedAt: now,
+        source: "beta_code",
+        betaExpiresAt: ULTRA_BETA_EXPIRES_AT_MS,
+        betaCodeId: id,
+        giftAckedAt: FieldValue.delete(),
+        giftedAt: now,
+        stripeSubscriptionId: FieldValue.delete(),
+        stripeCancelAtPeriodEnd: FieldValue.delete(),
+        stripeAccessUntil: FieldValue.delete(),
+        stripePendingPlan: FieldValue.delete(),
+        stripePendingUntil: FieldValue.delete(),
+      },
+      { merge: true },
+    );
+    tx.set(
+      codeRef,
+      {
+        timesRedeemed: used + 1,
+        lastRedeemedAt: now.toISOString(),
+        lastRedeemedBy: uid,
+      },
+      { merge: true },
+    );
+  });
+
+  return {
+    plan: "ultra" as const,
+    betaExpiresAt: ULTRA_BETA_EXPIRES_AT_MS,
+  };
 }
 
 function takeMemoryQuota(
@@ -651,7 +876,13 @@ export async function getEntitlementForUid(uid: string) {
         ? ("stripe" as const)
         : data.source === "comp"
           ? ("comp" as const)
-          : ("none" as const),
+          : data.source === "beta_code"
+            ? ("beta_code" as const)
+            : ("none" as const),
+    betaExpiresAt:
+      typeof data.betaExpiresAt === "number"
+        ? data.betaExpiresAt
+        : data.betaExpiresAt?.toMillis?.() ?? 0,
   };
 }
 
@@ -718,7 +949,17 @@ export async function applyStripeEntitlement(input: {
     !paid &&
     data.source === "comp" &&
     (data.plan === "pro" || data.plan === "ultra");
-  if (keepComp) {
+  const { ultraBetaStillActive } = await import("@/lib/beta-codes");
+  const betaExpiresAt =
+    typeof data.betaExpiresAt === "number"
+      ? data.betaExpiresAt
+      : data.betaExpiresAt?.toMillis?.() ?? 0;
+  const keepBeta =
+    !paid &&
+    data.source === "beta_code" &&
+    data.plan === "ultra" &&
+    ultraBetaStillActive(betaExpiresAt);
+  if (keepComp || keepBeta) {
     await ref.set(
       {
         updatedAt: now,
@@ -744,6 +985,8 @@ export async function applyStripeEntitlement(input: {
       createdAt: data.createdAt || now,
       updatedAt: now,
       source: paid ? "stripe" : FieldValue.delete(),
+      betaExpiresAt: FieldValue.delete(),
+      betaCodeId: FieldValue.delete(),
       stripeCustomerId: input.stripeCustomerId || data.stripeCustomerId || "",
       stripeSubscriptionId: paid
         ? input.stripeSubscriptionId || data.stripeSubscriptionId || ""

@@ -2,7 +2,7 @@ import { parseDiscordProfile, type DiscordProfile } from "@/lib/discord-profile"
 import { planHasPro, type PlanId } from "@/lib/plans";
 
 /** Flip to false when Varish says the beta period is over. */
-export const SHOW_BETA_WAITLIST = true;
+export const SHOW_BETA_WAITLIST = false;
 
 export const DISCORD_PENDING_KEY = "tvm-discord-joined";
 

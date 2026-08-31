@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AdminAccountsPanel } from "@/components/AdminAccountsPanel";
+import { AdminBetaCodesPanel } from "@/components/AdminBetaCodesPanel";
 import { AdminMaintenancePanel } from "@/components/AdminMaintenancePanel";
 import { AdminPromoCodesPanel } from "@/components/AdminPromoCodesPanel";
 import { AdminWaitlistPanel } from "@/components/AdminWaitlistPanel";
@@ -16,6 +17,7 @@ export default function SettingsPage() {
     <div className="dashboard-research">
       <SettingsPanel />
       <AdminMaintenancePanel />
+      <AdminBetaCodesPanel />
       <AdminWaitlistPanel />
       <AdminPromoCodesPanel />
       <AdminAccountsPanel />

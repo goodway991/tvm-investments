@@ -261,7 +261,7 @@ export function LandingPage() {
                   Create a free account to open today’s screen, movers, and research
                   notes.{" "}
                   <ProGlowText>
-                    Pro unlocks deeper lookbacks and higher limits when you need them.
+                    Have an Ultra beta code? Redeem it in Settings.
                   </ProGlowText>
                 </>
               )}
