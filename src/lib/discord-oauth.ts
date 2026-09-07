@@ -25,10 +25,13 @@ export type DiscordLinkPayload = {
   accessToken?: string;
 };
 
+export type DiscordOAuthFlow = "account" | "linked_role";
+
 export type OAuthState = {
   returnTo: string;
   guest: boolean;
   uid?: string;
+  flow?: DiscordOAuthFlow;
   exp: number;
   nonce: string;
 };
@@ -89,6 +92,7 @@ export function signOAuthState(input: Omit<OAuthState, "nonce" | "exp"> & { exp?
     returnTo: sanitizeReturnTo(input.returnTo),
     guest: input.guest,
     uid: input.uid,
+    flow: input.flow === "linked_role" ? "linked_role" : "account",
     nonce: randomBytes(16).toString("hex"),
     exp: input.exp ?? Date.now() + 10 * 60 * 1000,
   };
@@ -145,8 +149,17 @@ export function toDiscordLinkPayload(
   };
 }
 
-export function buildDiscordAuthorizeUrl(state: string, config: DiscordOAuthConfig) {
-  const scopes = config.guildId && config.botToken ? "identify guilds.join" : "identify";
+export function buildDiscordAuthorizeUrl(
+  state: string,
+  config: DiscordOAuthConfig,
+  options?: { flow?: DiscordOAuthFlow },
+) {
+  const scopes =
+    options?.flow === "linked_role"
+      ? "identify role_connections.write"
+      : config.guildId && config.botToken
+        ? "identify guilds.join"
+        : "identify";
   const params = new URLSearchParams({
     client_id: config.clientId,
     redirect_uri: config.redirectUri,

@@ -60,32 +60,49 @@ export function BetaStatusProvider({ children }: { children: React.ReactNode }) 
   const { user, entitlement, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<BetaStatus>(EMPTY_BETA_STATUS);
   const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(!SHOW_BETA_WAITLIST);
+  const [ready, setReady] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (!user || !SHOW_BETA_WAITLIST) {
+    if (!user) {
       setStatus(EMPTY_BETA_STATUS);
       setReady(true);
       return;
     }
-    const response = await authedFetch("/api/beta/status");
-    const payload = (await response.json()) as BetaStatus;
-    if (response.ok) setStatus(payload);
-    setReady(true);
+    try {
+      const response = await authedFetch("/api/beta/status");
+      const payload = (await response.json()) as BetaStatus;
+      if (response.ok) {
+        setStatus({
+          waitlistStatus:
+            payload.waitlistStatus === "pending" || payload.waitlistStatus === "admitted"
+              ? payload.waitlistStatus
+              : "none",
+          betaTester: payload.betaTester === true,
+          discordConnected: payload.discordConnected === true,
+          discord: payload.discord ?? null,
+        });
+      }
+    } catch {
+      /* keep last known */
+    } finally {
+      setReady(true);
+    }
   }, [user]);
 
   useEffect(() => {
-    if (!user || !SHOW_BETA_WAITLIST) {
+    if (!user) {
       setStatus(EMPTY_BETA_STATUS);
       setReady(true);
       return;
     }
+
     setReady(false);
     const db = getClientFirestore();
     if (!db) {
       void refresh();
       return;
     }
+
     return onSnapshot(
       doc(db, "beta_status", user.uid),
       (snapshot) => {
@@ -101,7 +118,7 @@ export function BetaStatusProvider({ children }: { children: React.ReactNode }) 
   }, [refresh, user]);
 
   const joinWaitlist = useCallback(async () => {
-    if (!user) return;
+    if (!user || !SHOW_BETA_WAITLIST) return;
     setLoading(true);
     try {
       const response = await authedFetch("/api/beta/status", {
@@ -111,7 +128,15 @@ export function BetaStatusProvider({ children }: { children: React.ReactNode }) 
       });
       const payload = (await response.json()) as BetaStatus & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to join the waitlist.");
-      setStatus(payload);
+      setStatus({
+        waitlistStatus:
+          payload.waitlistStatus === "pending" || payload.waitlistStatus === "admitted"
+            ? payload.waitlistStatus
+            : "none",
+        betaTester: payload.betaTester === true,
+        discordConnected: payload.discordConnected === true,
+        discord: payload.discord ?? null,
+      });
     } finally {
       setLoading(false);
     }
@@ -124,7 +149,9 @@ export function BetaStatusProvider({ children }: { children: React.ReactNode }) 
       const response = await authedFetch("/api/discord/authorize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ returnTo: window.location.pathname || "/dashboard" }),
+        body: JSON.stringify({
+          returnTo: `${window.location.pathname}${window.location.search || ""}` || "/dashboard",
+        }),
       });
       const payload = (await response.json()) as { url?: string; error?: string };
       if (!response.ok || !payload.url) {
@@ -145,7 +172,6 @@ export function BetaStatusProvider({ children }: { children: React.ReactNode }) 
   });
   const allowed = !user || phase === "open";
   const statusReady =
-    !SHOW_BETA_WAITLIST ||
     !user ||
     entitlement.role === "admin" ||
     (ready && !authLoading);

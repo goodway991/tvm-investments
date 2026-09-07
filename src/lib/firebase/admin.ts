@@ -867,14 +867,42 @@ function takeMemoryQuota(
   return { ok: true };
 }
 
+export async function findUidByDiscordId(discordId: string): Promise<string | null> {
+  const db = await getAdminDb();
+  if (!db || !discordId.trim()) return null;
+  const snap = await db
+    .collection("beta_status")
+    .where("discordId", "==", discordId.trim())
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  return snap.docs[0].id;
+}
+
 export async function getEntitlementForUid(uid: string) {
   const db = await getAdminDb();
   if (!db) return null;
   const snap = await db.collection("entitlements").doc(uid).get();
   if (!snap.exists) return null;
   const data = snap.data() || {};
-  const plan: PlanId =
+  const source =
+    data.source === "stripe" || data.source === "paid"
+      ? ("stripe" as const)
+      : data.source === "comp"
+        ? ("comp" as const)
+        : data.source === "beta_code"
+          ? ("beta_code" as const)
+          : ("none" as const);
+  const betaExpiresAt =
+    typeof data.betaExpiresAt === "number"
+      ? data.betaExpiresAt
+      : data.betaExpiresAt?.toMillis?.() ?? 0;
+  let plan: PlanId =
     data.plan === "ultra" ? "ultra" : data.plan === "pro" ? "pro" : "free";
+  if (source === "beta_code" && plan === "ultra") {
+    const { ultraBetaStillActive } = await import("@/lib/beta-codes");
+    if (!ultraBetaStillActive(betaExpiresAt)) plan = "free";
+  }
   return {
     uid,
     role: data.role === "admin" ? ("admin" as const) : ("client" as const),
@@ -896,18 +924,8 @@ export async function getEntitlementForUid(uid: string) {
           : "",
     stripePendingUntil:
       typeof data.stripePendingUntil === "number" ? data.stripePendingUntil : 0,
-    source:
-      data.source === "stripe" || data.source === "paid"
-        ? ("stripe" as const)
-        : data.source === "comp"
-          ? ("comp" as const)
-          : data.source === "beta_code"
-            ? ("beta_code" as const)
-            : ("none" as const),
-    betaExpiresAt:
-      typeof data.betaExpiresAt === "number"
-        ? data.betaExpiresAt
-        : data.betaExpiresAt?.toMillis?.() ?? 0,
+    source,
+    betaExpiresAt,
   };
 }
 

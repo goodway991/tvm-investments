@@ -53,10 +53,10 @@ function UnlinkIcon({ className }: { className?: string }) {
 }
 
 const SETTINGS_PERKS = [
-  "Linked member access on our Discord",
-  "Community channels as they open",
-  "Beta status synced to your account",
-  "Announcements and desk updates",
+  'Get a special "Website Linked" role',
+  "Unlock Pro / Ultra linked roles when you qualify",
+  "Access exclusive channels as they open",
+  "Sync desk status with Discord",
 ];
 
 export function DiscordConnectPanel({
@@ -85,8 +85,16 @@ export function DiscordConnectPanel({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("discord") === "ready") setPendingReady(true);
-    if (params.get("discord") === "error") {
+    const discord = params.get("discord");
+    if (discord === "ready") setPendingReady(true);
+    if (discord === "linked") {
+      // OAuth finished; Firestore snapshot will flip to the linked card.
+      params.delete("discord");
+      params.delete("discord_reason");
+      const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+      window.history.replaceState({}, "", next);
+    }
+    if (discord === "error") {
       setError(params.get("discord_reason") || "Discord connection failed. Try again.");
     }
   }, []);

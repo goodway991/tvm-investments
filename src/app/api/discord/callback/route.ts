@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   addDiscordUserToGuild,
+  discordDisplayName,
   discordPendingCookie,
   exchangeDiscordCode,
   fetchDiscordUser,
@@ -10,6 +11,11 @@ import {
   verifyOAuthState,
 } from "@/lib/discord-oauth";
 import { linkDiscordAccount } from "@/lib/firebase/admin";
+import {
+  linkedRoleSuccessHtml,
+  pushDiscordRoleConnection,
+  resolveDiscordRoleMetadata,
+} from "@/lib/discord-linked-roles";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +31,40 @@ function redirectWithStatus(
   return NextResponse.redirect(url);
 }
 
+function linkedRoleErrorHtml(message: string) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Linked roles · TVM Investments</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: linear-gradient(180deg,#0a0c14,#07090f); color: #f8faff;
+    }
+    .card {
+      width: min(28rem, calc(100vw - 2rem)); padding: 1.75rem 1.5rem;
+      border-radius: 24px; background: rgba(20,28,46,.92);
+      border: 1px solid rgba(180,210,255,.18); text-align: center;
+    }
+    h1 { margin: 0; font-size: 1.25rem; }
+    p { margin: 0.75rem 0 0; color: #c6d4e8; line-height: 1.5; }
+    a { color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Verification didn’t finish</h1>
+    <p>${message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+    <p><a href="https://tvminvest.com/dashboard/settings?tab=discord">Link Discord in TVM Settings</a>, then try again from Discord.</p>
+  </main>
+</body>
+</html>`;
+}
+
 export async function GET(request: NextRequest) {
   const config = getDiscordOAuthConfig();
   if (!config) {
@@ -35,18 +75,48 @@ export async function GET(request: NextRequest) {
   const stateRaw = request.nextUrl.searchParams.get("state");
   const oauthError = request.nextUrl.searchParams.get("error");
 
+  const state = stateRaw ? verifyOAuthState(stateRaw) : null;
+  const linkedRole = state?.flow === "linked_role";
+
   if (oauthError) {
+    if (linkedRole) {
+      return new NextResponse(linkedRoleErrorHtml(oauthError), {
+        status: 400,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
     return redirectWithStatus(request, "/login", "error", oauthError);
   }
 
-  const state = stateRaw ? verifyOAuthState(stateRaw) : null;
   if (!code || !state) {
+    if (linkedRole || stateRaw) {
+      return new NextResponse(linkedRoleErrorHtml("Invalid or expired Discord session."), {
+        status: 400,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
     return redirectWithStatus(request, state?.returnTo || "/login", "error", "invalid_state");
   }
 
   try {
     const accessToken = await exchangeDiscordCode(code, config);
     const discordUser = await fetchDiscordUser(accessToken);
+
+    if (linkedRole) {
+      const metadata = await resolveDiscordRoleMetadata(discordUser.id);
+      await pushDiscordRoleConnection(accessToken, discordUser, metadata);
+      return new NextResponse(
+        linkedRoleSuccessHtml({
+          displayName: discordDisplayName(discordUser),
+          metadata,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+
     const payload = toDiscordLinkPayload(discordUser, accessToken);
 
     try {
@@ -74,6 +144,12 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     const reason = error instanceof Error ? error.message : "oauth_failed";
+    if (linkedRole) {
+      return new NextResponse(linkedRoleErrorHtml(reason), {
+        status: 500,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
     return redirectWithStatus(request, state.returnTo, "error", reason.slice(0, 120));
   }
 }

@@ -168,7 +168,7 @@ function StockScene() {
 
 function WatchlistScene() {
   return (
-    <WindowFrame title="Watchlist pulse">
+    <WindowFrame title="Watchlist Pulse">
       <div className="tour-watch-stage relative flex h-full flex-col gap-2.5 p-4">
         {["AAPL", "MSFT", "GOOGL"].map((symbol, index) => (
           <div

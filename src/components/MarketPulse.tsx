@@ -25,7 +25,7 @@ const rangeCopy: Record<ChartRange, string> = {
   year: "Month-end closes this year",
 };
 
-export const WATCHLIST_PULSE_TITLE = "Watchlist pulse";
+export const WATCHLIST_PULSE_TITLE = "Watchlist Pulse";
 
 type PulseStock = {
   symbol: string;
@@ -276,11 +276,7 @@ export function MarketPulse({
                   {compactCompanyName(current.name)}
                 </p>
               </button>
-            ) : (
-              <span className="font-display text-base font-bold text-violet">
-                Watchlist
-              </span>
-            )}
+            ) : null}
           </div>
           <p className="mt-1 text-xs text-ink-soft">
             {predicting

@@ -157,7 +157,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     how: "Type a symbol or company, then Search. It opens Watchlist with that query so you can add it.",
   },
   "watchlist-pulse": {
-    title: "Watchlist pulse",
+    title: "Watchlist Pulse",
     what: "Live charts for names on your watchlist, plus a Pro two-week path using closes and a short-term model.",
     how: "Flip with the arrows. Tap the symbol to open the sheet. Pro can tap Predict for the two-week path.",
   },

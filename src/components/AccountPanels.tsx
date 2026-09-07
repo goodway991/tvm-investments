@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
@@ -26,6 +27,7 @@ import { useSiteEra } from "@/components/SiteEraProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
+import { UltraCongratsModal } from "@/components/UltraCongratsModal";
 import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
 import { DiscordConnectPanel } from "@/components/DiscordConnectPanel";
 import { authedFetch } from "@/lib/authed-fetch";
@@ -375,6 +377,7 @@ export function SettingsPanel() {
     updateDisplayName,
     updateLocale,
   } = useAuth();
+  const router = useRouter();
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
   const { resolved, setAppearance } = useTheme();
@@ -399,6 +402,7 @@ export function SettingsPanel() {
   const [betaBusy, setBetaBusy] = useState(false);
   const [betaError, setBetaError] = useState("");
   const [betaMessage, setBetaMessage] = useState("");
+  const [showUltraCongrats, setShowUltraCongrats] = useState(false);
   type SettingsTab = "account" | "profile" | "features" | "discord" | "plan";
   const tabs: { id: SettingsTab; label: string }[] = [
     { id: "account", label: "Account" },
@@ -979,6 +983,7 @@ export function SettingsPanel() {
                               `Ultra Beta Tester — Expires ${ULTRA_BETA_EXPIRES_LABEL}`,
                           );
                           setBetaCode("");
+                          setShowUltraCongrats(true);
                         })
                         .catch((redeemError: unknown) => {
                           setBetaError(
@@ -1009,6 +1014,13 @@ export function SettingsPanel() {
           </div>
         ) : null}
       </div>
+      <UltraCongratsModal
+        open={showUltraCongrats}
+        onEnter={() => {
+          setShowUltraCongrats(false);
+          router.push("/dashboard");
+        }}
+      />
     </div>
   );
 }
