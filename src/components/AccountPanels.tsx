@@ -377,7 +377,7 @@ export function SettingsPanel() {
   } = useAuth();
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
-  const { appearance, resolved, setAppearance } = useTheme();
+  const { resolved, setAppearance } = useTheme();
   const { density, setDensity, openCustomize } = useExperience();
   const { enabled: bogenEnabled, setEnabled: setBogenEnabled } = useBogen();
   const { era, rewind, archiveDate } = useSiteEra();
@@ -399,6 +399,15 @@ export function SettingsPanel() {
   const [betaBusy, setBetaBusy] = useState(false);
   const [betaError, setBetaError] = useState("");
   const [betaMessage, setBetaMessage] = useState("");
+  type SettingsTab = "account" | "profile" | "features" | "discord" | "plan";
+  const tabs: { id: SettingsTab; label: string }[] = [
+    { id: "account", label: "Account" },
+    { id: "profile", label: "Profile" },
+    { id: "features", label: "Features" },
+    { id: "discord", label: "Discord" },
+    { id: "plan", label: "Plan" },
+  ];
+  const [tab, setTab] = useState<SettingsTab>("account");
   const locationSaved =
     isValidCountry(profile?.country || "") &&
     isValidTimeZone(profile?.timeZone || "");
@@ -409,6 +418,29 @@ export function SettingsPanel() {
     if (profile?.country) setCountry(profile.country);
     if (profile?.timeZone) setTimeZone(profile.timeZone);
   }, [profile?.country, profile?.timeZone]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("tab");
+    if (
+      next === "account" ||
+      next === "profile" ||
+      next === "features" ||
+      next === "discord" ||
+      next === "plan"
+    ) {
+      setTab(next);
+    }
+  }, []);
+
+  function selectTab(next: SettingsTab) {
+    setTab(next);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", next);
+    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  }
 
   function startEditName() {
     setFirstName(profile?.firstName || "");
@@ -438,497 +470,545 @@ export function SettingsPanel() {
     window.location.href = "/login";
   }
 
+  const displayName = resolveAccountName({
+    profileName: profile?.displayName,
+    authName: user?.displayName,
+    email: user?.email,
+  });
+
   return (
     <div className="glass-strong rounded-[24px] p-6">
       <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-        <BogenHeading id="settings">Account</BogenHeading>
+        <BogenHeading id="settings">Settings</BogenHeading>
       </p>
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-5">
-        <div className="min-w-0 flex-1">
-          {editingName ? (
-            <div>
-              <div className="grid max-w-md grid-cols-2 gap-3">
-                <label className="block min-w-0">
-                  <span className="mb-1.5 block text-xs font-medium text-ink-soft">
-                    First name
-                  </span>
-                  <input
-                    type="text"
-                    maxLength={40}
-                    value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
-                    placeholder="First"
-                    className="field w-full rounded-2xl px-4 py-2.5 text-[15px] text-ink"
-                  />
-                </label>
-                <label className="block min-w-0">
-                  <span className="mb-1.5 block text-xs font-medium text-ink-soft">
-                    Last name
-                  </span>
-                  <input
-                    type="text"
-                    maxLength={40}
-                    value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
-                    placeholder="Last"
-                    className="field w-full rounded-2xl px-4 py-2.5 text-[15px] text-ink"
-                  />
-                </label>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void saveName()}
-                  disabled={nameBusy}
-                  className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  {nameBusy ? "Saving…" : "Save name"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingName(false)}
-                  disabled={nameBusy}
-                  className="rounded-full px-4 py-2 text-sm font-semibold text-ink-soft"
-                >
-                  Cancel
-                </button>
-              </div>
-              {nameError ? (
-                <p className="mt-2 text-sm text-coral" role="alert">
-                  {nameError}
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <h2 className="font-display text-2xl font-bold text-ink">
-                {ultraName ? (
-                  <UltraShinePhrase>
-                    {resolveAccountName({
-                      profileName: profile?.displayName,
-                      authName: user?.displayName,
-                      email: user?.email,
-                    })}
-                  </UltraShinePhrase>
-                ) : glowName ? (
-                  <ProGlowPhrase>
-                    {resolveAccountName({
-                      profileName: profile?.displayName,
-                      authName: user?.displayName,
-                      email: user?.email,
-                    })}
-                  </ProGlowPhrase>
-                ) : (
-                  resolveAccountName({
-                    profileName: profile?.displayName,
-                    authName: user?.displayName,
-                    email: user?.email,
-                  })
-                )}
-              </h2>
-              <button
-                type="button"
-                onClick={startEditName}
-                className="grid h-9 w-9 place-items-center rounded-full text-violet hover:bg-violet/10"
-                aria-label="Edit first and last name"
-              >
-                <TVMIcon name="pencil" size={16} />
-              </button>
-            </div>
-          )}
-          <p className="mt-1 text-sm text-ink-soft">{user?.email}</p>
-        </div>
-        {entitlement.plan === "ultra" ? (
-          <span className="ultra-profile-glow rounded-full px-4 py-2 text-sm font-semibold">
-            <UltraShinePhrase>Ultra</UltraShinePhrase>
-          </span>
-        ) : entitlement.plan === "pro" ? (
-          <span className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold">
-            <ProGlowText>Pro</ProGlowText>
-          </span>
-        ) : (
-          <span className="rounded-full border border-ink/10 px-4 py-2 text-sm font-semibold text-ink-soft">
-            Free
-          </span>
-        )}
-      </div>
+      <h2 className="mt-2 font-display text-2xl font-bold text-ink">Settings</h2>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl bg-surface p-4">
-          <p className="text-xs text-ink-soft">Watched stocks</p>
-          <p className="mt-1 font-display text-2xl font-bold text-ink">
-            {watchlist.symbols.length}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-surface p-4">
-          <p className="text-xs text-ink-soft">Portfolio positions</p>
-          <p className="mt-1 font-display text-2xl font-bold text-ink">
-            {positions.length}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-surface p-4">
-          <p className="text-xs text-ink-soft">Watchlist limit</p>
-          <p className="mt-1 font-display text-2xl font-bold text-ink">
-            {entitlement.watchlistLimit}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-        <p className="font-semibold text-ink">Plan</p>
-        <p className="mt-1">
-          You are on{" "}
-          {entitlement.plan === "ultra" ? (
-            <UltraShinePhrase>Ultra</UltraShinePhrase>
-          ) : (
-            <span className="font-semibold capitalize text-ink">{entitlement.plan}</span>
-          )}
-          {entitlement.stripeCancelAtPeriodEnd && entitlement.stripeAccessUntil
-            ? ` · paid access through ${new Date(
-                entitlement.stripeAccessUntil * 1000,
-              ).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}`
-            : ""}
-          .
-        </p>
-        <button
-          type="button"
-          onClick={() => openUpgrade()}
-          className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
-        >
-          View plan
-        </button>
-        {entitlement.source === "beta_code" &&
-        entitlement.plan === "ultra" &&
-        entitlement.betaExpiresAt > 0 ? (
-          <p className="mt-3 text-sm font-medium text-ink">
-            Ultra Beta Tester — Expires {ULTRA_BETA_EXPIRES_LABEL}
-          </p>
-        ) : null}
-      </div>
-
-      {entitlement.role !== "admin" &&
-      entitlement.source !== "stripe" &&
-      !(entitlement.source === "beta_code" && entitlement.plan === "ultra") ? (
-        <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-          <p className="font-semibold text-ink">Redeem Ultra code</p>
-          <p className="mt-1">
-            Paste your Ultra beta code for Ultra access through{" "}
-            {ULTRA_BETA_EXPIRES_LABEL}.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <input
-              value={betaCode}
-              onChange={(event) => setBetaCode(event.target.value)}
-              placeholder="Paste Ultra code"
-              className="field min-w-[180px] flex-1 rounded-2xl px-4 py-2.5 text-sm text-ink"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              type="button"
-              disabled={betaBusy || !betaCode.trim()}
-              onClick={() => {
-                setBetaBusy(true);
-                setBetaError("");
-                setBetaMessage("");
-                void authedFetch("/api/beta/redeem", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ code: betaCode }),
-                })
-                  .then(async (response) => {
-                    const payload = (await response.json()) as {
-                      error?: string;
-                      label?: string;
-                    };
-                    if (!response.ok) {
-                      throw new Error(payload.error || "Unable to redeem that code.");
-                    }
-                    setBetaMessage(
-                      payload.label ||
-                        `Ultra Beta Tester — Expires ${ULTRA_BETA_EXPIRES_LABEL}`,
-                    );
-                    setBetaCode("");
-                  })
-                  .catch((redeemError: unknown) => {
-                    setBetaError(
-                      redeemError instanceof Error
-                        ? redeemError.message
-                        : "Unable to redeem that code.",
-                    );
-                  })
-                  .finally(() => setBetaBusy(false));
-              }}
-              className="glass-violet rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {betaBusy ? "Redeeming…" : "Redeem"}
-            </button>
-          </div>
-          {betaError ? (
-            <p className="mt-2 text-sm text-coral" role="alert">
-              {betaError}
-            </p>
-          ) : null}
-          {betaMessage ? (
-            <p className="mt-2 text-sm text-emerald-400" role="status">
-              {betaMessage}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {showTvm10Labs() ? (
-        <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-          <p className="font-semibold text-ink">Country and time zone</p>
-          {showLocalePicker ? (
-            <>
-              <p className="mt-1">
-                <ProGlowText>
-                  Saved to your account. Ultra uses 6:00 in this zone for good
-                  morning, including the first login after 6:00 if you missed it.
-                </ProGlowText>
-              </p>
-              <div className="mt-4">
-                <LocalePicker
-                  country={country}
-                  timeZone={timeZone}
-                  onCountry={setCountry}
-                  onTimeZone={setTimeZone}
-                />
-              </div>
-              {localeError ? (
-                <p className="mt-2 text-sm text-coral" role="alert">
-                  {localeError}
-                </p>
-              ) : null}
-              <button
-                type="button"
-                disabled={localeBusy}
-                onClick={() => {
-                  setLocaleBusy(true);
-                  setLocaleError("");
-                  void updateLocale(country, timeZone)
-                    .then(() => setEditingLocale(false))
-                    .catch((saveError: unknown) => {
-                      setLocaleError(
-                        saveError instanceof Error
-                          ? saveError.message
-                          : "Unable to save your location.",
-                      );
-                    })
-                    .finally(() => setLocaleBusy(false));
-                }}
-                className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {localeBusy ? "Saving…" : "Save location"}
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="mt-1">
-                {savedCountry?.name || profile?.country}
-                {profile?.timeZone
-                  ? ` · ${profile.timeZone.replaceAll("_", " ")}`
-                  : ""}
-              </p>
-              <p className="glass-violet mt-3 inline-flex rounded-full px-5 py-2.5 text-sm font-semibold text-white">
-                Location set!
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setLocaleError("");
-                  setEditingLocale(true);
-                }}
-                className="mt-2 block text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
-              >
-                change location
-              </button>
-            </>
-          )}
-        </div>
-      ) : null}
-
-      {era.features.darkMode ? (
-        <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-          <p className="flex items-center gap-2 font-semibold text-ink">
-            Display appearance
-            <NewBadge feature="appearance" />
-          </p>
-          <p className="mt-1">
-            Switch between light and a glowy blue dark mode. The change stays on
-            this browser.
-          </p>
-          <div className="mt-4 flex items-center gap-3">
-            <span className={`text-sm font-semibold ${resolved === "light" ? "text-ink" : "text-ink-soft"}`}>
-              Light
-            </span>
-            <TvmSwitch
-                checked={resolved === "dark"}
-                onCheckedChange={(dark) => setAppearance(dark ? "dark" : "light")}
-                aria-label="Dark mode"
-              />
-            <span className={`text-sm font-semibold ${resolved === "dark" ? "text-ink" : "text-ink-soft"}`}>
-              Dark
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      {!rewind && showBeta3Labs() ? (
-      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-        <p className="flex items-center gap-2 font-semibold text-ink">
-          Dashboard layout
-          <NewBadge feature="density" />
-        </p>
-        <p className="mt-1">
-          Clean keeps today’s pick, your book, and a short mover list. Normal is
-          the full dashboard.
-        </p>
-        <div className="mt-4 flex items-center gap-3">
-          <span className={`text-sm font-semibold ${density === "clean" ? "text-ink" : "text-ink-soft"}`}>
-            Clean
-          </span>
-          <TvmSwitch
-            checked={density === "normal"}
-            onCheckedChange={(normal) => setDensity(normal ? "normal" : "clean")}
-            aria-label="Normal dashboard layout"
-          />
-          <span className={`text-sm font-semibold ${density === "normal" ? "text-ink" : "text-ink-soft"}`}>
-            Normal
-          </span>
-        </div>
-        {showCustomizeExperience(entitlement.role) ? (
-          <>
-            <button
-              type="button"
-              onClick={() => openCustomize()}
-              className="mt-3 text-sm font-semibold text-violet"
-            >
-              Customize experience
-            </button>
-            <button
-              type="button"
-              onClick={() => openCustomize()}
-              className="glass-violet mt-3 block rounded-full px-5 py-2.5 text-sm font-semibold text-white"
-            >
-              Let’s get you started
-            </button>
-          </>
-        ) : null}
-      </div>
-      ) : null}
-
-      {era.features.bogen ? (
-        <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-          <p className="flex items-center gap-2 font-semibold text-ink">
-            Bogen mode
-            <NewBadge feature="bogen" />
-          </p>
-          <p className="mt-1">
-            Show a question mark next to each feature. Tap one to read what it
-            does and how to use it.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setBogenEnabled(true)}
-              className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
-                bogenEnabled
-                  ? "glass-violet text-white"
-                  : "border border-ink/10 text-ink-soft hover:text-ink"
-              }`}
-            >
-              On
-            </button>
-            <button
-              type="button"
-              onClick={() => setBogenEnabled(false)}
-              className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
-                !bogenEnabled
-                  ? "glass-violet text-white"
-                  : "border border-ink/10 text-ink-soft hover:text-ink"
-              }`}
-            >
-              Off
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-        <p className="font-semibold text-ink">Version history</p>
-        <p className="mt-1">
-          TVM Investments is in Beta. Open a version to read what landed.
-        </p>
-        <div className="mt-3 space-y-2">
-          {[...RELEASES]
-            .reverse()
-            .filter((release) => {
-              if (!showTvm10Labs() && release.id === "tvm-1") {
-                return false;
-              }
-              return releaseVisibleOn(
-                RELEASE_ISO[release.id] ?? "9999-99-99",
-                archiveDate,
-              );
-            })
-            .map((release) => (
-              <VersionCard
-                key={release.id}
-                release={release}
-                current={!rewind && release.id === CURRENT_RELEASE_ID}
-              />
-            ))}
-        </div>
-      </div>
-
-      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-        <p className="font-semibold text-ink">
-          <BogenHeading id="virtual-tour">Virtual Tour</BogenHeading>
-        </p>
-        <p className="mt-1">
-          Replay the walkthrough — each feature in motion, including the logo
-          menu.
-        </p>
-        <button
-          type="button"
-          onClick={() => openTour()}
-          className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
-        >
-          Virtual Tour
-        </button>
-      </div>
-
-      <DiscordConnectPanel variant="settings" returnTo="/dashboard/settings" />
-
-      <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-        <p className="font-semibold text-ink">Legal &amp; privacy</p>
-        <p className="mt-1">
-          Your account, watchlist, and portfolio are private to you. Passwords are
-          hashed by Firebase Auth and never stored in Firestore. Data is encrypted in
-          transit (TLS) and at rest by Google Cloud.
-        </p>
-        <nav className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-violet">
-          <Link href="/terms">Terms of Service</Link>
-          <Link href="/privacy">Privacy Policy</Link>
-          <Link href="/refunds">Refunds</Link>
-          <Link href="/disclaimer">Risk Disclaimer</Link>
-        </nav>
-      </div>
-
-      <button
-        type="button"
-        onClick={handleLogout}
-        disabled={loggingOut}
-        className="mt-6 rounded-full border border-coral/30 px-5 py-2.5 text-sm font-semibold text-coral transition-colors hover:bg-coral/10 disabled:opacity-50"
+      <div
+        className="mt-5 flex flex-wrap gap-2"
+        role="tablist"
+        aria-label="Settings sections"
       >
-        {loggingOut ? "Logging out…" : "Log out"}
-      </button>
+        {tabs.map((item) => {
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => selectTab(item.id)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                active
+                  ? "glass-violet text-white"
+                  : "bg-surface text-ink-soft hover:text-ink"
+              }`}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-6" role="tabpanel">
+        {tab === "account" ? (
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-5">
+              <div className="min-w-0 flex-1">
+                {editingName ? (
+                  <div>
+                    <div className="grid max-w-md grid-cols-2 gap-3">
+                      <label className="block min-w-0">
+                        <span className="mb-1.5 block text-xs font-medium text-ink-soft">
+                          First name
+                        </span>
+                        <input
+                          type="text"
+                          maxLength={40}
+                          value={firstName}
+                          onChange={(event) => setFirstName(event.target.value)}
+                          placeholder="First"
+                          className="field w-full rounded-2xl px-4 py-2.5 text-[15px] text-ink"
+                        />
+                      </label>
+                      <label className="block min-w-0">
+                        <span className="mb-1.5 block text-xs font-medium text-ink-soft">
+                          Last name
+                        </span>
+                        <input
+                          type="text"
+                          maxLength={40}
+                          value={lastName}
+                          onChange={(event) => setLastName(event.target.value)}
+                          placeholder="Last"
+                          className="field w-full rounded-2xl px-4 py-2.5 text-[15px] text-ink"
+                        />
+                      </label>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void saveName()}
+                        disabled={nameBusy}
+                        className="glass-violet rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                      >
+                        {nameBusy ? "Saving…" : "Save name"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingName(false)}
+                        disabled={nameBusy}
+                        className="rounded-full px-4 py-2 text-sm font-semibold text-ink-soft"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {nameError ? (
+                      <p className="mt-2 text-sm text-coral" role="alert">
+                        {nameError}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display text-2xl font-bold text-ink">
+                      {ultraName ? (
+                        <UltraShinePhrase>{displayName}</UltraShinePhrase>
+                      ) : glowName ? (
+                        <ProGlowPhrase>{displayName}</ProGlowPhrase>
+                      ) : (
+                        displayName
+                      )}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={startEditName}
+                      className="grid h-9 w-9 place-items-center rounded-full text-violet hover:bg-violet/10"
+                      aria-label="Edit first and last name"
+                    >
+                      <TVMIcon name="pencil" size={16} />
+                    </button>
+                  </div>
+                )}
+                <p className="mt-1 text-sm text-ink-soft">{user?.email}</p>
+              </div>
+              {entitlement.plan === "ultra" ? (
+                <span className="ultra-profile-glow rounded-full px-4 py-2 text-sm font-semibold">
+                  <UltraShinePhrase>Ultra</UltraShinePhrase>
+                </span>
+              ) : entitlement.plan === "pro" ? (
+                <span className="pro-profile-glow rounded-full bg-transparent px-4 py-2 text-sm font-semibold">
+                  <ProGlowText>Pro</ProGlowText>
+                </span>
+              ) : (
+                <span className="rounded-full border border-ink/10 px-4 py-2 text-sm font-semibold text-ink-soft">
+                  Free
+                </span>
+              )}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-surface p-4">
+                <p className="text-xs text-ink-soft">Watched stocks</p>
+                <p className="mt-1 font-display text-2xl font-bold text-ink">
+                  {watchlist.symbols.length}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-surface p-4">
+                <p className="text-xs text-ink-soft">Portfolio positions</p>
+                <p className="mt-1 font-display text-2xl font-bold text-ink">
+                  {positions.length}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-surface p-4">
+                <p className="text-xs text-ink-soft">Watchlist limit</p>
+                <p className="mt-1 font-display text-2xl font-bold text-ink">
+                  {entitlement.watchlistLimit}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+              <p className="font-semibold text-ink">Legal &amp; privacy</p>
+              <p className="mt-1">
+                Your account, watchlist, and portfolio are private to you. Passwords are
+                hashed by Firebase Auth and never stored in Firestore. Data is encrypted in
+                transit (TLS) and at rest by Google Cloud.
+              </p>
+              <nav className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-violet">
+                <Link href="/terms">Terms of Service</Link>
+                <Link href="/privacy">Privacy Policy</Link>
+                <Link href="/refunds">Refunds</Link>
+                <Link href="/disclaimer">Risk Disclaimer</Link>
+              </nav>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="rounded-full border border-coral/30 px-5 py-2.5 text-sm font-semibold text-coral transition-colors hover:bg-coral/10 disabled:opacity-50"
+            >
+              {loggingOut ? "Logging out…" : "Log out"}
+            </button>
+          </div>
+        ) : null}
+
+        {tab === "profile" ? (
+          <div className="space-y-6">
+            {showTvm10Labs() ? (
+              <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+                <p className="font-semibold text-ink">Country and time zone</p>
+                {showLocalePicker ? (
+                  <>
+                    <p className="mt-1">
+                      <ProGlowText>
+                        Saved to your account. Ultra uses 6:00 in this zone for good
+                        morning, including the first login after 6:00 if you missed it.
+                      </ProGlowText>
+                    </p>
+                    <div className="mt-4">
+                      <LocalePicker
+                        country={country}
+                        timeZone={timeZone}
+                        onCountry={setCountry}
+                        onTimeZone={setTimeZone}
+                      />
+                    </div>
+                    {localeError ? (
+                      <p className="mt-2 text-sm text-coral" role="alert">
+                        {localeError}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={localeBusy}
+                      onClick={() => {
+                        setLocaleBusy(true);
+                        setLocaleError("");
+                        void updateLocale(country, timeZone)
+                          .then(() => setEditingLocale(false))
+                          .catch((saveError: unknown) => {
+                            setLocaleError(
+                              saveError instanceof Error
+                                ? saveError.message
+                                : "Unable to save your location.",
+                            );
+                          })
+                          .finally(() => setLocaleBusy(false));
+                      }}
+                      className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                    >
+                      {localeBusy ? "Saving…" : "Save location"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-1">
+                      {savedCountry?.name || profile?.country}
+                      {profile?.timeZone
+                        ? ` · ${profile.timeZone.replaceAll("_", " ")}`
+                        : ""}
+                    </p>
+                    <p className="glass-violet mt-3 inline-flex rounded-full px-5 py-2.5 text-sm font-semibold text-white">
+                      Location set!
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLocaleError("");
+                        setEditingLocale(true);
+                      }}
+                      className="mt-2 block text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
+                    >
+                      change location
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-ink-soft">
+                Profile location controls unlock with the Ultra morning desk.
+              </p>
+            )}
+          </div>
+        ) : null}
+
+        {tab === "features" ? (
+          <div className="space-y-6">
+            {era.features.darkMode ? (
+              <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+                <p className="flex items-center gap-2 font-semibold text-ink">
+                  Display appearance
+                  <NewBadge feature="appearance" />
+                </p>
+                <p className="mt-1">
+                  Switch between light and a glowy blue dark mode. The change stays on
+                  this browser.
+                </p>
+                <div className="mt-4 flex items-center gap-3">
+                  <span
+                    className={`text-sm font-semibold ${resolved === "light" ? "text-ink" : "text-ink-soft"}`}
+                  >
+                    Light
+                  </span>
+                  <TvmSwitch
+                    checked={resolved === "dark"}
+                    onCheckedChange={(dark) => setAppearance(dark ? "dark" : "light")}
+                    aria-label="Dark mode"
+                  />
+                  <span
+                    className={`text-sm font-semibold ${resolved === "dark" ? "text-ink" : "text-ink-soft"}`}
+                  >
+                    Dark
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            {!rewind && showBeta3Labs() ? (
+              <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+                <p className="flex items-center gap-2 font-semibold text-ink">
+                  Dashboard layout
+                  <NewBadge feature="density" />
+                </p>
+                <p className="mt-1">
+                  Clean keeps today’s pick, your book, and a short mover list. Normal is
+                  the full dashboard.
+                </p>
+                <div className="mt-4 flex items-center gap-3">
+                  <span
+                    className={`text-sm font-semibold ${density === "clean" ? "text-ink" : "text-ink-soft"}`}
+                  >
+                    Clean
+                  </span>
+                  <TvmSwitch
+                    checked={density === "normal"}
+                    onCheckedChange={(normal) => setDensity(normal ? "normal" : "clean")}
+                    aria-label="Normal dashboard layout"
+                  />
+                  <span
+                    className={`text-sm font-semibold ${density === "normal" ? "text-ink" : "text-ink-soft"}`}
+                  >
+                    Normal
+                  </span>
+                </div>
+                {showCustomizeExperience(entitlement.role) ? (
+                  <button
+                    type="button"
+                    onClick={() => openCustomize()}
+                    className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+                  >
+                    Customize experience
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {era.features.bogen ? (
+              <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+                <p className="flex items-center gap-2 font-semibold text-ink">
+                  Bogen mode
+                  <NewBadge feature="bogen" />
+                </p>
+                <p className="mt-1">
+                  Show a question mark next to each feature. Tap one to read what it
+                  does and how to use it.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBogenEnabled(true)}
+                    className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
+                      bogenEnabled
+                        ? "glass-violet text-white"
+                        : "border border-ink/10 text-ink-soft hover:text-ink"
+                    }`}
+                  >
+                    On
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBogenEnabled(false)}
+                    className={`rounded-full px-5 py-2.5 text-sm font-semibold ${
+                      !bogenEnabled
+                        ? "glass-violet text-white"
+                        : "border border-ink/10 text-ink-soft hover:text-ink"
+                    }`}
+                  >
+                    Off
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+              <p className="font-semibold text-ink">Version history</p>
+              <p className="mt-1">
+                TVM Investments is in Beta. Open a version to read what landed.
+              </p>
+              <div className="mt-3 space-y-2">
+                {[...RELEASES]
+                  .reverse()
+                  .filter((release) => {
+                    if (!showTvm10Labs() && release.id === "tvm-1") {
+                      return false;
+                    }
+                    return releaseVisibleOn(
+                      RELEASE_ISO[release.id] ?? "9999-99-99",
+                      archiveDate,
+                    );
+                  })
+                  .map((release) => (
+                    <VersionCard
+                      key={release.id}
+                      release={release}
+                      current={!rewind && release.id === CURRENT_RELEASE_ID}
+                    />
+                  ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+              <p className="font-semibold text-ink">
+                <BogenHeading id="virtual-tour">Virtual Tour</BogenHeading>
+              </p>
+              <p className="mt-1">
+                Replay the walkthrough — each feature in motion, including the logo
+                menu.
+              </p>
+              <button
+                type="button"
+                onClick={() => openTour()}
+                className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+              >
+                Virtual Tour
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {tab === "discord" ? (
+          <DiscordConnectPanel
+            variant="settings"
+            returnTo="/dashboard/settings?tab=discord"
+          />
+        ) : null}
+
+        {tab === "plan" ? (
+          <div className="space-y-6">
+            <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+              <p className="font-semibold text-ink">Plan</p>
+              <p className="mt-1">
+                You are on{" "}
+                {entitlement.plan === "ultra" ? (
+                  <UltraShinePhrase>Ultra</UltraShinePhrase>
+                ) : (
+                  <span className="font-semibold capitalize text-ink">
+                    {entitlement.plan}
+                  </span>
+                )}
+                {entitlement.stripeCancelAtPeriodEnd && entitlement.stripeAccessUntil
+                  ? ` · paid access through ${new Date(
+                      entitlement.stripeAccessUntil * 1000,
+                    ).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}`
+                  : ""}
+                .
+              </p>
+              <button
+                type="button"
+                onClick={() => openUpgrade()}
+                className="glass-violet mt-3 rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+              >
+                View plan
+              </button>
+              {entitlement.source === "beta_code" &&
+              entitlement.plan === "ultra" &&
+              entitlement.betaExpiresAt > 0 ? (
+                <p className="mt-3 text-sm font-medium text-ink">
+                  Ultra Beta Tester — Expires {ULTRA_BETA_EXPIRES_LABEL}
+                </p>
+              ) : null}
+            </div>
+
+            {entitlement.role !== "admin" &&
+            entitlement.source !== "stripe" &&
+            !(entitlement.source === "beta_code" && entitlement.plan === "ultra") ? (
+              <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
+                <p className="font-semibold text-ink">Redeem Ultra code</p>
+                <p className="mt-1">
+                  Paste your Ultra beta code for Ultra access through{" "}
+                  {ULTRA_BETA_EXPIRES_LABEL}.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <input
+                    value={betaCode}
+                    onChange={(event) => setBetaCode(event.target.value)}
+                    placeholder="Paste Ultra code"
+                    className="field min-w-[180px] flex-1 rounded-2xl px-4 py-2.5 text-sm text-ink"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <button
+                    type="button"
+                    disabled={betaBusy || !betaCode.trim()}
+                    onClick={() => {
+                      setBetaBusy(true);
+                      setBetaError("");
+                      setBetaMessage("");
+                      void authedFetch("/api/beta/redeem", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ code: betaCode }),
+                      })
+                        .then(async (response) => {
+                          const payload = (await response.json()) as {
+                            error?: string;
+                            label?: string;
+                          };
+                          if (!response.ok) {
+                            throw new Error(
+                              payload.error || "Unable to redeem that code.",
+                            );
+                          }
+                          setBetaMessage(
+                            payload.label ||
+                              `Ultra Beta Tester — Expires ${ULTRA_BETA_EXPIRES_LABEL}`,
+                          );
+                          setBetaCode("");
+                        })
+                        .catch((redeemError: unknown) => {
+                          setBetaError(
+                            redeemError instanceof Error
+                              ? redeemError.message
+                              : "Unable to redeem that code.",
+                          );
+                        })
+                        .finally(() => setBetaBusy(false));
+                    }}
+                    className="glass-violet rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {betaBusy ? "Redeeming…" : "Redeem"}
+                  </button>
+                </div>
+                {betaError ? (
+                  <p className="mt-2 text-sm text-coral" role="alert">
+                    {betaError}
+                  </p>
+                ) : null}
+                {betaMessage ? (
+                  <p className="mt-2 text-sm text-emerald-400" role="status">
+                    {betaMessage}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

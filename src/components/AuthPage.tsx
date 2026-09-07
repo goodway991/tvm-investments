@@ -57,7 +57,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
     const discord = params.get("discord");
     const reason = params.get("discord_reason");
     if (discord === "ready") {
-      setMessage("Discord connected. Sign in or create your account to finish linking.");
+      setMessage("Discord linked. Sign in or create your account to finish.");
     } else if (discord === "linked") {
       setMessage("Discord account linked.");
     } else if (discord === "error") {

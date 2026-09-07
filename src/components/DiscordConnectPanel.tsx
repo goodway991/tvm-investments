@@ -8,12 +8,23 @@ import {
   discordProfileAvatarUrl,
   discordProfileDisplayName,
   discordProfileHandle,
+  type DiscordProfile,
 } from "@/lib/discord-profile";
 import { DISCORD_INVITE_URL } from "@/lib/community";
 
 type DiscordConnectPanelProps = {
   variant?: "settings" | "auth";
   returnTo?: string;
+};
+
+type PendingDiscordView = {
+  discordId: string;
+  discordUsername: string;
+  discordGlobalName: string | null;
+  discordAvatar: string | null;
+  displayName: string;
+  handle: string;
+  avatarUrl: string;
 };
 
 function DiscordMark({ className }: { className?: string }) {
@@ -27,6 +38,27 @@ function DiscordMark({ className }: { className?: string }) {
   );
 }
 
+function UnlinkIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M9.5 14.5 14.5 9.5M8 11l-1.2 1.2a3.5 3.5 0 1 0 4.95 4.95L13 16M16 13l1.2-1.2a3.5 3.5 0 1 0-4.95-4.95L11 8"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const SETTINGS_PERKS = [
+  "Linked member access on our Discord",
+  "Community channels as they open",
+  "Beta status synced to your account",
+  "Announcements and desk updates",
+];
+
 export function DiscordConnectPanel({
   variant = "settings",
   returnTo,
@@ -36,9 +68,11 @@ export function DiscordConnectPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [pendingReady, setPendingReady] = useState(false);
+  const [pendingProfile, setPendingProfile] = useState<PendingDiscordView | null>(null);
   const [configured, setConfigured] = useState(true);
   const compact = variant === "auth";
-  const targetReturnTo = returnTo || (compact ? "/login" : "/dashboard/settings");
+  const targetReturnTo =
+    returnTo || (compact ? "/login" : "/dashboard/settings?tab=discord");
   const guestAuthorizeHref = `/api/discord/authorize?guest=1&returnTo=${encodeURIComponent(targetReturnTo)}`;
 
   useEffect(() => {
@@ -56,6 +90,22 @@ export function DiscordConnectPanel({
       setError(params.get("discord_reason") || "Discord connection failed. Try again.");
     }
   }, []);
+
+  useEffect(() => {
+    if (!compact || discordConnected) return;
+    let cancelled = false;
+    void fetch("/api/discord/pending")
+      .then((response) => response.json())
+      .then((payload: { pending?: boolean; discord?: PendingDiscordView }) => {
+        if (cancelled || !payload.pending || !payload.discord) return;
+        setPendingProfile(payload.discord);
+        setPendingReady(true);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [compact, discordConnected]);
 
   async function connectSignedIn() {
     setBusy(true);
@@ -101,36 +151,114 @@ export function DiscordConnectPanel({
     return (
       <div className={compact ? "mt-6" : ""}>
         <p className="rounded-2xl bg-surface px-4 py-3 text-sm text-ink-soft">
-          Discord linking is not configured on this environment yet. Add{" "}
-          <code className="text-ink">DISCORD_CLIENT_ID</code> and{" "}
-          <code className="text-ink">DISCORD_CLIENT_SECRET</code> to{" "}
-          <code className="text-ink">.env.local</code> to test locally.
+          Discord linking is not configured on this environment yet.
         </p>
       </div>
     );
   }
 
-  const linked = discordConnected && discord;
+  const linkedProfile: DiscordProfile | null = discordConnected && discord ? discord : null;
+  const showAuthLinked = Boolean(linkedProfile || (pendingReady && pendingProfile));
 
-  return (
-    <div className={compact ? "mt-2" : "mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft"}>
-      {!compact ? (
-        <>
-          <p className="font-semibold text-ink">Discord account</p>
-          <p className="mt-1">
-            Link your Discord account to access community channels and keep your beta
-            status in sync.
-          </p>
-        </>
-      ) : null}
-
-      {linked ? (
-        <div className={compact ? "mt-4 space-y-3" : "mt-4 space-y-3"}>
-          <div className="flex items-center gap-3 rounded-2xl bg-[#5865F2]/15 px-4 py-3">
+  if (compact) {
+    return (
+      <div className="mt-4 space-y-3">
+        {showAuthLinked ? (
+          <div className="flex items-center gap-3 rounded-2xl border border-[#5865F2]/25 bg-[#5865F2]/15 px-4 py-3">
             <div className="relative shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={discordProfileAvatarUrl(discord)}
+                src={
+                  linkedProfile
+                    ? discordProfileAvatarUrl(linkedProfile)
+                    : pendingProfile!.avatarUrl
+                }
+                alt=""
+                width={44}
+                height={44}
+                className="h-11 w-11 rounded-full object-cover"
+              />
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] text-white">
+                ✓
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-ink">
+                {linkedProfile
+                  ? discordProfileDisplayName(linkedProfile)
+                  : pendingProfile!.displayName}
+              </p>
+              <p className="truncate text-xs text-ink-soft">
+                {linkedProfile
+                  ? discordProfileHandle(linkedProfile)
+                  : pendingProfile!.handle}
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400">
+              Linked!
+            </span>
+          </div>
+        ) : (
+          <>
+            {user ? (
+              <button
+                type="button"
+                disabled={busy || loading}
+                onClick={() => void connectSignedIn()}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-[#5865F2]/10 px-5 py-3 text-sm font-semibold text-ink transition-all duration-200 hover:bg-[#5865F2]/20 disabled:opacity-50"
+              >
+                <DiscordMark className="h-5 w-5" />
+                {busy ? "Connecting…" : "Connect Discord account"}
+              </button>
+            ) : (
+              <a
+                href={guestAuthorizeHref}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-[#5865F2]/10 px-5 py-3 text-sm font-semibold text-ink transition-all duration-200 hover:bg-[#5865F2]/20"
+              >
+                <DiscordMark className="h-5 w-5" />
+                Connect Discord account
+              </a>
+            )}
+            <p className="text-center text-xs text-ink-soft">
+              Links your Discord profile to TVM. Server invite:{" "}
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-violet hover:underline"
+              >
+                Join Discord
+              </a>
+              .
+            </p>
+          </>
+        )}
+        {error ? (
+          <p className="rounded-xl bg-coral/10 px-3 py-2 text-xs text-coral" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 text-sm leading-relaxed text-ink-soft">
+      <div>
+        <p className="font-semibold text-ink">Discord account</p>
+        <p className="mt-1">
+          Link your Discord account to access community channels and keep your desk
+          status in sync.
+        </p>
+      </div>
+
+      {linkedProfile ? (
+        <>
+          <div className="flex items-center gap-3 rounded-2xl bg-[#5865F2]/20 px-4 py-3.5">
+            <div className="relative shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={discordProfileAvatarUrl(linkedProfile)}
                 alt=""
                 width={48}
                 height={48}
@@ -142,119 +270,64 @@ export function DiscordConnectPanel({
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-ink">
-                {discordProfileDisplayName(discord)}
+                {discordProfileDisplayName(linkedProfile)}
               </p>
               <p className="truncate text-xs text-ink-soft">
-                {discordProfileHandle(discord)}
+                {discordProfileHandle(linkedProfile)}
               </p>
             </div>
-            {!compact ? (
-              <button
-                type="button"
-                disabled={busy || loading}
-                onClick={() => void unlink()}
-                className="shrink-0 rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-white/5 disabled:opacity-50"
-              >
-                Unlink
-              </button>
-            ) : null}
+            <button
+              type="button"
+              disabled={busy || loading}
+              onClick={() => void unlink()}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-white/5 disabled:opacity-50"
+            >
+              <UnlinkIcon className="h-3.5 w-3.5" />
+              Unlink
+            </button>
           </div>
           <p className="flex items-center gap-2 text-xs font-medium text-emerald-400/90">
             <span aria-hidden="true">✓</span> Account linked
           </p>
-          {!compact ? (
-            <a
-              href={DISCORD_INVITE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex text-sm font-semibold text-violet hover:underline"
-            >
-              Open Discord server
-            </a>
-          ) : null}
-        </div>
+        </>
       ) : (
-        <div className={compact ? "mt-4 space-y-3" : "mt-4 space-y-3"}>
-          {pendingReady ? (
-            <p className="rounded-2xl bg-emerald-500/10 px-4 py-3 text-center text-xs font-medium text-emerald-400/90">
-              Discord authorized. Sign in or create an account to finish linking.
-            </p>
-          ) : null}
-          {user ? (
-            <button
-              type="button"
-              disabled={busy || loading}
-              onClick={() => void connectSignedIn()}
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all duration-200 disabled:opacity-50 ${
-                compact
-                  ? "border border-white/10 bg-[#5865F2]/10 text-ink hover:bg-[#5865F2]/20"
-                  : "glass-violet text-white hover:-translate-y-0.5"
-              }`}
-            >
-              <DiscordMark className="h-5 w-5" />
-              {busy ? "Connecting…" : "Connect Discord account"}
-            </button>
-          ) : (
-            <a
-              href={guestAuthorizeHref}
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all duration-200 ${
-                compact
-                  ? "border border-white/10 bg-[#5865F2]/10 text-ink hover:bg-[#5865F2]/20"
-                  : "glass-violet text-white hover:-translate-y-0.5"
-              }`}
-            >
-              <DiscordMark className="h-5 w-5" />
-              Connect Discord account
-            </a>
-          )}
-          {!compact ? (
-            <div className="rounded-2xl bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink">
-                What you get
-              </p>
-              <ul className="mt-3 space-y-2 text-sm">
-                {[
-                  "Linked member access on our Discord",
-                  "Community channels as they open",
-                  "Beta status synced to your account",
-                  "Announcements and desk updates",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <span className="mt-0.5 text-emerald-400" aria-hidden="true">
-                      ✓
-                    </span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <a
-                href={DISCORD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex text-sm font-semibold text-violet hover:underline"
-              >
-                Open Discord server
-              </a>
-            </div>
-          ) : (
-            <p className="text-center text-xs text-ink-soft">
-              Links your Discord profile to TVM. To open the server, use{" "}
-              <a
-                href={DISCORD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-violet hover:underline"
-              >
-                Join Discord
-              </a>
-              .
-            </p>
-          )}
-        </div>
+        <button
+          type="button"
+          disabled={busy || loading || !user}
+          onClick={() => void connectSignedIn()}
+          className="glass-violet inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50"
+        >
+          <DiscordMark className="h-5 w-5" />
+          {busy ? "Connecting…" : "Connect Discord account"}
+        </button>
       )}
 
+      <div className="rounded-2xl bg-black/20 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink">
+          What you get
+        </p>
+        <ul className="mt-3 space-y-2">
+          {SETTINGS_PERKS.map((item) => (
+            <li key={item} className="flex items-start gap-2">
+              <span className="mt-0.5 text-emerald-400" aria-hidden="true">
+                ✓
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+        <a
+          href={DISCORD_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex text-sm font-semibold text-violet hover:underline"
+        >
+          Open Discord server
+        </a>
+      </div>
+
       {error ? (
-        <p className="mt-3 rounded-xl bg-coral/10 px-3 py-2 text-xs text-coral" role="alert">
+        <p className="rounded-xl bg-coral/10 px-3 py-2 text-xs text-coral" role="alert">
           {error}
         </p>
       ) : null}
