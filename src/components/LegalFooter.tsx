@@ -30,6 +30,9 @@ export function LegalFooter() {
               <Link href="/terms" className="hover:text-violet">
                 Terms of Service
               </Link>
+              <Link href="/eula" className="hover:text-violet">
+                EULA
+              </Link>
               <Link href="/refunds" className="hover:text-violet">
                 Refunds
               </Link>

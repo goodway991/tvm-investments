@@ -29,6 +29,10 @@ export function LegalDocument({
               Terms of Service
             </Link>
             {" · "}
+            <Link href="/eula" className="text-violet hover:underline">
+              EULA
+            </Link>
+            {" · "}
             <Link href="/privacy" className="text-violet hover:underline">
               Privacy Policy
             </Link>

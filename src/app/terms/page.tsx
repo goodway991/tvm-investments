@@ -30,6 +30,7 @@ export default function TermsPage() {
       <p>
         By creating an account, checking the acceptance box, paying for a plan,
         or using the Service, you agree to these Terms, the{" "}
+        <a href="/eula">End User License Agreement (EULA)</a>, the{" "}
         <a href="/privacy">Privacy Policy</a>, and the{" "}
         <a href="/disclaimer">Risk Disclaimer</a>. If you do not agree, do not
         use the Service.

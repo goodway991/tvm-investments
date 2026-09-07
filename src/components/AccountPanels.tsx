@@ -640,6 +640,7 @@ export function SettingsPanel() {
               </p>
               <nav className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-violet">
                 <Link href="/terms">Terms of Service</Link>
+                <Link href="/eula">EULA</Link>
                 <Link href="/privacy">Privacy Policy</Link>
                 <Link href="/refunds">Refunds</Link>
                 <Link href="/disclaimer">Risk Disclaimer</Link>

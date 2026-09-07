@@ -441,6 +441,10 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                         Terms of Service
                       </Link>
                       ,{" "}
+                      <Link href="/eula" className="font-semibold text-violet hover:underline">
+                        EULA
+                      </Link>
+                      ,{" "}
                       <Link href="/privacy" className="font-semibold text-violet hover:underline">
                         Privacy Policy
                       </Link>
