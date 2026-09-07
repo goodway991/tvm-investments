@@ -1010,6 +1010,13 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time
         && newSeenFrozen(resource.data, request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            "displayName", "firstName", "lastName", "updatedAt",
+            "country", "timeZone",
+            "tourCompletedAt", "seenTour", "seenRelease", "seenCustomize",
+            "newSeen", "newSeenWave"
+          ])
         && (
           !resource.data.keys().hasAny(["tosVersion"])
           || (

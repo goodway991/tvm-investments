@@ -26,7 +26,7 @@ export function PaidDeskUpgrade({
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">
           <ProGlowText>
-            Upgrade to Pro to unlock this desk. Ultra is unlimited.
+            Upgrade to Pro to unlock this desk. Ultra raises predict caps.
           </ProGlowText>
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -42,7 +42,7 @@ export function PaidDeskUpgrade({
             onClick={() => openUpgrade("ultra")}
             className="ultra-profile-glow-move rounded-full px-6 py-3 text-sm font-semibold"
           >
-            <UltraShinePhrase>Upgrade to Ultra for unlimited</UltraShinePhrase>
+            <UltraShinePhrase>Upgrade to Ultra for higher caps</UltraShinePhrase>
           </button>
         </div>
       </div>

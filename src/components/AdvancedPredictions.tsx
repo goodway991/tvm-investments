@@ -21,6 +21,7 @@ import {
   type HorizonStats,
 } from "@/lib/horizon-forecast";
 import type { ChartPoint } from "@/lib/chart-series";
+import type { PredictUsage } from "@/lib/predict-usage";
 
 type AdvancedPayload = {
   history?: ChartPoint[];
@@ -34,6 +35,7 @@ type AdvancedPayload = {
   avgBlend?: number;
   note?: string | null;
   error?: string;
+  usage?: PredictUsage;
 };
 
 function settingsKey(uid: string) {
@@ -79,7 +81,7 @@ export function AdvancedPredictions({
   watchlist: string[];
 }) {
   const { openUpgrade } = useUpgrade();
-  const { usage, busy, consume, plan } = usePredictUsage("advanced");
+  const { usage, setUsage, busy, plan } = usePredictUsage("advanced");
   const [settings, setSettings] = useState<AdvancedSettings>(DEFAULT_ADVANCED_SETTINGS);
   const [draft, setDraft] = useState(symbol);
   const [horizonDays, setHorizonDays] = useState(MAX_HORIZON_TRADING_DAYS);
@@ -151,14 +153,14 @@ export function AdvancedPredictions({
           throw new Error("Advanced Prediction did not return enough data.");
         }
       }
+      if (response.status === 429) {
+        openUpgrade("ultra");
+        throw new Error(payload.error || "Weekly predict limit reached.");
+      }
       if (!response.ok || !payload.history?.length || payload.last == null) {
         throw new Error(payload.error || "Advanced Prediction did not return enough data.");
       }
-      const result = await consume();
-      if (!result.ok) {
-        openUpgrade("ultra");
-        return;
-      }
+      if (payload.usage) setUsage(payload.usage);
       setHistory(payload.history);
       setStats({
         last: payload.last,

@@ -169,3 +169,70 @@ export async function requireApiUser(
 
   return signedIn;
 }
+
+export type PredictKindGate =
+  | "pulse"
+  | "score"
+  | "addition"
+  | "horizon"
+  | "advanced";
+
+/** Desk + burst + weekly predict counter. Used by AI predict endpoints. */
+export async function requirePredictQuota(
+  request: NextRequest,
+  kind: PredictKindGate,
+): Promise<
+  | {
+      ok: true;
+      uid: string;
+      email: string;
+      plan: Awaited<ReturnType<typeof getPlanForUser>>;
+      usage: {
+        weekId: string;
+        pulse: number;
+        score: number;
+        addition: number;
+        horizon: number;
+        advanced: number;
+      };
+    }
+  | { ok: false; response: NextResponse }
+> {
+  const signedIn = await requireSignedIn(request);
+  if (!signedIn.ok) return signedIn;
+
+  const desk = await requireDeskAccess(signedIn.uid, signedIn.email);
+  if (!desk.ok) return desk;
+
+  const burstGate = takeBurst(signedIn.uid);
+  if (!burstGate.ok) {
+    return {
+      ok: false,
+      response: tooMany(
+        "Too many requests. Wait a minute and try again.",
+        burstGate.retryAfterSec,
+      ),
+    };
+  }
+
+  const { consumeServerPredictUsage } = await import("@/lib/firebase/admin");
+  const plan = await getPlanForUser(signedIn.uid, signedIn.email);
+  const result = await consumeServerPredictUsage(signedIn.uid, plan, kind);
+  if (!result.ok) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Weekly predict limit reached.", usage: result.usage },
+        { status: 429 },
+      ),
+    };
+  }
+
+  return {
+    ok: true,
+    uid: signedIn.uid,
+    email: signedIn.email,
+    plan,
+    usage: result.usage,
+  };
+}

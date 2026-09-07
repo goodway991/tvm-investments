@@ -647,17 +647,18 @@ export async function listFeedback(limitN = 40): Promise<FeedbackRow[]> {
   });
 }
 
-export type ApiQuotaKind = "market" | "research" | "feedback";
+export type ApiQuotaKind = "market" | "research" | "feedback" | "ai";
 
 const API_DAILY_LIMITS: Record<PlanId, Record<ApiQuotaKind, number>> = {
-  free: { market: 500, research: 40, feedback: 15 },
-  pro: { market: 800, research: 80, feedback: 20 },
-  ultra: { market: 1200, research: 150, feedback: 30 },
+  // Chart/data browsing stays generous; research notes and AI are the cost knobs.
+  free: { market: 400, research: 25, feedback: 10, ai: 0 },
+  pro: { market: 700, research: 50, feedback: 15, ai: 0 },
+  ultra: { market: 1000, research: 80, feedback: 20, ai: 40 },
 };
 
 const memoryDaily = new Map<
   string,
-  { date: string; market: number; research: number; feedback: number }
+  { date: string; market: number; research: number; feedback: number; ai: number }
 >();
 
 export async function getPlanForUser(uid: string, email: string): Promise<PlanId> {
@@ -922,6 +923,7 @@ function takeMemoryQuota(
     market: current?.date === date ? current.market : 0,
     research: current?.date === date ? current.research : 0,
     feedback: current?.date === date ? current.feedback : 0,
+    ai: current?.date === date ? current.ai : 0,
     [kind]: used + 1,
   });
   return { ok: true };
@@ -969,10 +971,6 @@ export async function consumeServerPredictUsage(
   const { weeklyPredictLimit } = await import("@/lib/predict-limits");
   const limit = weeklyPredictLimit(plan, kind);
   const weekId = etWeekIdServer();
-  if (limit == null) {
-    const usage = await readServerPredictUsage(uid);
-    return { ok: true as const, usage };
-  }
   if (limit <= 0) {
     return { ok: false as const, usage: await readServerPredictUsage(uid) };
   }
@@ -1263,6 +1261,12 @@ export async function consumeApiQuota(
           sameDay
             ? Number(data?.feedback || 0) + (kind === "feedback" ? 1 : 0)
             : kind === "feedback"
+              ? 1
+              : 0,
+        ai:
+          sameDay
+            ? Number(data?.ai || 0) + (kind === "ai" ? 1 : 0)
+            : kind === "ai"
               ? 1
               : 0,
         updatedAt: FieldValue.serverTimestamp(),

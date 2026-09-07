@@ -60,6 +60,7 @@ export function usePredictUsage(kind: PredictKind) {
 
   return {
     usage,
+    setUsage,
     busy,
     consume,
     plan: entitlement.plan as PlanId,
@@ -89,11 +90,11 @@ export function PredictButton({
   onUpgrade: (plan?: "pro" | "ultra") => void;
 }) {
   const limit = weeklyPredictLimit(plan, kind);
-  const remaining = limit == null ? null : Math.max(0, limit - used);
+  const remaining = Math.max(0, limit - used);
   const exhausted = remaining === 0;
   const ultra = plan === "ultra";
   const lockedToUltra = kind === "advanced" && plan !== "ultra";
-  const lockedToPro = !lockedToUltra && plan === "free" && (limit == null || limit <= 0);
+  const lockedToPro = !lockedToUltra && plan === "free" && limit <= 0;
   const ultraPredictLabel =
     kind === "pulse"
       ? "Ultra Pulse"
@@ -156,7 +157,9 @@ export function PredictButton({
         <p className="text-center text-[11px] text-ink-soft">
           <ProGlowText>
             {`${limit} ${kindCapLabel(kind)} used this week. ${
-              nextPlan === "ultra" ? "Ultra is unlimited." : "Pro gets more each week."
+              nextPlan === "ultra"
+                ? "Ultra raises the weekly cap."
+                : "Pro gets more each week."
             }`}
           </ProGlowText>
         </p>
@@ -184,7 +187,7 @@ export function PredictButton({
         )}
       </button>
       </BogenHit>
-      {remaining != null ? (
+      {remaining >= 0 && limit > 0 ? (
         <p className="text-[11px] text-ink-soft">
           {remaining} of {limit} left this week
         </p>

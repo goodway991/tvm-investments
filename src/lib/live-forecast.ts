@@ -265,8 +265,10 @@ export async function buildLiveForecast(
   symbol: string,
   asOf?: string,
   plan: PlanId = "free",
+  options: { useAi?: boolean } = {},
 ): Promise<LiveForecast> {
-  const key = cacheKey(symbol, asOf, plan);
+  const useAi = options.useAi === true;
+  const key = cacheKey(symbol, asOf, plan) + (useAi ? ":ai" : ":tape");
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
@@ -288,7 +290,7 @@ export async function buildLiveForecast(
     sectorChangePercent: peers.sectorChange,
     marketChangePercent: peers.marketChange,
     sectorEtf: peers.etf,
-    useLlm: plan === "ultra" && !asOf,
+    useLlm: useAi && plan === "ultra" && !asOf,
   });
 
   let walked: HorizonStats;
@@ -340,7 +342,7 @@ export async function buildLiveForecast(
 
   let source: LiveForecast["source"] = "yahoo";
   let note = research.note;
-  if (plan === "ultra" && !asOf) {
+  if (useAi && plan === "ultra" && !asOf) {
     const gemini = await geminiShortTermDrift({
       symbol,
       last: walked.last,

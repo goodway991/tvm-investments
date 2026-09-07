@@ -41,6 +41,12 @@ export const PRO_WEEKLY_PULSE_PREDICT_LIMIT = 5;
 export const PRO_WEEKLY_SCORE_PREDICT_LIMIT = 3;
 export const PRO_WEEKLY_ADDITION_PREDICT_LIMIT = 1;
 export const PRO_WEEKLY_HORIZON_PREDICT_LIMIT = 5;
+/** Ultra is generous but finite — server-enforced, not client-editable. */
+export const ULTRA_WEEKLY_PULSE_PREDICT_LIMIT = 40;
+export const ULTRA_WEEKLY_SCORE_PREDICT_LIMIT = 20;
+export const ULTRA_WEEKLY_ADDITION_PREDICT_LIMIT = 15;
+export const ULTRA_WEEKLY_HORIZON_PREDICT_LIMIT = 40;
+export const ULTRA_WEEKLY_ADVANCED_PREDICT_LIMIT = 25;
 
 export function watchlistLimitForPlan(plan: PlanId) {
   if (plan === "ultra") return ULTRA_WATCHLIST_LIMIT;
@@ -165,7 +171,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
     rank: 2,
   },
   {
-    name: "Unlimited Pulse Predicts",
+    name: "40 Pulse Predicts / week",
     free: false,
     pro: false,
     ultra: true,
@@ -183,7 +189,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
     rank: 1,
   },
   {
-    name: "Unlimited Portfolio Score Predictions",
+    name: "20 Portfolio Score Predictions / week",
     free: false,
     pro: false,
     ultra: true,
@@ -201,7 +207,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
     rank: 1,
   },
   {
-    name: "Unlimited Portfolio Addition Predictions",
+    name: "15 Portfolio Addition Predictions / week",
     free: false,
     pro: false,
     ultra: true,
@@ -226,7 +232,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
     rank: 1,
   },
   {
-    name: "Unlimited Horizon Suite predictions",
+    name: "40 Horizon Suite predictions / week",
     free: false,
     pro: false,
     ultra: true,

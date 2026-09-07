@@ -17,6 +17,7 @@ import { BogenHeading } from "@/components/BogenProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { authedFetch } from "@/lib/authed-fetch";
+import type { PredictUsage } from "@/lib/predict-usage";
 import type { DailySnapshot, OHLCVBar, StockCandidate } from "@/types";
 
 const rangeCopy: Record<ChartRange, string> = {
@@ -118,7 +119,7 @@ export function MarketPulse({
   const { entitlement, watchlist, portfolio } = useAuth();
   const { rewind } = useSiteEra();
   const { openUpgrade } = useUpgrade();
-  const { usage, busy: predictBusy, consume, plan } = usePredictUsage("pulse");
+  const { usage, setUsage, busy: predictBusy, plan } = usePredictUsage("pulse");
   const [index, setIndex] = useState(0);
   const [range, setRange] = useState<ChartRange>("month");
   const [predicting, setPredicting] = useState(false);
@@ -162,14 +163,18 @@ export function MarketPulse({
 
   const current = deck[Math.min(index, Math.max(deck.length - 1, 0))];
 
-  async function loadForecast(symbol: string) {
-    const cached = forecastBySymbol[symbol];
-    if (cached?.history.length >= 3) return cached;
+  async function loadForecast(symbol: string, opts?: { ai?: boolean }) {
+    const cached = !opts?.ai ? forecastBySymbol[symbol] : null;
+    if (cached && cached.history.length >= 3) return cached;
     setForecastLoading(true);
     setForecastError("");
     try {
       const params = new URLSearchParams({ symbol });
       if (rewind && snapshot.date) params.set("date", snapshot.date);
+      if (opts?.ai) {
+        params.set("ai", "1");
+        params.set("kind", "pulse");
+      }
       const response = await authedFetch(`/api/forecast?${params}`);
       const payload = (await response.json()) as {
         history?: ChartPoint[];
@@ -183,10 +188,16 @@ export function MarketPulse({
         avgBlend?: number;
         note?: string | null;
         error?: string;
+        usage?: PredictUsage;
       };
+      if (response.status === 429) {
+        openUpgrade(plan === "pro" ? "ultra" : "pro");
+        throw new Error(payload.error || "Weekly predict limit reached.");
+      }
       if (!response.ok || !payload.history?.length || payload.last == null) {
         throw new Error(payload.error || "Live forecast did not return enough data.");
       }
+      if (payload.usage) setUsage(payload.usage);
       const next: PulseForecast = {
         history: payload.history,
         stats: {
@@ -227,12 +238,7 @@ export function MarketPulse({
       return;
     }
     if (horizonDays <= 0) return;
-    const result = await consume();
-    if (!result.ok) {
-      openUpgrade(plan === "pro" ? "ultra" : "pro");
-      return;
-    }
-    const forecast = await loadForecast(current.symbol);
+    const forecast = await loadForecast(current.symbol, { ai: true });
     if (forecast) {
       setCommittedDays(horizonDays);
       setPredicting(true);

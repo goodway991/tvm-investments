@@ -52,7 +52,7 @@ type LoadedForecast = {
 export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
   const { user, watchlist } = useAuth();
   const { openUpgrade } = useUpgrade();
-  const { usage, busy: predictBusy, consume, plan } = usePredictUsage("horizon");
+  const { usage, setUsage, busy: predictBusy, plan } = usePredictUsage("horizon");
   const quoteMap = useMemo(
     () => new Map(quotes.map((quote) => [quote.symbol, quote])),
     [quotes],
@@ -641,13 +641,66 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
                         setHorizonDays(0);
                         return;
                       }
-                      if (horizonDays <= 0) return;
-                      const result = await consume();
-                      if (!result.ok) {
-                        openUpgrade(plan === "pro" ? "ultra" : "pro");
-                        return;
+                      if (horizonDays <= 0 || !selected) return;
+                      try {
+                        const response = await authedFetch(
+                          `/api/forecast?symbol=${encodeURIComponent(selected)}&ai=1&kind=horizon`,
+                        );
+                        const payload = (await response.json()) as {
+                          history?: ChartPoint[];
+                          last?: number;
+                          dailyDrift?: number;
+                          dailyVol?: number;
+                          kappa?: number;
+                          thetaLog?: number;
+                          lastDelta?: number;
+                          rho?: number;
+                          avgBlend?: number;
+                          note?: string | null;
+                          error?: string;
+                          usage?: {
+                            weekId: string;
+                            pulse: number;
+                            score: number;
+                            addition: number;
+                            horizon: number;
+                            advanced: number;
+                          };
+                        };
+                        if (response.status === 429) {
+                          openUpgrade(plan === "pro" ? "ultra" : "pro");
+                          setError(payload.error || "Weekly predict limit reached.");
+                          return;
+                        }
+                        if (!response.ok || !payload.history?.length || payload.last == null) {
+                          setError(payload.error || "Predict did not return enough data.");
+                          return;
+                        }
+                        if (payload.usage) setUsage(payload.usage);
+                        forecastsRef.current = {
+                          ...forecastsRef.current,
+                          [selected]: {
+                            history: payload.history,
+                            stats: {
+                              last: payload.last,
+                              dailyDrift: payload.dailyDrift ?? 0,
+                              dailyVol: payload.dailyVol ?? 0.02,
+                              kappa: payload.kappa ?? 0,
+                              thetaLog: payload.thetaLog ?? payload.dailyDrift ?? 0,
+                              lastDelta: payload.lastDelta ?? 0,
+                              rho: payload.rho ?? 0,
+                              avgBlend: payload.avgBlend ?? 0,
+                            },
+                            note: payload.note ?? null,
+                          },
+                        };
+                        setForecasts(forecastsRef.current);
+                        setHistory(payload.history);
+                        setCommittedDays(horizonDays);
+                        setError("");
+                      } catch {
+                        setError("Predict did not save. Try again.");
                       }
-                      setCommittedDays(horizonDays);
                     })();
                   }}
                 />

@@ -202,7 +202,7 @@ export function PlanComparisonTable({
             decent short-term predictions (2 Pulse Predicts / week). Pro gets
             non-algorithm based predictions with weekly caps: 5 Pulse, 3
             Portfolio Score, 1 Portfolio Addition, 5 Horizon. Ultra gets
-            algorithm-based 99%* accuracy predictions, unlimited, plus Advanced
+            algorithm-based 99%* accuracy predictions with weekly caps, plus Advanced
             Predictions on the workstation.
           </ProGlowText>
         </p>

@@ -33,28 +33,21 @@ export function LandingPage() {
   return (
     <PublicShell showNavigation={false} showAuthBar>
       <main className="animate-rise">
-        <div className="mx-auto max-w-[1180px] px-6 pb-24 pt-10">
-          <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
-            <div>
+        <div className="mx-auto max-w-[1180px] px-6 pb-28 pt-14">
+          <section className="grid min-h-[min(72vh,640px)] items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
+            <div className="max-w-xl">
               <p className="text-sm font-semibold uppercase tracking-widest text-violet">
                 The problem
               </p>
-              <p className="mt-3 max-w-lg text-lg leading-relaxed text-ink-soft">
-                Self-directed investors drown in market noise — quote sites, news
-                tabs, spreadsheets, and a gut check — with no shared place to
-                start the day’s work.
-              </p>
-              <h1 className="mt-7 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
+              <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
                 TVM’s answer: a{" "}
                 <span className="text-violet">daily research desk.</span>
               </h1>
-              <p className="mt-5 max-w-lg text-lg leading-relaxed text-ink-soft">
-                After the US close we screen stocks and ETFs, shortlist what
-                moved and what hit multiple signals, and put the scores and notes
-                in one workspace — so you decide with a process, not a blank
-                screen.
+              <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-soft">
+                One workspace after the close — so you decide with a process,
+                not a blank screen.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-10 flex flex-wrap gap-3">
                 <Link
                   href="/signup"
                   className="glass-violet inline-flex items-center justify-center rounded-full px-7 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-14px_rgba(37,90,230,0.7)] active:scale-[0.97]"
@@ -154,17 +147,32 @@ export function LandingPage() {
             </div>
           </section>
 
-          <section className="glass-strong mt-28 rounded-[30px] p-8 sm:p-10">
-            <div className="grid gap-8 sm:grid-cols-3">
+          <section className="mx-auto mt-24 max-w-3xl text-center sm:mt-32">
+            <p className="text-lg leading-relaxed text-ink-soft sm:text-xl">
+              Self-directed investors drown in market noise — quote sites, news
+              tabs, spreadsheets, and a gut check — with no shared place to start
+              the day’s work.
+            </p>
+            <p className="mt-8 text-lg leading-relaxed text-ink-soft sm:text-xl">
+              After the US close we screen stocks and ETFs, shortlist what moved
+              and what hit multiple signals, and put the scores and notes in one
+              workspace.
+            </p>
+          </section>
+
+          <section className="glass-strong mt-20 rounded-[30px] p-8 sm:mt-24 sm:p-10">
+            <div className="grid gap-10 sm:grid-cols-3 sm:gap-8">
               {features.map((feature) => (
                 <div key={feature.title}>
                   <div className="glass-violet grid h-12 w-12 place-items-center rounded-2xl text-white">
                     <TVMIcon name={feature.icon} size={22} />
                   </div>
-                  <h2 className="mt-4 font-display text-lg font-semibold text-ink">
+                  <h2 className="mt-5 font-display text-lg font-semibold text-ink">
                     {feature.title}
                   </h2>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{feature.text}</p>
+                  <p className="mt-2.5 text-sm leading-relaxed text-ink-soft">
+                    {feature.text}
+                  </p>
                 </div>
               ))}
             </div>

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiUser } from "@/lib/api-guard";
+import { requirePredictQuota } from "@/lib/api-guard";
 import { showTvm10Labs } from "@/lib/beta-labs";
-import { getPlanForUser } from "@/lib/firebase/admin";
 import { parseTicker } from "@/lib/ticker";
 import {
   clampAdvancedSettings,
@@ -17,15 +16,14 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
-  const gate = await requireApiUser(request, "research");
-  if (!gate.ok) return gate.response;
-
   if (!showTvm10Labs()) {
     return NextResponse.json({ error: "Advanced Predictions are not available." }, { status: 404 });
   }
 
-  const plan = await getPlanForUser(gate.uid, gate.email);
-  if (plan !== "ultra") {
+  const gate = await requirePredictQuota(request, "advanced");
+  if (!gate.ok) return gate.response;
+
+  if (gate.plan !== "ultra") {
     return NextResponse.json(
       { error: "Advanced Predictions are Ultra only." },
       { status: 403 },
@@ -70,6 +68,7 @@ export async function POST(request: NextRequest) {
       avgBlend: stats.avgBlend,
       equationCount: ensemble.equationCount,
       note: `Ultra Advanced · ${ensemble.equationCount}-equation algorithm (sliders applied).`,
+      usage: gate.usage,
     });
   } catch (error) {
     console.error("Advanced forecast error:", error);
