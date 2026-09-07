@@ -10,12 +10,16 @@ import {
   toDiscordLinkPayload,
   verifyOAuthState,
 } from "@/lib/discord-oauth";
-import { linkDiscordAccount } from "@/lib/firebase/admin";
+import { findUidByDiscordId, linkDiscordAccount } from "@/lib/firebase/admin";
 import {
   linkedRoleSuccessHtml,
   pushDiscordRoleConnection,
   resolveDiscordRoleMetadata,
 } from "@/lib/discord-linked-roles";
+import {
+  storeDiscordOAuthTokens,
+  syncGuildMemberRoles,
+} from "@/lib/discord-role-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -99,12 +103,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const accessToken = await exchangeDiscordCode(code, config);
-    const discordUser = await fetchDiscordUser(accessToken);
+    const tokens = await exchangeDiscordCode(code, config);
+    const discordUser = await fetchDiscordUser(tokens.accessToken);
 
     if (linkedRole) {
       const metadata = await resolveDiscordRoleMetadata(discordUser.id);
-      await pushDiscordRoleConnection(accessToken, discordUser, metadata);
+      await pushDiscordRoleConnection(tokens.accessToken, discordUser, metadata);
+      const uid = await findUidByDiscordId(discordUser.id);
+      if (uid) {
+        await storeDiscordOAuthTokens(uid, tokens);
+        await syncGuildMemberRoles(
+          discordUser.id,
+          metadata.is_ultra ? "ultra" : metadata.is_pro ? "pro" : "free",
+        );
+      }
       return new NextResponse(
         linkedRoleSuccessHtml({
           displayName: discordDisplayName(discordUser),
@@ -117,10 +129,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const payload = toDiscordLinkPayload(discordUser, accessToken);
+    const payload = toDiscordLinkPayload(discordUser, tokens);
 
     try {
-      await addDiscordUserToGuild(discordUser.id, accessToken, config);
+      await addDiscordUserToGuild(discordUser.id, tokens.accessToken, config);
     } catch (guildError) {
       console.warn("[discord] guild join skipped:", guildError);
     }
@@ -129,6 +141,7 @@ export async function GET(request: NextRequest) {
       await linkDiscordAccount(state.uid, "", payload, {
         joinWaitlist:
           state.returnTo.startsWith("/login") || state.returnTo.startsWith("/signup"),
+        tokens,
       });
       return redirectWithStatus(request, state.returnTo, "linked");
     }

@@ -24,7 +24,7 @@ function normalizePrivateKey(value?: string) {
   return key;
 }
 
-async function getAdminDb(): Promise<FirebaseFirestore.Firestore | null> {
+export async function getAdminDb(): Promise<FirebaseFirestore.Firestore | null> {
   if (adminDb) return adminDb;
 
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
@@ -534,6 +534,10 @@ export async function setAdminPlan(uid: string, plan: PlanId) {
     { merge: true },
   );
 
+  void import("@/lib/discord-role-sync")
+    .then((mod) => mod.syncDiscordRolesForUid(uid))
+    .catch((error) => console.warn("[discord] admin plan role sync:", error));
+
   return {
     stripeSubscriptionId:
       typeof data.stripeSubscriptionId === "string"
@@ -842,6 +846,10 @@ export async function redeemBetaCode(uid: string, email: string, rawCode: string
     );
   });
 
+  void import("@/lib/discord-role-sync")
+    .then((mod) => mod.syncDiscordRolesForUid(uid))
+    .catch((error) => console.warn("[discord] beta redeem role sync:", error));
+
   return {
     plan: "ultra" as const,
     betaExpiresAt: ULTRA_BETA_EXPIRES_AT_MS,
@@ -1045,6 +1053,10 @@ export async function applyStripeEntitlement(input: {
     },
     { merge: true },
   );
+
+  void import("@/lib/discord-role-sync")
+    .then((mod) => mod.syncDiscordRolesForUid(input.uid))
+    .catch((error) => console.warn("[discord] stripe plan role sync:", error));
 }
 
 export async function consumeApiQuota(
@@ -1153,6 +1165,9 @@ type DiscordLinkInput = {
   discordUsername: string;
   discordGlobalName: string | null;
   discordAvatar: string | null;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
 };
 
 async function assertDiscordAvailable(db: FirebaseFirestore.Firestore, discordId: string, uid: string) {
@@ -1170,7 +1185,10 @@ export async function linkDiscordAccount(
   uid: string,
   email: string,
   discord: DiscordLinkInput,
-  options?: { joinWaitlist?: boolean },
+  options?: {
+    joinWaitlist?: boolean;
+    tokens?: { accessToken: string; refreshToken?: string; expiresIn?: number; expiresAt?: number };
+  },
 ) {
   const db = await getAdminDb();
   if (!db) throw new Error("Discord linking is not available.");
@@ -1193,6 +1211,25 @@ export async function linkDiscordAccount(
   if (options?.joinWaitlist) {
     await joinBetaWaitlist(uid, email);
   }
+
+  const tokens = options?.tokens ||
+    (discord.accessToken
+      ? {
+          accessToken: discord.accessToken,
+          refreshToken: discord.refreshToken,
+          expiresIn: discord.expiresIn,
+        }
+      : null);
+  if (tokens?.accessToken) {
+    const { storeDiscordOAuthTokens, syncDiscordRolesForUid } = await import(
+      "@/lib/discord-role-sync"
+    );
+    await storeDiscordOAuthTokens(uid, tokens);
+    void syncDiscordRolesForUid(uid).catch((error) => {
+      console.warn("[discord] post-link role sync:", error);
+    });
+  }
+
   return getBetaStatus(uid);
 }
 
@@ -1210,6 +1247,11 @@ export async function unlinkDiscordAccount(uid: string, email: string) {
       discordGlobalName: FieldValue.delete(),
       discordAvatar: FieldValue.delete(),
       discordConnectedAt: FieldValue.delete(),
+      discordAccessTokenEnc: FieldValue.delete(),
+      discordRefreshTokenEnc: FieldValue.delete(),
+      discordTokenExpiresAt: FieldValue.delete(),
+      discordPlanSynced: FieldValue.delete(),
+      discordRolesSyncedAt: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
     },
     { merge: true },

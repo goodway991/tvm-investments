@@ -32,6 +32,13 @@ export async function POST(request: NextRequest) {
 
     const status = await linkDiscordAccount(gate.uid, gate.email, pending, {
       joinWaitlist: SHOW_BETA_WAITLIST,
+      tokens: pending.accessToken
+        ? {
+            accessToken: pending.accessToken,
+            refreshToken: pending.refreshToken,
+            expiresIn: pending.expiresIn,
+          }
+        : undefined,
     });
     const response = NextResponse.json({ linked: true, ...status });
     response.cookies.set(discordPendingCookie.name, "", {

@@ -54,9 +54,9 @@ function UnlinkIcon({ className }: { className?: string }) {
 
 const SETTINGS_PERKS = [
   'Get a special "Website Linked" role',
-  "Unlock Pro / Ultra linked roles when you qualify",
+  "Pro / Ultra linked roles update with your plan",
   "Access exclusive channels as they open",
-  "Sync desk status with Discord",
+  "Desk status syncs to Discord automatically",
 ];
 
 export function DiscordConnectPanel({

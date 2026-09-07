@@ -23,6 +23,16 @@ export type DiscordLinkPayload = {
   discordGlobalName: string | null;
   discordAvatar: string | null;
   accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+};
+
+export type DiscordTokenBundle = {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn: number;
+  expiresAt: number;
+  scope?: string;
 };
 
 export type DiscordOAuthFlow = "account" | "linked_role";
@@ -138,14 +148,24 @@ export function discordHandle(user: Pick<DiscordUser, "username">) {
 
 export function toDiscordLinkPayload(
   user: DiscordUser,
-  accessToken?: string,
+  tokens?: DiscordTokenBundle | string,
 ): DiscordLinkPayload {
+  const bundle =
+    typeof tokens === "string"
+      ? {
+          accessToken: tokens,
+          expiresIn: 604800,
+          expiresAt: Date.now() + 604800 * 1000,
+        }
+      : tokens;
   return {
     discordId: user.id,
     discordUsername: user.username,
     discordGlobalName: user.global_name,
     discordAvatar: user.avatar,
-    accessToken,
+    accessToken: bundle?.accessToken,
+    refreshToken: bundle?.refreshToken,
+    expiresIn: bundle?.expiresIn,
   };
 }
 
@@ -154,24 +174,26 @@ export function buildDiscordAuthorizeUrl(
   config: DiscordOAuthConfig,
   options?: { flow?: DiscordOAuthFlow },
 ) {
-  const scopes =
-    options?.flow === "linked_role"
-      ? "identify role_connections.write"
-      : config.guildId && config.botToken
-        ? "identify guilds.join"
-        : "identify";
+  // Always request role_connections.write so Connect Discord can push Linked Roles.
+  const parts = ["identify", "role_connections.write"];
+  if (options?.flow !== "linked_role" && config.guildId && config.botToken) {
+    parts.push("guilds.join");
+  }
   const params = new URLSearchParams({
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
     response_type: "code",
-    scope: scopes,
+    scope: parts.join(" "),
     state,
     prompt: "consent",
   });
   return `https://discord.com/api/oauth2/authorize?${params.toString()}`;
 }
 
-export async function exchangeDiscordCode(code: string, config: DiscordOAuthConfig) {
+export async function exchangeDiscordCode(
+  code: string,
+  config: DiscordOAuthConfig,
+): Promise<DiscordTokenBundle> {
   const body = new URLSearchParams({
     client_id: config.clientId,
     client_secret: config.clientSecret,
@@ -184,11 +206,58 @@ export async function exchangeDiscordCode(code: string, config: DiscordOAuthConf
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  const payload = (await response.json()) as { access_token?: string; error?: string };
+  const payload = (await response.json()) as {
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    scope?: string;
+    error?: string;
+  };
   if (!response.ok || !payload.access_token) {
     throw new Error(payload.error || "Discord authorization failed.");
   }
-  return payload.access_token;
+  const expiresIn = payload.expires_in || 604800;
+  return {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+    expiresIn,
+    expiresAt: Date.now() + expiresIn * 1000,
+    scope: payload.scope,
+  };
+}
+
+export async function refreshDiscordTokens(refreshToken: string): Promise<DiscordTokenBundle> {
+  const config = getDiscordOAuthConfig();
+  if (!config) throw new Error("Discord OAuth is not configured.");
+  const body = new URLSearchParams({
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+  const response = await fetch(`${DISCORD_API}/oauth2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const payload = (await response.json()) as {
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    scope?: string;
+    error?: string;
+  };
+  if (!response.ok || !payload.access_token) {
+    throw new Error(payload.error || "Discord token refresh failed.");
+  }
+  const expiresIn = payload.expires_in || 604800;
+  return {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token || refreshToken,
+    expiresIn,
+    expiresAt: Date.now() + expiresIn * 1000,
+    scope: payload.scope,
+  };
 }
 
 export async function fetchDiscordUser(accessToken: string) {
@@ -244,6 +313,8 @@ export function parsePendingDiscord(raw: string | undefined | null): DiscordLink
       discordGlobalName: parsed.discordGlobalName ?? null,
       discordAvatar: parsed.discordAvatar ?? null,
       accessToken: parsed.accessToken,
+      refreshToken: parsed.refreshToken,
+      expiresIn: parsed.expiresIn,
     };
   } catch {
     return null;
