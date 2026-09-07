@@ -6,6 +6,7 @@ import { authedFetch } from "@/lib/authed-fetch";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHeading } from "@/components/BogenProvider";
 import { ProGlowText } from "@/components/ProGlowText";
+import { SHOW_BETA_WAITLIST } from "@/lib/beta-waitlist";
 import type { PlanId } from "@/lib/plans";
 
 type PlanSource = "comp" | "paid" | "none";
@@ -158,7 +159,7 @@ export function AdminAccountsPanel() {
                         )}
                         {row.betaTester
                           ? " · Beta tester"
-                          : row.waitlistStatus === "pending"
+                          : SHOW_BETA_WAITLIST && row.waitlistStatus === "pending"
                             ? " · Waitlist"
                             : ""}
                         {row.discordConnected ? " · Discord connected" : ""}

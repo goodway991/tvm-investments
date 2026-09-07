@@ -422,17 +422,42 @@ export async function listAdminAccounts(): Promise<{
           source,
         });
       }
+      const { SHOW_BETA_WAITLIST } = await import("@/lib/beta-waitlist");
+      const stalePending: FirebaseFirestore.DocumentReference[] = [];
       for (const item of betaSnap.docs) {
         const data = item.data();
-        const waitlistStatus =
+        let waitlistStatus =
           data.waitlistStatus === "pending" || data.waitlistStatus === "admitted"
             ? data.waitlistStatus
             : "none";
+        // Waitlist is off — clear stale pending rows so admin/client stay in sync.
+        if (!SHOW_BETA_WAITLIST && waitlistStatus === "pending") {
+          waitlistStatus = "none";
+          stalePending.push(item.ref);
+        }
         beta.set(item.id, {
           waitlistStatus,
           betaTester: data.betaTester === true || waitlistStatus === "admitted",
           discordConnected: data.discordConnected === true,
         });
+      }
+      if (stalePending.length) {
+        const { FieldValue } = await import("firebase-admin/firestore");
+        for (let i = 0; i < stalePending.length; i += 400) {
+          const chunk = stalePending.slice(i, i + 400);
+          const batch = db.batch();
+          for (const ref of chunk) {
+            batch.set(
+              ref,
+              {
+                waitlistStatus: "none",
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true },
+            );
+          }
+          await batch.commit();
+        }
       }
       plansLoaded = true;
     } catch (error) {

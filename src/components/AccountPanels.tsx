@@ -614,18 +614,19 @@ export function SettingsPanel() {
       entitlement.source !== "stripe" &&
       !(entitlement.source === "beta_code" && entitlement.plan === "ultra") ? (
         <div className="mt-6 rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-          <p className="font-semibold text-ink">Beta test code</p>
+          <p className="font-semibold text-ink">Redeem Ultra code</p>
           <p className="mt-1">
-            Have an Ultra beta code? Enter it here for Ultra access through{" "}
+            Paste your Ultra beta code for Ultra access through{" "}
             {ULTRA_BETA_EXPIRES_LABEL}.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <input
               value={betaCode}
               onChange={(event) => setBetaCode(event.target.value)}
-              placeholder="Enter code"
+              placeholder="Paste Ultra code"
               className="field min-w-[180px] flex-1 rounded-2xl px-4 py-2.5 text-sm text-ink"
               autoComplete="off"
+              spellCheck={false}
             />
             <button
               type="button"
@@ -664,7 +665,7 @@ export function SettingsPanel() {
               }}
               className="glass-violet rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {betaBusy ? "Applying…" : "Apply code"}
+              {betaBusy ? "Redeeming…" : "Redeem"}
             </button>
           </div>
           {betaError ? (

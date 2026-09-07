@@ -33,6 +33,7 @@ import {
   getClientFirestore,
 } from "@/lib/firebase/client";
 import { LEGAL_STORAGE_KEY, TOS_VERSION } from "@/lib/legal";
+import { ultraBetaStillActive } from "@/lib/beta-codes";
 import {
   clearSignupName,
   fullDisplayName,
@@ -190,8 +191,7 @@ function entitlementFromData(
   const betaActive =
     source === "beta_code" &&
     storedPlan === "ultra" &&
-    betaExpiresAt > 0 &&
-    Date.now() <= betaExpiresAt;
+    ultraBetaStillActive(betaExpiresAt);
   const plan = overlayLabsPlan(
     role,
     betaActive ? "ultra" : source === "beta_code" ? "free" : storedPlan,
