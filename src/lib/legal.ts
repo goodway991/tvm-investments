@@ -7,9 +7,9 @@ export const PRIVACY_EFFECTIVE_DATE = "August 26, 2026";
 export const EULA_EFFECTIVE_DATE = "September 7, 2026";
 
 export const LEGAL_ENTITY = "TVM Investments";
-/** Named individuals who license the TVM web application under the EULA. */
+/** Sole owner / licensor named in the EULA. */
 export const EULA_LICENSORS =
-  "Varish Desai, Taiki Okada, and Miguel Rosales, individuals doing business as TVM Investments";
+  "Varish Desai, an individual doing business as TVM Investments";
 export const LEGAL_JURISDICTION = "the State of New York";
 export const LEGAL_VENUE =
   "the state or federal courts located in New York County, New York";
