@@ -35,9 +35,11 @@ export function DiscordConnectPanel({
   const { discordConnected, discord, loading } = useBetaStatus();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [pendingReady, setPendingReady] = useState(false);
   const [configured, setConfigured] = useState(true);
   const compact = variant === "auth";
   const targetReturnTo = returnTo || (compact ? "/login" : "/dashboard/settings");
+  const guestAuthorizeHref = `/api/discord/authorize?guest=1&returnTo=${encodeURIComponent(targetReturnTo)}`;
 
   useEffect(() => {
     void fetch("/api/discord/config")
@@ -46,24 +48,29 @@ export function DiscordConnectPanel({
       .catch(() => setConfigured(false));
   }, []);
 
-  async function connect() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("discord") === "ready") setPendingReady(true);
+    if (params.get("discord") === "error") {
+      setError(params.get("discord_reason") || "Discord connection failed. Try again.");
+    }
+  }, []);
+
+  async function connectSignedIn() {
     setBusy(true);
     setError("");
     try {
-      if (user) {
-        const response = await authedFetch("/api/discord/authorize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ returnTo: targetReturnTo }),
-        });
-        const payload = (await response.json()) as { url?: string; error?: string };
-        if (!response.ok || !payload.url) {
-          throw new Error(payload.error || "Unable to start Discord linking.");
-        }
-        window.location.href = payload.url;
-        return;
+      const response = await authedFetch("/api/discord/authorize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ returnTo: targetReturnTo }),
+      });
+      const payload = (await response.json()) as { url?: string; error?: string };
+      if (!response.ok || !payload.url) {
+        throw new Error(payload.error || "Unable to start Discord linking.");
       }
-      window.location.href = `/api/discord/authorize?guest=1&returnTo=${encodeURIComponent(targetReturnTo)}`;
+      window.location.assign(payload.url);
     } catch (connectError) {
       setError(
         connectError instanceof Error
@@ -168,19 +175,38 @@ export function DiscordConnectPanel({
         </div>
       ) : (
         <div className={compact ? "mt-4 space-y-3" : "mt-4 space-y-3"}>
-          <button
-            type="button"
-            disabled={busy || loading}
-            onClick={() => void connect()}
-            className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all duration-200 disabled:opacity-50 ${
-              compact
-                ? "border border-white/10 bg-[#5865F2]/10 text-ink hover:bg-[#5865F2]/20"
-                : "glass-violet text-white hover:-translate-y-0.5"
-            }`}
-          >
-            <DiscordMark className="h-5 w-5" />
-            {busy ? "Connecting…" : "Connect Discord account"}
-          </button>
+          {pendingReady ? (
+            <p className="rounded-2xl bg-emerald-500/10 px-4 py-3 text-center text-xs font-medium text-emerald-400/90">
+              Discord authorized. Sign in or create an account to finish linking.
+            </p>
+          ) : null}
+          {user ? (
+            <button
+              type="button"
+              disabled={busy || loading}
+              onClick={() => void connectSignedIn()}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all duration-200 disabled:opacity-50 ${
+                compact
+                  ? "border border-white/10 bg-[#5865F2]/10 text-ink hover:bg-[#5865F2]/20"
+                  : "glass-violet text-white hover:-translate-y-0.5"
+              }`}
+            >
+              <DiscordMark className="h-5 w-5" />
+              {busy ? "Connecting…" : "Connect Discord account"}
+            </button>
+          ) : (
+            <a
+              href={guestAuthorizeHref}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all duration-200 ${
+                compact
+                  ? "border border-white/10 bg-[#5865F2]/10 text-ink hover:bg-[#5865F2]/20"
+                  : "glass-violet text-white hover:-translate-y-0.5"
+              }`}
+            >
+              <DiscordMark className="h-5 w-5" />
+              Connect Discord account
+            </a>
+          )}
           {!compact ? (
             <div className="rounded-2xl bg-black/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-ink">
@@ -201,10 +227,27 @@ export function DiscordConnectPanel({
                   </li>
                 ))}
               </ul>
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex text-sm font-semibold text-violet hover:underline"
+              >
+                Open Discord server
+              </a>
             </div>
           ) : (
             <p className="text-center text-xs text-ink-soft">
-              Connect Discord to link your account and join the community.
+              Links your Discord profile to TVM. To open the server, use{" "}
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-violet hover:underline"
+              >
+                Join Discord
+              </a>
+              .
             </p>
           )}
         </div>
