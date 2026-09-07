@@ -1,3 +1,4 @@
+import "server-only";
 import type { SectorDive, StockCandidate } from "@/types";
 import { formatSessionLabel } from "./archive-window";
 import { computeRSI } from "./indicators";

@@ -36,19 +36,23 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1180px] px-6 pb-24 pt-10">
           <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
             <div>
-              <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-violet">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-violet" />
-                Built for people who research before they trade
-              </span>
-              <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
-                A daily research desk for the{" "}
-                <span className="text-violet">self-directed investor.</span>
+              <p className="text-sm font-semibold uppercase tracking-widest text-violet">
+                The problem
+              </p>
+              <p className="mt-3 max-w-lg text-lg leading-relaxed text-ink-soft">
+                Self-directed investors drown in market noise — quote sites, news
+                tabs, spreadsheets, and a gut check — with no shared place to
+                start the day’s work.
+              </p>
+              <h1 className="mt-7 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
+                TVM’s answer: a{" "}
+                <span className="text-violet">daily research desk.</span>
               </h1>
-              <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
-                TVM Investments is for individuals who want a repeatable process —
-                not a hot tip. Each weekday we screen US stocks and ETFs, flag
-                names that hit multiple historically-motivated setups, and hand
-                you the notes.
+              <p className="mt-5 max-w-lg text-lg leading-relaxed text-ink-soft">
+                After the US close we screen stocks and ETFs, shortlist what
+                moved and what hit multiple signals, and put the scores and notes
+                in one workspace — so you decide with a process, not a blank
+                screen.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
@@ -57,30 +61,13 @@ export function LandingPage() {
                 >
                   {SHOW_BETA_WAITLIST ? "Create account" : "Get started free"}
                 </Link>
+                <Link
+                  href="/about"
+                  className="glass-strong inline-flex items-center justify-center rounded-full px-7 py-3.5 text-[15px] font-medium text-ink transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.85] active:scale-[0.97]"
+                >
+                  How the desk works
+                </Link>
               </div>
-              <div className="mt-9 flex items-center gap-6 text-sm text-ink-soft">
-                <div>
-                  <span className="font-display text-2xl font-bold text-ink">8</span>
-                  <br />
-                  signal framework
-                </div>
-                <div className="h-9 w-px bg-ink/10" />
-                <div>
-                  <span className="font-display text-2xl font-bold text-ink">EOD</span>
-                  <br />
-                  weekday snapshot
-                </div>
-                <div className="h-9 w-px bg-ink/10" />
-                <div>
-                  <span className="font-display text-2xl font-bold text-ink">99%</span>
-                  <br />
-                  accuracy*
-                </div>
-              </div>
-              <p className="mt-5 text-sm font-medium text-ink">
-                Reliable, accurate market data.
-                <span className="text-ink-soft"> Up to 99% accuracy.*</span>
-              </p>
             </div>
 
             <div className="relative hidden h-[440px] sm:block" aria-label="Investment dashboard preview">
@@ -199,19 +186,17 @@ export function LandingPage() {
               />
             </div>
             <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-violet">Who it’s for</p>
+              <p className="text-sm font-semibold uppercase tracking-widest text-violet">
+                Why it exists
+              </p>
               <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-ink">
-                You already do the work. We give it a desk.
+                Same problem. One desk. Every session.
               </h2>
               <p className="mt-5 leading-relaxed text-ink-soft">
-                Most people researching stocks bounce between a quote site, a
-                news tab, a spreadsheet, and a gut check. TVM is the place that
-                process lives: what moved, what flagged, why it flagged, and
-                what you are watching — updated after the US cash close.
-              </p>
-              <p className="mt-4 leading-relaxed text-ink-soft">
-                It is a structured reading of US stocks and ETFs, with the
-                reasoning in front of you instead of buried in a black box.
+                Hot tips and endless tabs do not scale. TVM is the weekday
+                process that replaces them: what moved, what flagged, why it
+                flagged, and what you are watching — refreshed after the US cash
+                close.
               </p>
               <Link
                 href="/about"

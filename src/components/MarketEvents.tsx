@@ -8,6 +8,7 @@ import { OverlaySheet } from "@/components/OverlaySheet";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { TVMIcon } from "@/components/TVMBrand";
 import { showTvm10Labs } from "@/lib/beta-labs";
+import { safeHttpUrl } from "@/lib/sanitize-text";
 
 const impactColors = {
   bullish: "text-gain bg-green-500/10 border-green-500/20",
@@ -167,10 +168,13 @@ function EventSheet({
           <Stat label="Read" value={`${read} min`} />
         </div>
 
-        {event.imageUrl ? (
+        {(() => {
+          const imageSrc = safeHttpUrl(event.imageUrl);
+          if (!imageSrc) return null;
+          return (
           <figure className="overflow-hidden rounded-[22px]">
             <img
-              src={event.imageUrl}
+              src={imageSrc}
               alt={event.imageCaption || event.title}
               className="h-56 w-full object-cover sm:h-72"
             />
@@ -180,7 +184,8 @@ function EventSheet({
               </figcaption>
             ) : null}
           </figure>
-        ) : null}
+          );
+        })()}
 
         <ArticleBlocks blocks={blocks} />
 

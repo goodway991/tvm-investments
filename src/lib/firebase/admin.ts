@@ -1,6 +1,7 @@
 import type { DailySnapshot, BacktestEntry, BacktestSummary, ScreenedStock } from "@/types";
 import { etDateString } from "@/lib/archive-window";
 import { ARCHIVE_KEEP_DAYS, watchlistLimitForPlan, type PaidPlanId, type PlanId } from "@/lib/plans";
+import { sanitizePlainText } from "@/lib/sanitize-text";
 import { slimSnapshot } from "@/lib/snapshot-view";
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -322,7 +323,9 @@ export async function saveUserInvestment(data: {
 }
 
 const ADMIN_EMAIL =
-  process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
+  process.env.TVM_ADMIN_EMAIL?.trim() ||
+  process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL?.trim() ||
+  "admin@tvm-investments.test";
 
 export function isAdminEmail(email?: string | null) {
   return (email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
@@ -364,10 +367,29 @@ export type AdminAccountRow = {
   discordConnected: boolean;
 };
 
-export async function listAdminAccounts(): Promise<{
+type AdminAccountsPayload = {
   rows: AdminAccountRow[];
   plansLoaded: boolean;
-}> {
+};
+
+let adminAccountsCache: { at: number; payload: AdminAccountsPayload } | null = null;
+const ADMIN_ACCOUNTS_TTL_MS = 45_000;
+
+export function invalidateAdminAccountsCache() {
+  adminAccountsCache = null;
+}
+
+export async function listAdminAccounts(options?: {
+  force?: boolean;
+}): Promise<AdminAccountsPayload> {
+  if (
+    !options?.force &&
+    adminAccountsCache &&
+    Date.now() - adminAccountsCache.at < ADMIN_ACCOUNTS_TTL_MS
+  ) {
+    return adminAccountsCache.payload;
+  }
+
   const auth = await getAdminAuth();
   if (!auth) throw new Error("Admin access is not configured.");
 
@@ -403,10 +425,8 @@ export async function listAdminAccounts(): Promise<{
   const db = await getAdminDb();
   if (db) {
     try {
-      const [entitlementSnap, betaSnap] = await Promise.all([
-        db.collection("entitlements").get(),
-        db.collection("beta_status").get(),
-      ]);
+      const { SHOW_BETA_WAITLIST } = await import("@/lib/beta-waitlist");
+      const entitlementSnap = await db.collection("entitlements").get();
       for (const item of entitlementSnap.docs) {
         const data = item.data();
         const source =
@@ -422,41 +442,21 @@ export async function listAdminAccounts(): Promise<{
           source,
         });
       }
-      const { SHOW_BETA_WAITLIST } = await import("@/lib/beta-waitlist");
-      const stalePending: FirebaseFirestore.DocumentReference[] = [];
-      for (const item of betaSnap.docs) {
-        const data = item.data();
-        let waitlistStatus =
-          data.waitlistStatus === "pending" || data.waitlistStatus === "admitted"
-            ? data.waitlistStatus
-            : "none";
-        // Waitlist is off — clear stale pending rows so admin/client stay in sync.
-        if (!SHOW_BETA_WAITLIST && waitlistStatus === "pending") {
-          waitlistStatus = "none";
-          stalePending.push(item.ref);
-        }
-        beta.set(item.id, {
-          waitlistStatus,
-          betaTester: data.betaTester === true || waitlistStatus === "admitted",
-          discordConnected: data.discordConnected === true,
-        });
-      }
-      if (stalePending.length) {
-        const { FieldValue } = await import("firebase-admin/firestore");
-        for (let i = 0; i < stalePending.length; i += 400) {
-          const chunk = stalePending.slice(i, i + 400);
-          const batch = db.batch();
-          for (const ref of chunk) {
-            batch.set(
-              ref,
-              {
-                waitlistStatus: "none",
-                updatedAt: FieldValue.serverTimestamp(),
-              },
-              { merge: true },
-            );
-          }
-          await batch.commit();
+
+      // Waitlist off: skip full beta_status collection scan (1 read per doc).
+      if (SHOW_BETA_WAITLIST) {
+        const betaSnap = await db.collection("beta_status").get();
+        for (const item of betaSnap.docs) {
+          const data = item.data();
+          const waitlistStatus =
+            data.waitlistStatus === "pending" || data.waitlistStatus === "admitted"
+              ? data.waitlistStatus
+              : "none";
+          beta.set(item.id, {
+            waitlistStatus,
+            betaTester: data.betaTester === true || waitlistStatus === "admitted",
+            discordConnected: data.discordConnected === true,
+          });
         }
       }
       plansLoaded = true;
@@ -485,7 +485,9 @@ export async function listAdminAccounts(): Promise<{
     })
     .sort((a, b) => a.email.localeCompare(b.email));
 
-  return { rows, plansLoaded };
+  const payload = { rows, plansLoaded };
+  adminAccountsCache = { at: Date.now(), payload };
+  return payload;
 }
 
 export async function setAdminPlan(uid: string, plan: PlanId) {
@@ -537,6 +539,8 @@ export async function setAdminPlan(uid: string, plan: PlanId) {
   void import("@/lib/discord-role-sync")
     .then((mod) => mod.syncDiscordRolesForUid(uid))
     .catch((error) => console.warn("[discord] admin plan role sync:", error));
+
+  invalidateAdminAccountsCache();
 
   return {
     stripeSubscriptionId:
@@ -590,12 +594,19 @@ export async function listFeedback(limitN = 40): Promise<FeedbackRow[]> {
         : data.kind === "support"
           ? "support"
           : "bug";
+    const rawMessage = String(data.message || "");
+    const message =
+      sanitizePlainText(rawMessage, {
+        maxLength: 4000,
+        allowNewlines: true,
+        minLength: 0,
+      }) ?? rawMessage.slice(0, 4000);
     return {
       id: doc.id,
       email: String(data.email || "unknown"),
       kind,
       rating: Number(data.rating) || 0,
-      message: String(data.message || ""),
+      message,
       createdAt: String(data.createdAt || ""),
       emailed: Boolean(data.emailed),
     };
@@ -1276,6 +1287,7 @@ export async function admitBetaTester(uid: string) {
     },
     { merge: true },
   );
+  invalidateAdminAccountsCache();
   return getBetaStatus(uid);
 }
 
@@ -1306,9 +1318,13 @@ export async function updateSiteMaintenance(input: {
   const db = await getAdminDb();
   if (!db) throw new Error("Maintenance could not be updated.");
   const { FieldValue } = await import("firebase-admin/firestore");
-  const start = input.start.trim();
-  const end = input.end.trim();
-  const message = input.message.trim();
+  const start = sanitizePlainText(input.start, { maxLength: 80 }) || "";
+  const end = sanitizePlainText(input.end, { maxLength: 80 }) || "";
+  const message =
+    sanitizePlainText(input.message, {
+      maxLength: 500,
+      allowNewlines: false,
+    }) || "";
   await db.collection("site").doc("maintenance").set(
     {
       enabled: input.enabled,

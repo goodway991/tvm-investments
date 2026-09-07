@@ -1,6 +1,10 @@
 import "server-only";
 import { verifyIdToken } from "@/lib/firebase/admin";
 
+/**
+ * Prefer Admin SDK verifyIdToken only.
+ * Identity Toolkit fallback is local/dev when Admin is unavailable — never in production.
+ */
 export async function verifyUserToken(idToken: string): Promise<{
   uid: string;
   email: string;
@@ -9,6 +13,10 @@ export async function verifyUserToken(idToken: string): Promise<{
   if (decoded?.uid) {
     return { uid: decoded.uid, email: decoded.email || "unknown" };
   }
+
+  const allowFallback =
+    process.env.NODE_ENV !== "production" && process.env.VERCEL_ENV !== "production";
+  if (!allowFallback) return null;
 
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
   if (!apiKey) return null;

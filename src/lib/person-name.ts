@@ -1,12 +1,13 @@
+import { isSafePersonName, stripControlChars } from "@/lib/sanitize-text";
+
 export const SIGNUP_NAME_KEY = "tvm-signup-name";
 
 export function normalizePersonName(value: string) {
-  return value.trim().replace(/\s+/g, " ");
+  return stripControlChars(value, false);
 }
 
 export function isPersonName(value: string) {
-  const next = normalizePersonName(value);
-  return next.length >= 1 && next.length <= 40 && !/[0-9@]/.test(next);
+  return isSafePersonName(normalizePersonName(value));
 }
 
 export function fullDisplayName(firstName: string, lastName: string) {

@@ -1,3 +1,4 @@
+import "server-only";
 import type { ChartPoint } from "@/lib/chart-series";
 import type { PlanId } from "@/lib/plans";
 import {

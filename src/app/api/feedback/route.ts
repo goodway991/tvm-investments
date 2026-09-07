@@ -7,6 +7,7 @@ import {
   verifyIdToken,
 } from "@/lib/firebase/admin";
 import { getFeedbackInbox } from "@/lib/feedback-inbox";
+import { escapeHtml, sanitizePlainText } from "@/lib/sanitize-text";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,11 @@ export async function POST(request: NextRequest) {
           ? "bug"
           : null;
   const rating = Number(body.rating);
-  const message = String(body.message ?? "").trim();
+  const message = sanitizePlainText(String(body.message ?? ""), {
+    minLength: 8,
+    maxLength: 4000,
+    allowNewlines: true,
+  });
 
   if (!kind) {
     return NextResponse.json(
@@ -65,7 +70,7 @@ export async function POST(request: NextRequest) {
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return NextResponse.json({ error: "Pick a rating from 1 to 5 stars." }, { status: 400 });
   }
-  if (message.length < 8 || message.length > 4000) {
+  if (!message) {
     return NextResponse.json(
       { error: "Write between 8 and 4,000 characters." },
       { status: 400 },
@@ -254,10 +259,3 @@ async function sendWithSmtp({
   }
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}

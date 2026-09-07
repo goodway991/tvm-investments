@@ -62,11 +62,14 @@ function discordRedirectUri() {
 }
 
 function oauthSecret() {
-  return (
-    process.env.DISCORD_OAUTH_SECRET?.trim() ||
-    process.env.CRON_SECRET?.trim() ||
-    "tvm-discord-oauth-dev"
-  );
+  const secret =
+    process.env.DISCORD_OAUTH_SECRET?.trim() || process.env.CRON_SECRET?.trim();
+  if (secret) return secret;
+  // Local/dev only — never ship a fixed HMAC key to production.
+  if (process.env.NODE_ENV !== "production" && process.env.VERCEL_ENV !== "production") {
+    return "tvm-discord-oauth-dev";
+  }
+  throw new Error("DISCORD_OAUTH_SECRET (or CRON_SECRET) must be set.");
 }
 
 export function getDiscordOAuthConfig(): DiscordOAuthConfig | null {

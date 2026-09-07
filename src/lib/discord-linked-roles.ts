@@ -8,6 +8,7 @@ import {
   findUidByDiscordId,
   getEntitlementForUid,
 } from "@/lib/firebase/admin";
+import { escapeHtml } from "@/lib/sanitize-text";
 
 const DISCORD_API = "https://discord.com/api/v10";
 
@@ -181,12 +182,4 @@ export function linkedRoleSuccessHtml(opts: {
   </main>
 </body>
 </html>`;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

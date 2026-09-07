@@ -17,8 +17,13 @@ function tokenCryptoKey() {
   const raw =
     process.env.DISCORD_TOKEN_KEY?.trim() ||
     process.env.DISCORD_OAUTH_SECRET?.trim() ||
-    process.env.CRON_SECRET?.trim() ||
-    "tvm-discord-token-dev";
+    process.env.CRON_SECRET?.trim();
+  if (!raw) {
+    if (process.env.NODE_ENV !== "production" && process.env.VERCEL_ENV !== "production") {
+      return createHash("sha256").update("tvm-discord-token-dev").digest();
+    }
+    throw new Error("DISCORD_TOKEN_KEY (or DISCORD_OAUTH_SECRET / CRON_SECRET) must be set.");
+  }
   return createHash("sha256").update(raw).digest();
 }
 

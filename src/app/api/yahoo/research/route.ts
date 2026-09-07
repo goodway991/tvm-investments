@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { researchSymbol } from "@/lib/analysis-pipeline";
 import { requireApiUser } from "@/lib/api-guard";
+import { getPlanForUser } from "@/lib/firebase/admin";
+import { planHasPro } from "@/lib/plans";
 import { parseTicker } from "@/lib/ticker";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +16,10 @@ export async function GET(request: NextRequest) {
   if (!symbol) {
     return NextResponse.json({ error: "Valid ticker required" }, { status: 400 });
   }
-  const withProCulture = request.nextUrl.searchParams.get("pro") === "1";
+
+  const plan = await getPlanForUser(gate.uid, gate.email);
+  const wantsPro = request.nextUrl.searchParams.get("pro") === "1";
+  const withProCulture = wantsPro && planHasPro(plan);
 
   try {
     const payload = await researchSymbol(symbol, withProCulture);

@@ -20,6 +20,7 @@ import {
   storeDiscordOAuthTokens,
   syncGuildMemberRoles,
 } from "@/lib/discord-role-sync";
+import { escapeHtml } from "@/lib/sanitize-text";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ function linkedRoleErrorHtml(message: string) {
 <body>
   <main class="card">
     <h1>Verification didn’t finish</h1>
-    <p>${message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+    <p>${escapeHtml(message)}</p>
     <p><a href="https://tvminvest.com/dashboard/settings?tab=discord">Link Discord in TVM Settings</a>, then try again from Discord.</p>
   </main>
 </body>

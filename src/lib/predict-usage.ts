@@ -1,7 +1,5 @@
 "use client";
 
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { getClientFirestore } from "@/lib/firebase/client";
 import {
   FREE_WEEKLY_PULSE_PREDICT_LIMIT,
   PRO_WEEKLY_ADDITION_PREDICT_LIMIT,
@@ -92,29 +90,15 @@ export function writeLocalPredictUsage(uid: string, usage: PredictUsage) {
   }
 }
 
+/** Soft UI counters only — never touch Firestore (saves Blaze reads; not authoritative). */
 export async function loadPredictUsage(uid: string): Promise<PredictUsage> {
-  const weekId = etWeekId();
-  const local = readLocalPredictUsage(uid);
-  const db = getClientFirestore();
-  if (!db) return local;
-  try {
-    const snap = await getDoc(doc(db, "predict_usage", uid));
-    const remote = parseUsage(snap.exists() ? snap.data() : null, weekId);
-    const merged: PredictUsage = {
-      weekId,
-      pulse: Math.max(local.pulse, remote.pulse),
-      score: Math.max(local.score, remote.score),
-      addition: Math.max(local.addition, remote.addition),
-      horizon: Math.max(local.horizon, remote.horizon),
-      advanced: Math.max(local.advanced, remote.advanced),
-    };
-    writeLocalPredictUsage(uid, merged);
-    return merged;
-  } catch {
-    return local;
-  }
+  return readLocalPredictUsage(uid);
 }
 
+/**
+ * Soft UI gate. Real limits are plan checks + `/api` quotas on the server.
+ * Do not write predict_usage to Firestore — clients must not own quota docs.
+ */
 export async function consumePredictUsage(
   uid: string,
   kind: PredictKind,
@@ -126,26 +110,5 @@ export async function consumePredictUsage(
   if (limit <= 0 || current[kind] >= limit) return { ok: false, usage: current };
   const next: PredictUsage = { ...current, [kind]: current[kind] + 1 };
   writeLocalPredictUsage(uid, next);
-  const db = getClientFirestore();
-  if (db) {
-    try {
-      await setDoc(
-        doc(db, "predict_usage", uid),
-        {
-          uid,
-          weekId: next.weekId,
-          pulse: next.pulse,
-          score: next.score,
-          addition: next.addition,
-          horizon: next.horizon,
-          advanced: next.advanced,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-    } catch (error) {
-      console.error("[predict_usage] write failed", error);
-    }
-  }
   return { ok: true, usage: next };
 }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSignedIn } from "@/lib/api-guard";
 import {
-  connectDiscordStatus,
   getBetaStatus,
   joinBetaWaitlist,
 } from "@/lib/firebase/admin";
@@ -37,8 +36,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(status);
     }
     if (action === "discord") {
-      const status = await connectDiscordStatus(gate.uid, gate.email);
-      return NextResponse.json(status);
+      return NextResponse.json(
+        { error: "Link Discord through OAuth in Settings — this flag cannot be set manually." },
+        { status: 403 },
+      );
     }
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   } catch (error) {

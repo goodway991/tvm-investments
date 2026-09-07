@@ -112,11 +112,12 @@ service cloud.firestore {
         && value.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     }
 
+    // Letters/marks/spaces/hyphen/apostrophe/period only — blocks HTML metacharacters.
     function validGivenName(value) {
       return value is string
         && value.size() >= 1
         && value.size() <= 40
-        && value.matches("^[^@0-9]{1,40}$");
+        && value.matches("^[^@0-9<>&\"'`\\\\/]{1,40}$");
     }
 
     function validUser(data, uid) {
@@ -1088,7 +1089,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow read: if isOwner(uid);
       allow create: if isOwner(uid)
         && validUser(request.resource.data, uid)
         && request.resource.data.keys().hasAll([
@@ -1119,7 +1120,8 @@ service cloud.firestore {
     }
 
     match /entitlements/{uid} {
-      allow read: if isOwner(uid) || isBootstrapAdmin();
+      // Owner read only. Grants/comp/admin are Admin SDK only — no client god-mode.
+      allow read: if isOwner(uid);
       allow create: if isOwner(uid)
         && (
           (
@@ -1134,40 +1136,24 @@ service cloud.firestore {
         )
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
-      allow update: if (
-          isBootstrapAdmin()
-          && (
-            validFreeEntitlement(request.resource.data, uid)
-            || validCompProEntitlement(request.resource.data, uid)
-            || (
-              validAdminEntitlement(request.resource.data, uid)
-              && resource.data.role == "admin"
-            )
-          )
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.createdAt == resource.data.createdAt
-          && request.resource.data.updatedAt == request.time
+      allow update: if isOwner(uid)
+        && resource.data.plan == "pro"
+        && resource.data.role == "client"
+        && (
+          !resource.data.keys().hasAny(["source"])
+          || resource.data.source == "comp"
         )
-        || (
-          isOwner(uid)
-          && resource.data.plan == "pro"
-          && resource.data.role == "client"
-          && (
-            !resource.data.keys().hasAny(["source"])
-            || resource.data.source == "comp"
-          )
-          && !resource.data.keys().hasAny(["giftAckedAt"])
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(["giftAckedAt", "updatedAt"])
-          && request.resource.data.giftAckedAt is timestamp
-          && request.resource.data.updatedAt == request.time
-          && validCompProEntitlement(request.resource.data, uid)
-        );
+        && !resource.data.keys().hasAny(["giftAckedAt"])
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["giftAckedAt", "updatedAt"])
+        && request.resource.data.giftAckedAt is timestamp
+        && request.resource.data.updatedAt == request.time
+        && validCompProEntitlement(request.resource.data, uid);
       allow delete: if false;
     }
 
     match /watchlists/{uid} {
-      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow read: if isOwner(uid);
       allow create: if isOwner(uid)
         && validWatchlist(request.resource.data, uid)
         && request.resource.data.createdAt == request.time
@@ -1196,12 +1182,6 @@ service cloud.firestore {
               && validFreeCooldown(request.resource.data)
             )
           )
-        )
-        || (
-          isBootstrapAdmin()
-          && validWatchlistReset(request.resource.data, uid)
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.createdAt == resource.data.createdAt
         )
         || (
           isOwner(uid)
@@ -1259,11 +1239,8 @@ service cloud.firestore {
     }
 
     match /predict_usage/{uid} {
-      allow read: if isOwner(uid);
-      allow create, update: if isOwner(uid)
-        && validPredictUsage(request.resource.data, uid)
-        && request.resource.data.updatedAt == request.time;
-      allow delete: if false;
+      // Soft UI counters live in localStorage. Server api_usage + plan gates are authoritative.
+      allow read, write: if false;
     }
 
     // Daily API proxy counters. Admin SDK only — clients must not read or write.
@@ -1272,7 +1249,7 @@ service cloud.firestore {
     }
 
     match /beta_status/{uid} {
-      allow read: if isOwner(uid) || isBootstrapAdmin();
+      allow read: if isOwner(uid);
       allow write: if false;
     }
 
@@ -1287,8 +1264,11 @@ service cloud.firestore {
     }
 
     match /site/releases {
-      allow read: if true;
-      allow write: if false;
+      allow read, write: if false;
+    }
+
+    match /feedback/{id} {
+      allow read, write: if false;
     }
 
     match /daily_snapshots/{document=**} {

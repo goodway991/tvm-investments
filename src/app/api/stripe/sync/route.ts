@@ -5,6 +5,12 @@ import { stripeConfigured } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Return-URL recovery after Checkout. The client only sends a session id;
+ * payment/plan status is loaded from Stripe with the secret key, ownership
+ * is checked against the signed-in Firebase uid, then entitlements update.
+ * Forged "I paid" JSON cannot unlock a plan.
+ */
 export async function POST(request: NextRequest) {
   const gate = await requireSignedIn(request);
   if (!gate.ok) return gate.response;

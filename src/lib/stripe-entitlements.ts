@@ -134,9 +134,7 @@ export async function applySubscription(subscription: Stripe.Subscription) {
   }
   const pending = await pendingChange(subscription);
   const plan =
-    planFromPriceId(priceIdFromSubscription(subscription)) ||
-    (subscription.metadata?.plan === "ultra" ? "ultra" : null) ||
-    "pro";
+    planFromPriceId(priceIdFromSubscription(subscription)) || "pro";
   await applyStripeEntitlement({
     uid,
     plan,
@@ -179,43 +177,38 @@ export async function cancelSubscriptionNow(subscriptionId: string) {
 export async function applyCheckoutSessionObject(session: Stripe.Checkout.Session) {
   const uid = uidFrom(session.metadata, session.client_reference_id);
   if (!uid) return;
-  if (session.mode !== "subscription" || session.payment_status === "unpaid") return;
+  // Never unlock from client-supplied JSON — only Stripe Checkout session objects.
+  if (session.mode !== "subscription") return;
+  if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
+    return;
+  }
 
   const stripe = getStripe();
   const subscriptionId =
     typeof session.subscription === "string"
       ? session.subscription
       : session.subscription?.id;
-  if (subscriptionId) {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    if (!subscription.metadata?.firebaseUid) {
-      await stripe.subscriptions.update(subscriptionId, {
-        metadata: {
-          ...subscription.metadata,
-          firebaseUid: uid,
-          plan: session.metadata?.plan || subscription.metadata?.plan || "pro",
-        },
-      });
-    }
-    await applySubscription({
-      ...subscription,
+  // Require a real Subscription from Stripe. Do not grant from metadata alone.
+  if (!subscriptionId) return;
+
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  if (!subscription.metadata?.firebaseUid) {
+    await stripe.subscriptions.update(subscriptionId, {
       metadata: {
         ...subscription.metadata,
         firebaseUid: uid,
         plan: session.metadata?.plan || subscription.metadata?.plan || "pro",
       },
     });
-    return;
   }
-
-  const plan = (session.metadata?.plan === "ultra" ? "ultra" : "pro") as PaidPlanId;
-  await applyStripeEntitlement({
-    uid,
-    plan,
-    stripeCustomerId: customerId(session.customer),
-    stripeSubscriptionId: "",
+  await applySubscription({
+    ...subscription,
+    metadata: {
+      ...subscription.metadata,
+      firebaseUid: uid,
+      plan: session.metadata?.plan || subscription.metadata?.plan || "pro",
+    },
   });
-  await admitBetaTester(uid);
 }
 
 export async function changeSubscriptionPrice(input: {
@@ -351,6 +344,11 @@ export async function resumeSubscription(uid: string, subscriptionId: string) {
   return updated;
 }
 
+/**
+ * Post-checkout recovery for the signed-in buyer.
+ * Trusts Stripe's API (secret key retrieve), not the client's claim that they paid.
+ * Still refuses sessions that belong to a different Firebase uid.
+ */
 export async function applyCheckoutSession(sessionId: string, uid: string) {
   const stripe = getStripe();
   const session = await stripe.checkout.sessions.retrieve(sessionId);
@@ -360,6 +358,9 @@ export async function applyCheckoutSession(sessionId: string, uid: string) {
   }
   if (session.status === "expired") {
     throw new Error("That checkout expired.");
+  }
+  if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
+    throw new Error("That checkout is not paid yet.");
   }
   await applyCheckoutSessionObject(session);
 }

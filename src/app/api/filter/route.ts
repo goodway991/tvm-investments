@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireArchiveDate } from "@/lib/archive-access";
 import { requireApiUser } from "@/lib/api-guard";
 import { applyFilters } from "@/lib/scoring";
 import { getDashboardSnapshot, parseArchiveDate } from "@/lib/snapshot";
@@ -11,6 +12,9 @@ export async function GET(request: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const params = request.nextUrl.searchParams;
+  const date = parseArchiveDate(params.get("date") ?? params.get("archive")) ?? null;
+  const archive = await requireArchiveDate(gate.uid, gate.email, date);
+  if (!archive.ok) return archive.response;
 
   const filters: FilterCriteria = {
     peMin: num(params.get("peMin")),
@@ -23,9 +27,7 @@ export async function GET(request: NextRequest) {
     marketCapMax: num(params.get("marketCapMax")),
   };
 
-  const snapshot = await getDashboardSnapshot(
-    parseArchiveDate(params.get("date") ?? params.get("archive")),
-  );
+  const snapshot = await getDashboardSnapshot(date);
   const filtered = applyFilters(snapshot.screenedStocks, filters);
 
   return NextResponse.json({

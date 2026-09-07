@@ -1,6 +1,6 @@
 "use client";
 
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
@@ -189,17 +189,39 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const db = getClientFirestore();
     if (!db) return;
-    return onSnapshot(
-      doc(db, MAINTENANCE_COLLECTION, MAINTENANCE_DOC_ID),
-      (snapshot) => {
+
+    let cancelled = false;
+    const ref = doc(db, MAINTENANCE_COLLECTION, MAINTENANCE_DOC_ID);
+
+    async function pull() {
+      try {
+        const { getDoc } = await import("firebase/firestore");
+        const snapshot = await getDoc(ref);
+        if (cancelled) return;
         setSite(
           parseSiteMaintenance(snapshot.data() as Record<string, unknown> | undefined),
         );
-      },
-      () => {
-        setSite(IDLE);
-      },
-    );
+      } catch {
+        if (!cancelled) setSite(IDLE);
+      }
+    }
+
+    void pull();
+    // Poll instead of onSnapshot — one read per interval, not a billed listener on every page.
+    const POLL_MS = 5 * 60_000;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void pull();
+    }, POLL_MS);
+    const onFocus = () => void pull();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, []);
 
   const resolved = useMemo(() => resolveMaintenanceState(site), [site]);

@@ -4,6 +4,13 @@ import type {
   OHLCVBar,
   StockCandidate,
 } from "@/types";
+import {
+  FREE_MOVER_LIMIT,
+  PRO_MOVER_LIMIT,
+  planHasPro,
+  sectorDiveLimit,
+  type PlanId,
+} from "@/lib/plans";
 
 const DAILY_BARS = 32;
 const YEAR_BARS = 12;
@@ -75,6 +82,22 @@ export function dashboardView(snapshot: DailySnapshot): DailySnapshot {
     shortTermPicks: snapshot.shortTermPicks,
     longTermPicks: snapshot.longTermPicks,
     reports: snapshot.reports,
+  };
+}
+
+/** Enforce free/pro payload caps on the server so the UI gate is not the only wall. */
+export function applyPlanSnapshotCaps(
+  snapshot: DailySnapshot,
+  plan: PlanId,
+): DailySnapshot {
+  const moverCap = planHasPro(plan) ? PRO_MOVER_LIMIT : FREE_MOVER_LIMIT;
+  const diveCap = sectorDiveLimit(plan);
+  const dives = snapshot.sectorDives || [];
+  return {
+    ...snapshot,
+    topMovers: snapshot.topMovers.slice(0, moverCap),
+    sectorDives: Number.isFinite(diveCap) ? dives.slice(0, diveCap) : dives,
+    techSectorAnalysis: planHasPro(plan) ? snapshot.techSectorAnalysis : "",
   };
 }
 

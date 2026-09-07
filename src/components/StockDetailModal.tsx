@@ -14,6 +14,7 @@ import { sparklineValues, type ChartRange } from "@/lib/chart-series";
 import { authedFetch } from "@/lib/authed-fetch";
 import { planHasPro } from "@/lib/plans";
 import { evaluateRange52Week } from "@/lib/range-52-week";
+import { safeHttpUrl } from "@/lib/sanitize-text";
 
 function signedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -303,25 +304,43 @@ export function StockDetailModal({
           </div>
           <div className="mt-3 space-y-2">
             {news.length > 0 ? (
-              news.slice(0, 6).map((item) => (
-                <a
-                  key={`${item.headline}-${item.datetime}`}
-                  href={item.url || "#"}
-                  target={item.url ? "_blank" : undefined}
-                  rel={item.url ? "noreferrer" : undefined}
-                  className="glass block rounded-2xl p-4 transition-transform hover:-translate-y-0.5"
-                >
-                  <p className="text-sm font-medium text-ink">
-                    <BogenTerms text={item.headline} />
-                  </p>
-                  <p className="mt-1 text-xs text-ink-soft">
-                    {item.source}
-                    {item.datetime
-                      ? ` · ${new Date(item.datetime).toLocaleString()}`
-                      : ""}
-                  </p>
-                </a>
-              ))
+              news.slice(0, 6).map((item) => {
+                const href = safeHttpUrl(item.url);
+                const inner = (
+                  <>
+                    <p className="text-sm font-medium text-ink">
+                      <BogenTerms text={item.headline} />
+                    </p>
+                    <p className="mt-1 text-xs text-ink-soft">
+                      {item.source}
+                      {item.datetime
+                        ? ` · ${new Date(item.datetime).toLocaleString()}`
+                        : ""}
+                    </p>
+                  </>
+                );
+                if (!href) {
+                  return (
+                    <div
+                      key={`${item.headline}-${item.datetime}`}
+                      className="glass block rounded-2xl p-4"
+                    >
+                      {inner}
+                    </div>
+                  );
+                }
+                return (
+                  <a
+                    key={`${item.headline}-${item.datetime}`}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="glass block rounded-2xl p-4 transition-transform hover:-translate-y-0.5"
+                  >
+                    {inner}
+                  </a>
+                );
+              })
             ) : (
               <p className="glass rounded-2xl p-4 text-sm text-ink-soft">
                 No headlines available for {detail.symbol} right now.
