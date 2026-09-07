@@ -5,9 +5,12 @@ import { getPlanForUser } from "@/lib/firebase/admin";
 import { parseTicker } from "@/lib/ticker";
 import {
   clampAdvancedSettings,
-  fitAdvancedForecast,
   ohlcvToHistory,
 } from "@/lib/advanced-forecast";
+import {
+  applyUltraAdvancedSettings,
+  fitUltraEnsemble,
+} from "@/lib/ultra-ensemble";
 import { fetchYahooOhlcvSeries } from "@/lib/providers/yahoo";
 
 export const dynamic = "force-dynamic";
@@ -44,14 +47,15 @@ export async function POST(request: NextRequest) {
   const settings = clampAdvancedSettings(body.settings);
 
   try {
-    const bars = await fetchYahooOhlcvSeries(symbol, settings.lookback + 12);
-    const stats = fitAdvancedForecast(bars, settings);
-    if (!stats) {
+    const bars = await fetchYahooOhlcvSeries(symbol, Math.max(90, settings.lookback + 12));
+    const ensemble = fitUltraEnsemble(bars);
+    if (!ensemble) {
       return NextResponse.json(
         { error: "Not enough daily bars to sketch this name." },
         { status: 422 },
       );
     }
+    const stats = applyUltraAdvancedSettings(ensemble.stats, settings);
     const history = ohlcvToHistory(bars).slice(-Math.max(12, settings.lookback));
     return NextResponse.json({
       symbol,
@@ -64,7 +68,8 @@ export async function POST(request: NextRequest) {
       lastDelta: stats.lastDelta,
       rho: stats.rho,
       avgBlend: stats.avgBlend,
-      note: "Ultra Advanced Prediction · 99%* research-read.",
+      equationCount: ensemble.equationCount,
+      note: `Ultra Advanced · ${ensemble.equationCount}-equation algorithm (sliders applied).`,
     });
   } catch (error) {
     console.error("Advanced forecast error:", error);

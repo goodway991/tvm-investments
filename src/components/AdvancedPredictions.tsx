@@ -186,7 +186,7 @@ export function AdvancedPredictions({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-violet">
-            <UltraShinePhrase>Advanced Predictions</UltraShinePhrase>
+            <UltraShinePhrase>Ultra Algorithm</UltraShinePhrase>
           </p>
           <h2 className="mt-1 flex flex-wrap items-center gap-2 font-display text-lg font-semibold text-ink">
             <BogenHeading id="advanced-predict">Tune the 99%* read</BogenHeading>

@@ -94,6 +94,19 @@ export function PredictButton({
   const ultra = plan === "ultra";
   const lockedToUltra = kind === "advanced" && plan !== "ultra";
   const lockedToPro = !lockedToUltra && plan === "free" && (limit == null || limit <= 0);
+  const ultraPredictLabel =
+    kind === "pulse"
+      ? "Ultra Pulse"
+      : kind === "horizon"
+        ? "Ultra Predict"
+        : kind === "advanced"
+          ? "Ultra Algorithm"
+          : kind === "score"
+            ? "Ultra Score"
+            : kind === "addition"
+              ? "Ultra Analyze"
+              : predictLabel;
+  const activeLabel = ultra ? ultraPredictLabel : predictLabel;
 
   if (lockedToUltra) {
     return (
@@ -165,9 +178,9 @@ export function PredictButton({
         {predicted ? (
           hideLabel
         ) : ultra ? (
-          <UltraShinePhrase>{predictLabel}</UltraShinePhrase>
+          <UltraShinePhrase>{activeLabel}</UltraShinePhrase>
         ) : (
-          <ProGlowText>{predictLabel}</ProGlowText>
+          <ProGlowText>{activeLabel}</ProGlowText>
         )}
       </button>
       </BogenHit>

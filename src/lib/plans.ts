@@ -276,7 +276,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
     rank: 2,
   },
   {
-    name: "Algorithm-based 99%* accuracy predictions",
+    name: "Multi-equation Ultra algorithm predictions (99%*)",
     free: false,
     pro: false,
     ultra: true,

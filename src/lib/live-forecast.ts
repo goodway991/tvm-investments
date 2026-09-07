@@ -15,11 +15,8 @@ import {
   tapeWeightForPlan,
   walkResearchStats,
 } from "@/lib/horizon-research";
-import {
-  DEFAULT_ADVANCED_SETTINGS,
-  fitAdvancedForecast,
-  ohlcvToHistory,
-} from "@/lib/advanced-forecast";
+import { ohlcvToHistory } from "@/lib/advanced-forecast";
+import { fitUltraEnsemble } from "@/lib/ultra-ensemble";
 import { resolveSector } from "@/lib/sector-dives";
 import {
   fetchYahooAnalystView,
@@ -242,11 +239,20 @@ async function loadPeerReturns(sector: string, asOf?: string) {
   }
 }
 
-function planNote(plan: PlanId, researchNote: string, usedGemini: boolean) {
+function planNote(
+  plan: PlanId,
+  researchNote: string,
+  usedGemini: boolean,
+  equationCount?: number,
+) {
   if (plan === "ultra") {
+    const stack =
+      equationCount && equationCount > 0
+        ? `Ultra algorithm · ${equationCount} equations`
+        : "Ultra algorithm ensemble";
     return usedGemini
-      ? researchNote
-      : `Ultra 8-signal research-read. ${researchNote}`;
+      ? `${stack} + Gemini. ${researchNote}`
+      : `${stack}. ${researchNote}`;
   }
   if (plan === "pro") {
     return `Non-algorithm path from tape, sector, and headlines. ${researchNote}`;
@@ -275,16 +281,6 @@ export async function buildLiveForecast(
     throw new Error("Not enough daily bars to project this name.");
   }
 
-  const tape: HorizonStats | null =
-    plan === "ultra"
-      ? fitAdvancedForecast(candidate.ohlcv, DEFAULT_ADVANCED_SETTINGS)
-      : plan === "pro"
-        ? horizonStats(history.map((point) => point.value))
-        : simpleHorizonStats(history.map((point) => point.value));
-  if (!tape) {
-    throw new Error("Not enough daily closes to project this name.");
-  }
-
   const peers = await loadPeerReturns(candidate.sector, asOf);
   const research = await researchHorizonRead({
     stock: candidate,
@@ -294,19 +290,51 @@ export async function buildLiveForecast(
     useLlm: plan === "ultra" && !asOf,
   });
 
-  let walked = walkResearchStats(
-    tape,
-    research.dailyDrift,
-    tapeWeightForPlan(plan),
-  );
-  if (plan === "pro") {
-    const analystDaily = analystDailyDrift(walked.last, analyst.targetMean);
-    const blended = clamp(
-      walked.dailyDrift * 0.88 + analystDaily * 0.12,
-      -MAX_DAILY_DRIFT,
-      MAX_DAILY_DRIFT,
+  let walked: HorizonStats;
+  let equationCount = 0;
+
+  if (plan === "ultra") {
+    const ensemble = fitUltraEnsemble(candidate.ohlcv, {
+      researchDrift: research.dailyDrift,
+      analystDailyDrift: analystDailyDrift(
+        history[history.length - 1]?.value ?? 0,
+        analyst.targetMean,
+      ),
+      sectorChangePct: peers.sectorChange,
+      marketChangePct: peers.marketChange,
+    });
+    if (!ensemble) {
+      throw new Error("Not enough daily bars for the Ultra algorithm ensemble.");
+    }
+    walked = ensemble.stats;
+    equationCount = ensemble.equationCount;
+  } else {
+    const tape: HorizonStats | null =
+      plan === "pro"
+        ? horizonStats(history.map((point) => point.value))
+        : simpleHorizonStats(history.map((point) => point.value));
+    if (!tape) {
+      throw new Error("Not enough daily closes to project this name.");
+    }
+    walked = walkResearchStats(
+      tape,
+      research.dailyDrift,
+      tapeWeightForPlan(plan),
     );
-    walked = { ...walked, dailyDrift: blended, thetaLog: blended, lastDelta: blended };
+    if (plan === "pro") {
+      const analystDaily = analystDailyDrift(walked.last, analyst.targetMean);
+      const blended = clamp(
+        walked.dailyDrift * 0.88 + analystDaily * 0.12,
+        -MAX_DAILY_DRIFT,
+        MAX_DAILY_DRIFT,
+      );
+      walked = {
+        ...walked,
+        dailyDrift: blended,
+        thetaLog: blended,
+        lastDelta: blended,
+      };
+    }
   }
 
   let source: LiveForecast["source"] = "yahoo";
@@ -332,7 +360,11 @@ export async function buildLiveForecast(
         gemini.dailyDrift,
         walked.dailyVol,
       );
-      walked = { ...walked, dailyDrift: blended, thetaLog: blended, lastDelta: blended };
+      walked = {
+        ...walked,
+        dailyDrift: blended,
+        thetaLog: blended,
+      };
       note = gemini.note;
       source = "yahoo+gemini";
     }
@@ -344,18 +376,23 @@ export async function buildLiveForecast(
     last: walked.last,
     dailyDrift: walked.dailyDrift,
     dailyVol: clamp(walked.dailyVol, MIN_SIGMA, MAX_SIGMA),
-    kappa: 0,
+    kappa: plan === "ultra" ? walked.kappa : 0,
     thetaLog: walked.thetaLog,
     lastDelta: walked.lastDelta,
-    rho: 0,
-    avgBlend: 0,
+    rho: plan === "ultra" ? walked.rho : 0,
+    avgBlend: plan === "ultra" ? walked.avgBlend ?? 0 : 0,
     source,
     targetMean: analyst.targetMean,
     targetLow: analyst.targetLow,
     targetHigh: analyst.targetHigh,
     recommendation: analyst.recommendation,
     analystCount: analyst.analystCount,
-    note: planNote(plan, note, source === "yahoo+gemini").slice(0, 280),
+    note: planNote(
+      plan,
+      note,
+      source === "yahoo+gemini",
+      equationCount,
+    ).slice(0, 280),
   };
   cache.set(key, { at: Date.now(), value });
   return value;
