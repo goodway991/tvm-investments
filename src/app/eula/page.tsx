@@ -5,6 +5,7 @@ import {
   EULA_EFFECTIVE_DATE,
   EULA_JURISDICTION,
   EULA_LICENSORS,
+  EULA_MANAGING_OWNER,
   EULA_VENUE,
   EULA_VERSION,
   LEGAL_ENTITY,
@@ -27,10 +28,11 @@ export default function EulaPage() {
     >
       <p>
         This End User License Agreement (“EULA”) is a legally binding license
-        between you (“you” or “User”) and {EULA_LICENSORS} (“Licensor,” “we,”
-        “us,” or “our”). Varish Desai is the sole owner of {LEGAL_ENTITY}.
-        Co-founders may help build the product; they are not licensors under
-        this EULA unless separately named in a later amendment.
+        between you (“you” or “User”) and {EULA_LICENSORS} (collectively,
+        “Licensor,” “we,” “us,” or “our”). The named individuals are part owners
+        of {LEGAL_ENTITY}. {EULA_MANAGING_OWNER} is the managing owner: he
+        directs the product and the work of the other part owners, and day-to-day
+        decisions for the Application are made under his direction.
       </p>
       <p>
         It governs your license to access and use the TVM Investments web
