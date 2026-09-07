@@ -295,33 +295,14 @@ export async function addDiscordUserToGuild(
 }
 
 export function serializePendingDiscord(payload: DiscordLinkPayload) {
-  const body = Buffer.from(
-    JSON.stringify({ ...payload, exp: Date.now() + PENDING_MAX_AGE_SEC * 1000 }),
-  ).toString("base64url");
-  return `${body}.${signPayload(body)}`;
+  // Legacy name — callers should use createPendingDiscordLink + serializePendingCookie.
+  void payload;
+  throw new Error("Use createPendingDiscordLink + serializePendingCookie.");
 }
 
 export function parsePendingDiscord(raw: string | undefined | null): DiscordLinkPayload | null {
-  if (!raw) return null;
-  const [body, signature] = raw.split(".");
-  if (!body || !signature || !safeEqual(signPayload(body), signature)) return null;
-  try {
-    const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as DiscordLinkPayload & {
-      exp?: number;
-    };
-    if (!parsed.discordId || !parsed.exp || Date.now() > parsed.exp) return null;
-    return {
-      discordId: parsed.discordId,
-      discordUsername: parsed.discordUsername,
-      discordGlobalName: parsed.discordGlobalName ?? null,
-      discordAvatar: parsed.discordAvatar ?? null,
-      accessToken: parsed.accessToken,
-      refreshToken: parsed.refreshToken,
-      expiresIn: parsed.expiresIn,
-    };
-  } catch {
-    return null;
-  }
+  void raw;
+  return null;
 }
 
 export const discordPendingCookie = {

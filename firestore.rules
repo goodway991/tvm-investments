@@ -40,6 +40,7 @@ service cloud.firestore {
     // portfolios/{uid}
     //   uid: string, cash: number, totalValue: number
     //   createdAt: timestamp (immutable), updatedAt: timestamp
+    //   Owner may read. Mutations are Admin SDK via /api/portfolio only.
     //
     // portfolios/{uid}/positions/{symbol}
     //   uid: string, symbol: string, shares: number
@@ -49,11 +50,18 @@ service cloud.firestore {
     // horizon_sims/{uid}
     //   uid: string, cash: number, totalValue: number
     //   createdAt: timestamp (immutable), updatedAt: timestamp
+    //   Owner may read. Mutations are Admin SDK via /api/horizon only.
     //   create starts the paper book at cash == 10000, totalValue == 10000
     //
     // horizon_sims/{uid}/positions/{symbol}
     //   uid: string, symbol: string, shares: number
     //   averageCost: number, currentPrice: number, updatedAt: timestamp
+    //
+    // discord_pending/{id}
+    //   Encrypted Discord OAuth tokens for guest link. Admin SDK only.
+    //
+    // predict_usage/{uid}
+    //   Weekly predict counters. Admin SDK via /api/predict-usage only.
     //
     // site/maintenance
     //   enabled: master lock. Dates only inform the banner copy.
@@ -982,112 +990,6 @@ service cloud.firestore {
         && data.nextChangeAt <= request.time + duration.value(5, "m");
     }
 
-    function validPortfolio(data, uid) {
-      return data.keys().hasOnly([
-          "uid", "cash", "totalValue", "createdAt", "updatedAt"
-        ])
-        && data.keys().hasAll([
-          "uid", "cash", "totalValue", "createdAt", "updatedAt"
-        ])
-        && data.uid is string
-        && data.uid == uid
-        && data.cash is number
-        && data.cash >= 0
-        && data.cash <= 1000000000000
-        && data.totalValue is number
-        && data.totalValue >= 0
-        && data.totalValue <= 1000000000000
-        && data.createdAt is timestamp
-        && data.updatedAt is timestamp;
-    }
-
-    function validHorizonSim(data, uid) {
-      return data.keys().hasOnly([
-          "uid", "cash", "totalValue", "createdAt", "updatedAt"
-        ])
-        && data.keys().hasAll([
-          "uid", "cash", "totalValue", "createdAt", "updatedAt"
-        ])
-        && data.uid is string
-        && data.uid == uid
-        && data.cash is number
-        && data.cash >= 0
-        && data.cash <= 10000000
-        && data.totalValue is number
-        && data.totalValue >= 0
-        && data.totalValue <= 10000000
-        && data.createdAt is timestamp
-        && data.updatedAt is timestamp;
-    }
-
-    function validHorizonSimCreate(data, uid) {
-      return validHorizonSim(data, uid)
-        && data.cash == 10000
-        && data.totalValue == 10000;
-    }
-
-    function validPredictCount(value) {
-      return value is number && value >= 0 && value <= 100;
-    }
-
-    function validPredictUsage(data, uid) {
-      return data.keys().hasOnly([
-          "uid", "weekId", "review", "horizon", "pulse", "score",
-          "addition", "advanced", "updatedAt"
-        ])
-        && data.keys().hasAll(["uid", "weekId", "updatedAt"])
-        && data.uid is string
-        && data.uid == uid
-        && data.weekId is string
-        && data.weekId.size() >= 6
-        && data.weekId.size() <= 16
-        && (!("review" in data) || validPredictCount(data.review))
-        && (!("horizon" in data) || validPredictCount(data.horizon))
-        && (!("pulse" in data) || validPredictCount(data.pulse))
-        && (!("score" in data) || validPredictCount(data.score))
-        && (!("addition" in data) || validPredictCount(data.addition))
-        && (!("advanced" in data) || validPredictCount(data.advanced))
-        && data.updatedAt is timestamp;
-    }
-
-    function validPurchasedAt(value) {
-      return value == null
-        || (
-          value is string
-          && value.size() == 10
-          && value.matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
-        );
-    }
-
-    function validPosition(data, uid, symbol) {
-      return data.keys().hasOnly([
-          "uid", "symbol", "shares", "averageCost", "currentPrice",
-          "updatedAt", "purchasedAt"
-        ])
-        && data.keys().hasAll([
-          "uid", "symbol", "shares", "averageCost", "currentPrice", "updatedAt"
-        ])
-        && data.uid is string
-        && data.uid == uid
-        && data.symbol is string
-        && data.symbol == symbol
-        && data.symbol.matches("^[A-Z.\\-]{1,8}$")
-        && data.shares is number
-        && data.shares >= 0
-        && data.shares <= 1000000000
-        && data.averageCost is number
-        && data.averageCost >= 0
-        && data.averageCost <= 10000000
-        && data.currentPrice is number
-        && data.currentPrice >= 0
-        && data.currentPrice <= 10000000
-        && data.updatedAt is timestamp
-        && (
-          !data.keys().hasAny(["purchasedAt"])
-          || validPurchasedAt(data.purchasedAt)
-        );
-    }
-
     match /users/{uid} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid)
@@ -1196,50 +1098,33 @@ service cloud.firestore {
 
     match /portfolios/{uid} {
       allow read: if isOwner(uid);
-      allow create: if isOwner(uid)
-        && validPortfolio(request.resource.data, uid)
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time;
-      allow update: if isOwner(uid)
-        && validPortfolio(request.resource.data, uid)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.updatedAt == request.time;
-      allow delete: if false;
+      // Mutations go through /api/portfolio (Admin SDK).
+      allow create, update, delete: if false;
 
       match /positions/{symbol} {
         allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid)
-          && validPosition(request.resource.data, uid, symbol)
-          && request.resource.data.updatedAt == request.time;
-        allow delete: if isOwner(uid);
+        allow create, update, delete: if false;
       }
     }
 
     match /horizon_sims/{uid} {
       allow read: if isOwner(uid);
-      allow create: if isOwner(uid)
-        && validHorizonSimCreate(request.resource.data, uid)
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time;
-      allow update: if isOwner(uid)
-        && validHorizonSim(request.resource.data, uid)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.updatedAt == request.time;
-      allow delete: if false;
+      // Mutations go through /api/horizon (Admin SDK).
+      allow create, update, delete: if false;
 
       match /positions/{symbol} {
         allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid)
-          && validPosition(request.resource.data, uid, symbol)
-          && request.resource.data.updatedAt == request.time;
-        allow delete: if isOwner(uid);
+        allow create, update, delete: if false;
       }
     }
 
     match /predict_usage/{uid} {
-      // Soft UI counters live in localStorage. Server api_usage + plan gates are authoritative.
+      // Counters live in Admin SDK via /api/predict-usage. Clients cannot touch this.
+      allow read, write: if false;
+    }
+
+    match /discord_pending/{id} {
+      // Opaque OAuth pending rows — Admin SDK only; cookie holds signed id, not tokens.
       allow read, write: if false;
     }
 

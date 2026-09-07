@@ -5,14 +5,18 @@ import {
   discordDisplayName,
   discordHandle,
   discordPendingCookie,
-  parsePendingDiscord,
 } from "@/lib/discord-oauth";
+import {
+  loadPendingDiscordLink,
+  parsePendingCookieId,
+} from "@/lib/discord-pending";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const jar = await cookies();
-  const pending = parsePendingDiscord(jar.get(discordPendingCookie.name)?.value);
+  const pendingId = parsePendingCookieId(jar.get(discordPendingCookie.name)?.value);
+  const pending = pendingId ? await loadPendingDiscordLink(pendingId) : null;
   if (!pending) {
     return NextResponse.json({ pending: false });
   }

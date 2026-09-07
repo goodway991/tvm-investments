@@ -32,8 +32,8 @@ import {
 } from "@/lib/person-name";
 
 type AuthMode = "login" | "signup";
-const ADMIN_EMAIL =
-  process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
+/** Matches firestore.rules isBootstrapAdmin — typing ADMIN on login maps here. */
+const BOOTSTRAP_ADMIN_EMAIL = "admin@tvm-investments.test";
 
 export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
   const router = useRouter();
@@ -125,7 +125,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
     try {
       const credentialEmail =
         mode === "login" && email.trim().toUpperCase() === "ADMIN"
-          ? ADMIN_EMAIL
+          ? BOOTSTRAP_ADMIN_EMAIL
           : email.trim();
       await setPersistence(
         auth,
@@ -187,7 +187,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
       return;
     }
     const resetEmail =
-      email.trim().toUpperCase() === "ADMIN" ? ADMIN_EMAIL : email.trim();
+      email.trim().toUpperCase() === "ADMIN" ? BOOTSTRAP_ADMIN_EMAIL : email.trim();
     if (!resetEmail.includes("@")) {
       setError("Enter a valid email address first.");
       return;

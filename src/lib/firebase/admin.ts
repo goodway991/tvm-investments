@@ -323,9 +323,7 @@ export async function saveUserInvestment(data: {
 }
 
 const ADMIN_EMAIL =
-  process.env.TVM_ADMIN_EMAIL?.trim() ||
-  process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL?.trim() ||
-  "admin@tvm-investments.test";
+  process.env.TVM_ADMIN_EMAIL?.trim() || "admin@tvm-investments.test";
 
 export function isAdminEmail(email?: string | null) {
   return (email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
@@ -398,16 +396,34 @@ export async function listAdminAccounts(options?: {
     email: string;
     displayName: string;
     disabled: boolean;
+    claimPlan?: PlanId;
+    claimRole?: "client" | "admin";
+    claimSource?: "comp" | "paid" | "none";
   }> = [];
   let pageToken: string | undefined;
   do {
     const page = await auth.listUsers(1000, pageToken);
     for (const record of page.users) {
+      const claims = (record.customClaims || {}) as Record<string, unknown>;
+      const claimPlan =
+        claims.tvmPlan === "ultra" || claims.tvmPlan === "pro" || claims.tvmPlan === "free"
+          ? claims.tvmPlan
+          : undefined;
+      const claimRole = claims.tvmRole === "admin" ? "admin" : claims.tvmRole === "client" ? "client" : undefined;
+      const claimSource =
+        claims.tvmSource === "comp" || claims.tvmSource === "paid" || claims.tvmSource === "none"
+          ? claims.tvmSource
+          : claims.tvmSource === "stripe"
+            ? "paid"
+            : undefined;
       authUsers.push({
         uid: record.uid,
         email: record.email || "",
         displayName: record.displayName || "",
         disabled: Boolean(record.disabled),
+        claimPlan,
+        claimRole,
+        claimSource,
       });
     }
     pageToken = page.pageToken;
@@ -422,28 +438,31 @@ export async function listAdminAccounts(options?: {
     { betaTester: boolean; waitlistStatus: "none" | "pending" | "admitted"; discordConnected: boolean }
   >();
   let plansLoaded = false;
+  const missingClaims = authUsers.some((row) => !row.claimPlan && !isAdminEmail(row.email));
   const db = await getAdminDb();
   if (db) {
     try {
       const { SHOW_BETA_WAITLIST } = await import("@/lib/beta-waitlist");
-      const entitlementSnap = await db.collection("entitlements").get();
-      for (const item of entitlementSnap.docs) {
-        const data = item.data();
-        const source =
-          data.source === "stripe" || data.source === "paid"
-            ? "paid"
-            : data.source === "comp"
-              ? "comp"
-              : "none";
-        entitlements.set(item.id, {
-          role: data.role === "admin" ? "admin" : "client",
-          plan:
-            data.plan === "ultra" ? "ultra" : data.plan === "pro" ? "pro" : "free",
-          source,
-        });
+      // Prefer Auth custom claims; only scan entitlements when some users lack claims.
+      if (missingClaims) {
+        const entitlementSnap = await db.collection("entitlements").get();
+        for (const item of entitlementSnap.docs) {
+          const data = item.data();
+          const source =
+            data.source === "stripe" || data.source === "paid"
+              ? "paid"
+              : data.source === "comp"
+                ? "comp"
+                : "none";
+          entitlements.set(item.id, {
+            role: data.role === "admin" ? "admin" : "client",
+            plan:
+              data.plan === "ultra" ? "ultra" : data.plan === "pro" ? "pro" : "free",
+            source,
+          });
+        }
       }
 
-      // Waitlist off: skip full beta_status collection scan (1 read per doc).
       if (SHOW_BETA_WAITLIST) {
         const betaSnap = await db.collection("beta_status").get();
         for (const item of betaSnap.docs) {
@@ -469,14 +488,23 @@ export async function listAdminAccounts(options?: {
     .map((record) => {
       const next = entitlements.get(record.uid);
       const status = beta.get(record.uid);
-      const admin = isAdminEmail(record.email) || next?.role === "admin";
+      const admin =
+        isAdminEmail(record.email) ||
+        record.claimRole === "admin" ||
+        next?.role === "admin";
+      const plan = admin
+        ? "pro"
+        : record.claimPlan || next?.plan || "free";
+      const source = admin
+        ? "none"
+        : record.claimSource || next?.source || "none";
       return {
         uid: record.uid,
         email: record.email,
         displayName: record.displayName,
         role: admin ? "admin" : "client",
-        plan: admin ? "pro" : next?.plan ?? "free",
-        source: admin ? "none" : next?.source ?? "none",
+        plan,
+        source,
         disabled: record.disabled,
         betaTester: admin ? true : Boolean(status?.betaTester),
         waitlistStatus: admin ? "admitted" : status?.waitlistStatus ?? "none",
@@ -541,6 +569,12 @@ export async function setAdminPlan(uid: string, plan: PlanId) {
     .catch((error) => console.warn("[discord] admin plan role sync:", error));
 
   invalidateAdminAccountsCache();
+
+  await syncAuthPlanClaims(uid, {
+    plan: paid ? plan : "free",
+    role: "client",
+    source: paid ? "comp" : "none",
+  });
 
   return {
     stripeSubscriptionId:
@@ -861,6 +895,13 @@ export async function redeemBetaCode(uid: string, email: string, rawCode: string
     .then((mod) => mod.syncDiscordRolesForUid(uid))
     .catch((error) => console.warn("[discord] beta redeem role sync:", error));
 
+  await syncAuthPlanClaims(uid, {
+    plan: "ultra",
+    role: "client",
+    source: "comp",
+  });
+  invalidateAdminAccountsCache();
+
   return {
     plan: "ultra" as const,
     betaExpiresAt: ULTRA_BETA_EXPIRES_AT_MS,
@@ -884,6 +925,110 @@ function takeMemoryQuota(
     [kind]: used + 1,
   });
   return { ok: true };
+}
+
+export type ServerPredictKind = "pulse" | "score" | "addition" | "horizon" | "advanced";
+
+function etWeekIdServer(date = new Date()) {
+  const ymd = date.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const [year, month, day] = ymd.split("-").map(Number);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  const weekday = utc.getUTCDay() || 7;
+  utc.setUTCDate(utc.getUTCDate() + 4 - weekday);
+  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${utc.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function emptyPredictUsage(weekId = etWeekIdServer()) {
+  return { weekId, pulse: 0, score: 0, addition: 0, horizon: 0, advanced: 0 };
+}
+
+export async function readServerPredictUsage(uid: string) {
+  const db = await getAdminDb();
+  const weekId = etWeekIdServer();
+  if (!db) return emptyPredictUsage(weekId);
+  const snap = await db.collection("predict_usage").doc(uid).get();
+  const data = snap.data() || {};
+  if (String(data.weekId || "") !== weekId) return emptyPredictUsage(weekId);
+  return {
+    weekId,
+    pulse: Math.max(0, Number(data.pulse) || 0),
+    score: Math.max(0, Number(data.score) || 0),
+    addition: Math.max(0, Number(data.addition) || 0),
+    horizon: Math.max(0, Number(data.horizon) || 0),
+    advanced: Math.max(0, Number(data.advanced) || 0),
+  };
+}
+
+export async function consumeServerPredictUsage(
+  uid: string,
+  plan: PlanId,
+  kind: ServerPredictKind,
+) {
+  const { weeklyPredictLimit } = await import("@/lib/predict-limits");
+  const limit = weeklyPredictLimit(plan, kind);
+  const weekId = etWeekIdServer();
+  if (limit == null) {
+    const usage = await readServerPredictUsage(uid);
+    return { ok: true as const, usage };
+  }
+  if (limit <= 0) {
+    return { ok: false as const, usage: await readServerPredictUsage(uid) };
+  }
+
+  const db = await getAdminDb();
+  if (!db) {
+    return { ok: false as const, usage: emptyPredictUsage(weekId) };
+  }
+
+  const { FieldValue } = await import("firebase-admin/firestore");
+  const ref = db.collection("predict_usage").doc(uid);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.data() || {};
+    const sameWeek = String(data.weekId || "") === weekId;
+    const usage = {
+      weekId,
+      pulse: sameWeek ? Math.max(0, Number(data.pulse) || 0) : 0,
+      score: sameWeek ? Math.max(0, Number(data.score) || 0) : 0,
+      addition: sameWeek ? Math.max(0, Number(data.addition) || 0) : 0,
+      horizon: sameWeek ? Math.max(0, Number(data.horizon) || 0) : 0,
+      advanced: sameWeek ? Math.max(0, Number(data.advanced) || 0) : 0,
+    };
+    if (usage[kind] >= limit) return { ok: false as const, usage };
+    usage[kind] += 1;
+    tx.set(
+      ref,
+      {
+        uid,
+        ...usage,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+    return { ok: true as const, usage };
+  });
+}
+
+export async function syncAuthPlanClaims(
+  uid: string,
+  input: { plan: PlanId; role?: "client" | "admin"; source?: string },
+) {
+  const auth = await getAdminAuth();
+  if (!auth) return;
+  try {
+    const user = await auth.getUser(uid);
+    const existing = (user.customClaims || {}) as Record<string, unknown>;
+    await auth.setCustomUserClaims(uid, {
+      ...existing,
+      tvmPlan: input.plan,
+      tvmRole: input.role || "client",
+      tvmSource: input.source || "none",
+    });
+  } catch (error) {
+    console.warn("[auth claims] sync failed:", error);
+  }
 }
 
 export async function findUidByDiscordId(discordId: string): Promise<string | null> {
@@ -1068,6 +1213,13 @@ export async function applyStripeEntitlement(input: {
   void import("@/lib/discord-role-sync")
     .then((mod) => mod.syncDiscordRolesForUid(input.uid))
     .catch((error) => console.warn("[discord] stripe plan role sync:", error));
+
+  await syncAuthPlanClaims(input.uid, {
+    plan: paid ? input.plan : "free",
+    role: "client",
+    source: paid ? "stripe" : "none",
+  });
+  invalidateAdminAccountsCache();
 }
 
 export async function consumeApiQuota(

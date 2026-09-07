@@ -17,7 +17,6 @@ import {
 } from "firebase/auth";
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -28,6 +27,7 @@ import {
   updateDoc,
   type DocumentData,
 } from "firebase/firestore";
+import { authedFetch } from "@/lib/authed-fetch";
 import {
   getClientAuth,
   getClientFirestore,
@@ -69,8 +69,8 @@ import {
   type NewSeenMap,
 } from "@/lib/new-badges";
 
-const ADMIN_EMAIL =
-  process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
+/** Matches firestore.rules isBootstrapAdmin — not a secret; production admin is server-gated via TVM_ADMIN_EMAIL. */
+const BOOTSTRAP_ADMIN_EMAIL = "admin@tvm-investments.test";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ALLOWED_WATCHLIST = new Set(WATCHLIST_ALLOWED_SYMBOLS);
 
@@ -170,7 +170,7 @@ function entitlementFromData(
   email: string | null,
 ): AccountEntitlement {
   const role =
-    data.role === "admin" || email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+    data.role === "admin" || email?.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()
       ? "admin"
       : "client";
   const betaExpiresAt =
@@ -432,7 +432,7 @@ async function ensureAccountDocuments(user: User) {
   if (!db || !user.email) return;
 
   const now = serverTimestamp();
-  const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = user.email.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase();
   const profileRef = doc(db, "users", user.uid);
   const entitlementRef = doc(db, "entitlements", user.uid);
   const watchlistRef = doc(db, "watchlists", user.uid);
@@ -508,21 +508,26 @@ async function ensureAccountDocuments(user: User) {
     );
   }
 
-  if (!portfolio.exists()) {
-    creates.push(
-      setDoc(portfolioRef, {
-        uid: user.uid,
-        cash: 0,
-        totalValue: 0,
-        createdAt: now,
-        updatedAt: now,
-      }),
-    );
-  }
-
   if (creates.length) await Promise.all(creates);
 
-  return { profile, entitlement, watchlist, portfolio };
+  // Paper book writes are Admin SDK only — create via API if missing.
+  let portfolioSnap = portfolio;
+  if (!portfolio.exists()) {
+    const ensure = await authedFetch("/api/portfolio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "ensure" }),
+    });
+    if (!ensure.ok) {
+      const payload = (await ensure.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      throw new Error(payload?.error || "Could not create your paper portfolio.");
+    }
+    portfolioSnap = await getDoc(portfolioRef);
+  }
+
+  return { profile, entitlement, watchlist, portfolio: portfolioSnap };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -577,7 +582,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setAccountReady(false);
       setProfile(profileFromAuth(nextUser));
-      if (nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      if (nextUser.email?.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()) {
         const plan = overlayLabsPlan("admin", "pro");
         setEntitlement({
           role: "admin",
@@ -615,7 +620,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }),
             });
             const roleIsAdmin =
-              nextUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+              nextUser.email?.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase();
             const storedTour =
               typeof data.seenTour === "string" ? data.seenTour : "";
             const localTour = readTourSeen(nextUser.uid);
@@ -691,6 +696,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .catch((positionError) => {
               console.error(positionError);
             });
+
+          // Server isAdmin (TVM_ADMIN_EMAIL) — never expose the mailbox in the client bundle.
+          void authedFetch("/api/me")
+            .then(async (response) => {
+              if (!response.ok || cancelled) return;
+              const me = (await response.json()) as {
+                isAdmin?: boolean;
+                plan?: string;
+              };
+              if (!me.isAdmin) return;
+              setEntitlement((current) => {
+                const plan = overlayLabsPlan("admin", current.plan);
+                return {
+                  ...current,
+                  role: "admin",
+                  plan,
+                  watchlistLimit: watchlistLimitForPlan(plan),
+                  cooldownDays: 0,
+                };
+              });
+              setTourPending(false);
+            })
+            .catch(() => undefined);
         })
         .catch((accountError) => {
           console.error(accountError);
@@ -1053,22 +1081,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updatePortfolio = useCallback(
     async (cash: number, totalValue: number) => {
-      const db = getClientFirestore();
-      if (!db || !user) throw new Error("Sign in to update your portfolio.");
-      await setDoc(
-        doc(db, "portfolios", user.uid),
-        {
-          uid: user.uid,
-          cash: Math.max(0, cash),
-          totalValue: Math.max(0, totalValue),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-      setPortfolio({
-        cash: Math.max(0, cash),
-        totalValue: Math.max(0, totalValue),
+      if (!user) throw new Error("Sign in to update your portfolio.");
+      const nextCash = Math.max(0, cash);
+      const nextTotal = Math.max(0, totalValue);
+      const response = await authedFetch("/api/portfolio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "cash",
+          cash: nextCash,
+          totalValue: nextTotal,
+        }),
       });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error || "Could not update your portfolio.");
+      }
+      setPortfolio({ cash: nextCash, totalValue: nextTotal });
     },
     [user],
   );
@@ -1079,8 +1110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentPrice?: number;
       },
     ) => {
-      const db = getClientFirestore();
-      if (!db || !user) throw new Error("Sign in to update your portfolio.");
+      if (!user) throw new Error("Sign in to update your portfolio.");
       const symbol = position.symbol.trim().toUpperCase();
       const next = {
         symbol,
@@ -1089,11 +1119,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentPrice: Math.max(0, position.currentPrice ?? position.averageCost),
         purchasedAt: position.purchasedAt || null,
       };
-      await setDoc(doc(db, "portfolios", user.uid, "positions", symbol), {
-        uid: user.uid,
-        ...next,
-        updatedAt: serverTimestamp(),
+      const response = await authedFetch("/api/portfolio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "position", ...next }),
       });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error || "Could not save that position.");
+      }
       setPositions((current) => {
         const without = current.filter((row) => row.symbol !== symbol);
         return [...without, next];
@@ -1104,13 +1140,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const removePosition = useCallback(
     async (symbol: string) => {
-      const db = getClientFirestore();
-      if (!db || !user) throw new Error("Sign in to update your portfolio.");
-      await deleteDoc(
-        doc(db, "portfolios", user.uid, "positions", symbol.toUpperCase()),
-      );
+      if (!user) throw new Error("Sign in to update your portfolio.");
+      const ticker = symbol.toUpperCase();
+      const response = await authedFetch("/api/portfolio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "remove", symbol: ticker }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error || "Could not remove that position.");
+      }
       setPositions((current) =>
-        current.filter((row) => row.symbol !== symbol.toUpperCase()),
+        current.filter((row) => row.symbol !== ticker),
       );
     },
     [user],

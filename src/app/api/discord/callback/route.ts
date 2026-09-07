@@ -6,10 +6,13 @@ import {
   exchangeDiscordCode,
   fetchDiscordUser,
   getDiscordOAuthConfig,
-  serializePendingDiscord,
   toDiscordLinkPayload,
   verifyOAuthState,
 } from "@/lib/discord-oauth";
+import {
+  createPendingDiscordLink,
+  serializePendingCookie,
+} from "@/lib/discord-pending";
 import { findUidByDiscordId, linkDiscordAccount } from "@/lib/firebase/admin";
 import {
   linkedRoleSuccessHtml,
@@ -148,7 +151,8 @@ export async function GET(request: NextRequest) {
     }
 
     const response = redirectWithStatus(request, state.returnTo, "ready");
-    response.cookies.set(discordPendingCookie.name, serializePendingDiscord(payload), {
+    const pendingId = await createPendingDiscordLink(payload);
+    response.cookies.set(discordPendingCookie.name, serializePendingCookie(pendingId), {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

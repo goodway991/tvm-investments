@@ -4,13 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
-  serverTimestamp,
-  setDoc,
-  writeBatch,
 } from "firebase/firestore";
 import { useAuth } from "@/components/AuthProvider";
 import { HorizonForecastChart } from "@/components/HorizonForecastChart";
@@ -120,18 +116,25 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
   }, [selected]);
 
   useEffect(() => {
-    const db = getClientFirestore();
-    if (!db || !user || !simReady || simExists) return;
-    void setDoc(doc(db, "horizon_sims", user.uid), {
-      uid: user.uid,
-      cash: HORIZON_STARTING_CASH,
-      totalValue: HORIZON_STARTING_CASH,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }).then(() => {
-      setSimExists(true);
-      setCash(HORIZON_STARTING_CASH);
-    });
+    if (!user || !simReady || simExists) return;
+    let cancelled = false;
+    void authedFetch("/api/horizon", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "ensure" }),
+    })
+      .then(async (response) => {
+        if (!response.ok || cancelled) return;
+        const payload = (await response.json()) as {
+          sim?: { cash?: number };
+        };
+        setSimExists(true);
+        setCash(Number(payload.sim?.cash) || HORIZON_STARTING_CASH);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, [simExists, simReady, user]);
 
   useEffect(() => {
@@ -287,27 +290,6 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
     setHorizonDays(days);
   }
 
-  async function writeSim(nextCash: number, nextPositions: HorizonPosition[]) {
-    const db = getClientFirestore();
-    if (!db || !user) {
-      setCash(nextCash);
-      setPositions(nextPositions);
-      return;
-    }
-    const holdings = nextPositions.reduce(
-      (total, position) => total + position.shares * position.currentPrice,
-      0,
-    );
-    const payload = {
-      uid: user.uid,
-      cash: nextCash,
-      totalValue: nextCash + holdings,
-      updatedAt: serverTimestamp(),
-      ...(simExists ? {} : { createdAt: serverTimestamp() }),
-    };
-    await setDoc(doc(db, "horizon_sims", user.uid), payload, { merge: true });
-  }
-
   async function buy() {
     const count = Number(shares);
     if (!selected || !(count > 0) || !(lastPrice > 0)) {
@@ -330,49 +312,40 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
     setError("");
     setMessage("");
     try {
-      const existing = positions.find((position) => position.symbol === selected);
-      const nextShares = (existing?.shares ?? 0) + count;
-      const nextCost =
-        ((existing?.shares ?? 0) * (existing?.averageCost ?? 0) + cost) / nextShares;
+      const response = await authedFetch("/api/horizon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "buy",
+          symbol: selected,
+          shares: count,
+          price: lastPrice,
+        }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        cash?: number;
+        symbol?: string;
+        shares?: number;
+        averageCost?: number;
+        currentPrice?: number;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error || "Buy did not save.");
+      }
+      const nextCash = Number(payload.cash);
       const nextPosition: HorizonPosition = {
         symbol: selected,
-        shares: nextShares,
-        averageCost: nextCost,
-        currentPrice: lastPrice,
+        shares: Number(payload.shares) || count,
+        averageCost: Number(payload.averageCost) || lastPrice,
+        currentPrice: Number(payload.currentPrice) || lastPrice,
       };
-      const nextPositions = [
-        ...positions.filter((position) => position.symbol !== selected),
+      setSimExists(true);
+      setCash(Number.isFinite(nextCash) ? nextCash : cash - cost);
+      setPositions((current) => [
+        ...current.filter((position) => position.symbol !== selected),
         nextPosition,
-      ];
-      const nextCash = cash - cost;
-      setCash(nextCash);
-      setPositions(nextPositions);
-      const db = getClientFirestore();
-      if (db && user) {
-        if (!simExists) {
-          try {
-            await setDoc(doc(db, "horizon_sims", user.uid), {
-              uid: user.uid,
-              cash: HORIZON_STARTING_CASH,
-              totalValue: HORIZON_STARTING_CASH,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            });
-          } catch {
-            /* already created */
-          }
-          setSimExists(true);
-        }
-        await writeSim(nextCash, nextPositions);
-        await setDoc(doc(db, "horizon_sims", user.uid, "positions", selected), {
-          uid: user.uid,
-          symbol: selected,
-          shares: nextShares,
-          averageCost: nextCost,
-          currentPrice: lastPrice,
-          updatedAt: serverTimestamp(),
-        });
-      }
+      ]);
       setMessage(`Bought ${count} ${selected} at ${formatPrice(lastPrice)}.`);
     } catch (buyError) {
       setError(buyError instanceof Error ? buyError.message : "Buy did not save.");
@@ -387,20 +360,38 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
     const series = forecasts[symbol]?.history ?? [];
     const price =
       series.at(-1)?.value ?? quoteMap.get(symbol)?.price ?? position.currentPrice;
-    const proceeds = position.shares * price;
     setSaving(true);
     setError("");
     setMessage("");
     try {
-      const nextPositions = positions.filter((item) => item.symbol !== symbol);
-      const nextCash = cash + proceeds;
-      setCash(nextCash);
-      setPositions(nextPositions);
-      const db = getClientFirestore();
-      if (db && user) {
-        await deleteDoc(doc(db, "horizon_sims", user.uid, "positions", symbol));
-        await writeSim(nextCash, nextPositions);
+      const response = await authedFetch("/api/horizon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sell",
+          symbol,
+          shares: position.shares,
+          price,
+        }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        cash?: number;
+        shares?: number;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error || "Sell did not save.");
       }
+      const nextCash = Number(payload.cash);
+      const remaining = Number(payload.shares) || 0;
+      setCash(Number.isFinite(nextCash) ? nextCash : cash + position.shares * price);
+      setPositions((current) =>
+        remaining > 0
+          ? current.map((item) =>
+              item.symbol === symbol ? { ...item, shares: remaining, currentPrice: price } : item,
+            )
+          : current.filter((item) => item.symbol !== symbol),
+      );
       setMessage(`Sold ${position.shares} ${symbol} at ${formatPrice(price)}.`);
     } catch (sellError) {
       setError(sellError instanceof Error ? sellError.message : "Sell did not save.");
@@ -414,32 +405,21 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
     setError("");
     setMessage("");
     try {
-      setCash(HORIZON_STARTING_CASH);
-      setPositions([]);
-      const db = getClientFirestore();
-      if (db && user) {
-        const batch = writeBatch(db);
-        positions.forEach((position) => {
-          batch.delete(doc(db, "horizon_sims", user.uid, "positions", position.symbol));
-        });
-        const simRef = doc(db, "horizon_sims", user.uid);
-        if (simExists) {
-          batch.update(simRef, {
-            cash: HORIZON_STARTING_CASH,
-            totalValue: HORIZON_STARTING_CASH,
-            updatedAt: serverTimestamp(),
-          });
-        } else {
-          batch.set(simRef, {
-            uid: user.uid,
-            cash: HORIZON_STARTING_CASH,
-            totalValue: HORIZON_STARTING_CASH,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-        }
-        await batch.commit();
+      const response = await authedFetch("/api/horizon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset" }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        sim?: { cash?: number };
+      };
+      if (!response.ok) {
+        throw new Error(payload.error || "Reset did not save.");
       }
+      setSimExists(true);
+      setCash(Number(payload.sim?.cash) || HORIZON_STARTING_CASH);
+      setPositions([]);
       setMessage("Paper book reset to $10,000.");
     } catch (resetError) {
       setError(resetError instanceof Error ? resetError.message : "Reset did not save.");

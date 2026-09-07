@@ -24,8 +24,6 @@ import {
   type SiteMaintenance,
 } from "@/lib/maintenance";
 
-const ADMIN_EMAIL =
-  process.env.NEXT_PUBLIC_TVM_ADMIN_EMAIL || "admin@tvm-investments.test";
 const DISMISS_KEY = "tvm-warning-dismissed";
 
 const IDLE: SiteMaintenance = {
@@ -177,9 +175,7 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const [dismissed, setDismissed] = useState("");
   const [mounted, setMounted] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
-  const isAdmin =
-    entitlement.role === "admin" ||
-    user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = entitlement.role === "admin";
 
   useEffect(() => {
     setMounted(true);

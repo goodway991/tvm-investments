@@ -4,8 +4,12 @@ import {
   addDiscordUserToGuild,
   discordPendingCookie,
   getDiscordOAuthConfig,
-  parsePendingDiscord,
 } from "@/lib/discord-oauth";
+import {
+  deletePendingDiscordLink,
+  loadPendingDiscordLink,
+  parsePendingCookieId,
+} from "@/lib/discord-pending";
 import { linkDiscordAccount } from "@/lib/firebase/admin";
 import { SHOW_BETA_WAITLIST } from "@/lib/beta-waitlist";
 
@@ -15,7 +19,10 @@ export async function POST(request: NextRequest) {
   const gate = await requireSignedIn(request);
   if (!gate.ok) return gate.response;
 
-  const pending = parsePendingDiscord(request.cookies.get(discordPendingCookie.name)?.value);
+  const pendingId = parsePendingCookieId(
+    request.cookies.get(discordPendingCookie.name)?.value,
+  );
+  const pending = pendingId ? await loadPendingDiscordLink(pendingId) : null;
   if (!pending) {
     return NextResponse.json({ linked: false });
   }
@@ -40,6 +47,7 @@ export async function POST(request: NextRequest) {
           }
         : undefined,
     });
+    if (pendingId) await deletePendingDiscordLink(pendingId);
     const response = NextResponse.json({ linked: true, ...status });
     response.cookies.set(discordPendingCookie.name, "", {
       httpOnly: true,
