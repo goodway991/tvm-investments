@@ -918,11 +918,8 @@ export function applyUltraAdvancedSettings(
 
   const rho = clamp(base.rho * follow, -0.45, 0.9);
   const kappa = rho > 0.04 ? clamp(-Math.log(rho), 0.02, 1.4) : 0;
-  const dailyVol = clamp(
-    base.dailyVol * (0.92 + (1 - noise) * 0.16),
-    MIN_SIGMA,
-    MAX_SIGMA,
-  );
+  // Noise flatten softens drift only — keep measured ensemble σ intact.
+  const dailyVol = clamp(base.dailyVol, MIN_SIGMA, MAX_SIGMA);
 
   return {
     ...base,

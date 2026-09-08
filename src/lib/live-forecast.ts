@@ -117,7 +117,7 @@ async function geminiShortTermDrift(input: {
     "- No recent headlines";
   const prompt = `Estimate expected daily log return for the NEXT 5 to 10 trading days. JSON only:
 {"dailyDrift": number, "note": "one sentence"}
-Use the stock tape, sector tape, and headlines. Do not flatten to the last close. Do not treat the 12-month analyst target as a 2-week price. Typical dailyDrift is between -0.012 and 0.012.
+Use the stock tape, sector tape, and headlines. Do not flatten to the last close. Do not treat the 12-month analyst target as a 2-week price. Typical dailyDrift is between -0.018 and 0.018; allow larger moves when tape and news justify them.
 
 ${input.symbol} last close ${input.last}. Research tilt ${input.dailyDrift.toFixed(5)} (daily vol ${input.dailyVol.toFixed(5)}).
 Sector ${input.sector} via ${input.sectorEtf} 1-day ${input.sectorChange.toFixed(2)}%. SPY 1-day ${input.marketChange.toFixed(2)}%.

@@ -12,16 +12,19 @@ export function formatHorizonLabel(days: number) {
   return rounded === 1 ? "1 trading day" : `${rounded} trading days`;
 }
 
-export const Z_BAND = 1.05;
+/** ~90% normal CI on integrated log-move (markets are fat-tailed; not a guarantee). */
+export const Z_BAND = 1.645;
 export const MIN_SIGMA = 0.006;
-export const MAX_SIGMA = 0.055;
-export const MAX_DAILY_DRIFT = 0.012;
+/** ~8%/day ≈ 127% ann — room for true high-vol names without inventing drama. */
+export const MAX_SIGMA = 0.08;
+/** Short-horizon expected daily log-drift cap (strong movers, not multi-year CAGR). */
+export const MAX_DAILY_DRIFT = 0.018;
 const EWMA_LAMBDA = 0.94;
 const MIN_KAPPA = 0.02;
 const MAX_KAPPA = 1.4;
-const DENOISE_CURRENT = 0.38;
+const DENOISE_CURRENT = 0.52;
 const ACCEL_WEIGHT = 0.28;
-const FLAT_ALPHA = 0.16;
+const FLAT_ALPHA = 0.1;
 const MIN_DIFF_AR = -0.45;
 const MAX_DIFF_AR = 0.9;
 
@@ -152,23 +155,28 @@ function incrementRho(stats: HorizonStats) {
 }
 
 /**
- * Smooth log closes, work in first diffs, AR(1) on those diffs, then integrate.
- * A dead zone vs vol flattens noise-sized drift.
+ * Drift on lightly denoised log-diffs; vol on raw log returns so EWMA σ
+ * matches tape (smoothing understates realized vol and flattens cones).
  */
 function fitLogDifferential(closes: number[]): HorizonStats {
   const series = closes.filter((price) => price > 0);
   const last = series[series.length - 1] ?? 0;
   const logs = series.map(Math.log);
+  const rawDelta = firstDiff(logs);
   const smooth = causalSmooth(logs, DENOISE_CURRENT);
   const delta = firstDiff(smooth);
   const accel = firstDiff(delta);
-  const dailyVol = clamp(Math.sqrt(ewmaVariance(delta)), MIN_SIGMA, MAX_SIGMA);
+  const dailyVol = clamp(
+    Math.sqrt(ewmaVariance(rawDelta.length ? rawDelta : delta)),
+    MIN_SIGMA,
+    MAX_SIGMA,
+  );
   const lastDelta = delta[delta.length - 1] ?? 0;
   const mu1 = mean(delta.length > 21 ? delta.slice(-21) : delta);
   const mu2 = accel.length ? mean(accel.length > 8 ? accel.slice(-8) : accel) : 0;
   let meanDelta = clamp(mu1 + ACCEL_WEIGHT * mu2, -MAX_DAILY_DRIFT, MAX_DAILY_DRIFT);
   if (Math.abs(meanDelta) < FLAT_ALPHA * dailyVol) {
-    meanDelta *= 0.2;
+    meanDelta *= 0.35;
   }
 
   const ar = fitAr1(delta);
@@ -289,9 +297,9 @@ function formatDay(timestamp: number) {
 }
 
 /**
- * Tape-shaped residuals so the forward path kinks like recent closes
- * instead of a ruler. Bridged to 0 at both ends so the tip still
- * lands on the model mean.
+ * Historical demeaned log-return path, scaled to forecast daily σ, then a
+ * Brownian bridge so the tip still lands on the model mean. Amplitude matches
+ * one trading day of residual per day (no dt shrink that flattened the path).
  */
 function pathWiggleSeries(
   closes: number[],
@@ -304,30 +312,28 @@ function pathWiggleSeries(
   if (series.length < 5 || horizon <= 0 || samples < 2) return out;
   const diffs = firstDiff(series.map(Math.log));
   if (diffs.length < 3) return out;
+  const mu = mean(diffs);
+  const residuals = diffs.map((value) => value - mu);
+  const histVol = Math.sqrt(mean(residuals.map((value) => value * value))) || vol;
+  const scale = histVol > 1e-8 ? vol / histVol : 1;
+  const days = Math.max(1, Math.round(horizon));
+  const dayWalk = [0];
   let acc = 0;
-  const walk = [0];
-  const dt = horizon / samples;
-  for (let index = 1; index <= samples; index += 1) {
-    const src = ((index - 1) / samples) * diffs.length;
-    const i0 = Math.floor(src) % diffs.length;
-    const i1 = (i0 + 1) % diffs.length;
-    const frac = src - Math.floor(src);
-    acc += (diffs[i0] * (1 - frac) + diffs[i1] * frac) * dt;
-    walk.push(acc);
+  const start = Math.max(0, residuals.length - days);
+  for (let day = 0; day < days; day += 1) {
+    const residual = residuals[(start + day) % residuals.length] ?? 0;
+    acc += residual * scale;
+    dayWalk.push(acc);
   }
-  const end = walk[samples];
-  const phase = (series[series.length - 1] * 0.271) % 1;
+  const end = dayWalk[days] ?? 0;
   for (let index = 0; index <= samples; index += 1) {
     const u = index / samples;
-    const tape = walk[index] - end * u;
-    const envelope = Math.min(1, u * 18) * (1 - u);
-    const grain =
-      vol *
-      envelope *
-      (0.72 * Math.sin(2 * Math.PI * (2.15 * u + phase)) +
-        0.42 * Math.sin(2 * Math.PI * (4.6 * u + phase * 1.7)) +
-        0.22 * Math.sin(2 * Math.PI * (7.4 * u + phase * 0.4)));
-    out[index] = tape * 1.2 + grain;
+    const pos = u * days;
+    const i0 = Math.min(days, Math.floor(pos));
+    const i1 = Math.min(days, i0 + 1);
+    const frac = pos - Math.floor(pos);
+    const level = dayWalk[i0] * (1 - frac) + dayWalk[i1] * frac;
+    out[index] = level - end * u;
   }
   return out;
 }

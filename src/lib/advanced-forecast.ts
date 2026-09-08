@@ -177,11 +177,17 @@ export function fitAdvancedForecast(
 
   const currentWeight = clamp(0.72 - (settings.noiseFlatten / 100) * 0.5, 0.18, 0.7);
   const logs = window.map((bar) => Math.log(bar.close));
+  const rawDelta = firstDiff(logs);
   const smooth = causalSmooth(logs, currentWeight);
   const delta = firstDiff(smooth);
   const accel = firstDiff(delta);
   const tape = tapeIncrements(window);
-  const dailyVol = clamp(Math.sqrt(ewmaVariance(delta)), MIN_SIGMA, MAX_SIGMA);
+  // Vol from raw closes — noiseFlatten softens drift, not realized σ.
+  const dailyVol = clamp(
+    Math.sqrt(ewmaVariance(rawDelta.length ? rawDelta : delta)),
+    MIN_SIGMA,
+    MAX_SIGMA,
+  );
   const lastDelta = delta[delta.length - 1] ?? 0;
 
   const recent = delta.length > 21 ? delta.slice(-21) : delta;
