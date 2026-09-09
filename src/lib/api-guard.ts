@@ -60,8 +60,11 @@ function takeBurst(uid: string) {
   return { ok: true as const };
 }
 
-export async function requireSignedIn(request: NextRequest): Promise<
-  | { ok: true; uid: string; email: string }
+export async function requireSignedIn(
+  request: NextRequest,
+  options?: { allowUnverified?: boolean },
+): Promise<
+  | { ok: true; uid: string; email: string; emailVerified: boolean }
   | { ok: false; response: NextResponse }
 > {
   const token = bearerToken(request);
@@ -78,7 +81,50 @@ export async function requireSignedIn(request: NextRequest): Promise<
       response: NextResponse.json({ error: "Sign in required." }, { status: 401 }),
     };
   }
-  return { ok: true, uid: user.uid, email: user.email };
+
+  let emailVerified = user.emailVerified;
+  if (!emailVerified) {
+    const { ensureEmailVerifiedOrGrandfather } = await import("@/lib/email-otp");
+    const gate = await ensureEmailVerifiedOrGrandfather({
+      uid: user.uid,
+      email: user.email,
+      emailVerified: false,
+    });
+    emailVerified = gate.verified;
+  }
+
+  if (!emailVerified && !options?.allowUnverified) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error:
+            "Verify your email with the one-time code we sent before using the desk.",
+        },
+        { status: 403 },
+      ),
+    };
+  }
+
+  return {
+    ok: true,
+    uid: user.uid,
+    email: user.email,
+    emailVerified,
+  };
+}
+
+export async function requireVerifiedEmail(
+  signedIn: { uid: string; email: string; emailVerified: boolean },
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  if (signedIn.emailVerified) return { ok: true };
+  return {
+    ok: false,
+    response: NextResponse.json(
+      { error: "Verify your email with the one-time code we sent before using the desk." },
+      { status: 403 },
+    ),
+  };
 }
 
 export async function requireDeskAccess(
@@ -136,6 +182,9 @@ export async function requireApiUser(
 > {
   const signedIn = await requireSignedIn(request);
   if (!signedIn.ok) return signedIn;
+
+  const verified = await requireVerifiedEmail(signedIn);
+  if (!verified.ok) return verified;
 
   const desk = await requireDeskAccess(signedIn.uid, signedIn.email);
   if (!desk.ok) return desk;
@@ -200,6 +249,9 @@ export async function requirePredictQuota(
 > {
   const signedIn = await requireSignedIn(request);
   if (!signedIn.ok) return signedIn;
+
+  const verified = await requireVerifiedEmail(signedIn);
+  if (!verified.ok) return verified;
 
   const desk = await requireDeskAccess(signedIn.uid, signedIn.email);
   if (!desk.ok) return desk;

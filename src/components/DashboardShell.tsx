@@ -14,6 +14,7 @@ import { MaintenanceNavCard } from "@/components/MaintenanceGate";
 import { useAuth } from "@/components/AuthProvider";
 import { useDeskAccess } from "@/components/BetaStatusProvider";
 import { BetaAccessScreen } from "@/components/BetaAccessScreen";
+import { EmailVerifyPanel } from "@/components/EmailVerifyPanel";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
@@ -342,7 +343,7 @@ function PreviewSidebar({
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { user, profile, entitlement, loading, error, tourPending } = useAuth();
+  const { user, profile, entitlement, loading, error, tourPending, logout } = useAuth();
   const desk = useDeskAccess();
   const { era, rewind } = useSiteEra();
   const { density } = useExperience();
@@ -378,7 +379,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (loading || (user && !desk.ready)) {
+  if (loading || (user?.emailVerified && !desk.ready)) {
     return (
       <div className="grid min-h-screen place-items-center bg-surface">
         <div className="glass-strong rounded-[24px] px-8 py-6 text-center">
@@ -387,10 +388,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
-  }
-
-  if (user && !desk.allowed && desk.phase !== "open") {
-    return <BetaAccessScreen phase={desk.phase} />;
   }
 
   if (!user) {
@@ -419,6 +416,29 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  if (!user.emailVerified) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-surface px-5">
+        <div className="glass-strong w-full max-w-md rounded-[28px] p-8">
+          <div className="mb-6 flex justify-center">
+            <TVMBrand />
+          </div>
+          <EmailVerifyPanel
+            email={user.email || ""}
+            onVerified={() => {
+              window.location.assign("/dashboard");
+            }}
+            onSignOut={logout}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (user && !desk.allowed && desk.phase !== "open") {
+    return <BetaAccessScreen phase={desk.phase} />;
   }
 
   return (

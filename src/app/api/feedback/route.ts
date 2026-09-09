@@ -8,6 +8,7 @@ import {
 } from "@/lib/firebase/admin";
 import { getFeedbackInbox } from "@/lib/feedback-inbox";
 import { escapeHtml, sanitizePlainText } from "@/lib/sanitize-text";
+import { sendTransactionalEmail } from "@/lib/send-transactional-email";
 
 export const dynamic = "force-dynamic";
 
@@ -164,98 +165,12 @@ async function sendFeedbackEmail({
     </div>
   `;
 
-  if (await sendWithSmtp({ to, email, subject, text, html })) return true;
-  if (await sendWithResend({ to, email, subject, text, html })) return true;
-  return false;
-}
-
-async function sendWithResend({
-  to,
-  email,
-  subject,
-  text,
-  html,
-}: {
-  to: string;
-  email: string;
-  subject: string;
-  text: string;
-  html: string;
-}): Promise<boolean> {
-  const key = process.env.RESEND_API_KEY?.trim();
-  if (!key) return false;
-
-  const from =
-    process.env.TVM_FEEDBACK_FROM?.trim() ||
-    "TVM Investments <beth.t@example.com>";
-
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        reply_to: email !== "unknown" ? email : undefined,
-        subject,
-        text,
-        html,
-      }),
-    });
-    if (!response.ok) {
-      console.error("Feedback email failed (Resend).");
-      return false;
-    }
-    return true;
-  } catch {
-    console.error("Feedback email failed (Resend).");
-    return false;
-  }
-}
-
-async function sendWithSmtp({
-  to,
-  email,
-  subject,
-  text,
-  html,
-}: {
-  to: string;
-  email: string;
-  subject: string;
-  text: string;
-  html: string;
-}): Promise<boolean> {
-  const user = process.env.TVM_SMTP_USER?.trim() || to;
-  const pass = process.env.TVM_SMTP_PASS?.trim();
-  if (!pass) return false;
-
-  const host = process.env.TVM_SMTP_HOST?.trim() || "smtp.gmail.com";
-  const port = Number(process.env.TVM_SMTP_PORT) || 465;
-
-  try {
-    const nodemailer = await import("nodemailer");
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
-    await transporter.sendMail({
-      from: `TVM Investments <${user}>`,
-      to,
-      replyTo: email !== "unknown" ? email : undefined,
-      subject,
-      text,
-      html,
-    });
-    return true;
-  } catch {
-    console.error("Feedback email failed (SMTP).");
-    return false;
-  }
+  return sendTransactionalEmail({
+    to,
+    subject,
+    text,
+    html,
+    replyTo: email !== "unknown" ? email : undefined,
+  });
 }
 

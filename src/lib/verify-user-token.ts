@@ -8,10 +8,15 @@ import { verifyIdToken } from "@/lib/firebase/admin";
 export async function verifyUserToken(idToken: string): Promise<{
   uid: string;
   email: string;
+  emailVerified: boolean;
 } | null> {
   const decoded = await verifyIdToken(idToken);
   if (decoded?.uid) {
-    return { uid: decoded.uid, email: decoded.email || "unknown" };
+    return {
+      uid: decoded.uid,
+      email: decoded.email || "unknown",
+      emailVerified: Boolean(decoded.email_verified),
+    };
   }
 
   const allowFallback =
@@ -32,11 +37,19 @@ export async function verifyUserToken(idToken: string): Promise<{
     );
     if (!response.ok) return null;
     const payload = (await response.json()) as {
-      users?: Array<{ localId?: string; email?: string }>;
+      users?: Array<{
+        localId?: string;
+        email?: string;
+        emailVerified?: boolean;
+      }>;
     };
     const user = payload.users?.[0];
     if (!user?.localId) return null;
-    return { uid: user.localId, email: user.email || "unknown" };
+    return {
+      uid: user.localId,
+      email: user.email || "unknown",
+      emailVerified: Boolean(user.emailVerified),
+    };
   } catch {
     return null;
   }

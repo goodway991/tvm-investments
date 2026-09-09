@@ -63,6 +63,9 @@ service cloud.firestore {
     // predict_usage/{uid}
     //   Weekly predict counters. Admin SDK via /api/predict-usage only.
     //
+    // email_otps/{uid}
+    //   One-time email verification codes. Admin SDK only.
+    //
     // site/maintenance
     //   enabled: master lock. Dates only inform the banner copy.
     //   warning: orange banner while enabled or when warning is true
@@ -1160,6 +1163,10 @@ service cloud.firestore {
     }
 
     match /feedback/{id} {
+      allow read, write: if false;
+    }
+
+    match /email_otps/{uid} {
       allow read, write: if false;
     }
 
