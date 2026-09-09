@@ -57,9 +57,23 @@ async function getAdminAuth() {
 
 export async function markEmailVerified(uid: string): Promise<boolean> {
   const auth = await getAdminAuth();
+  const db = await getAdminDb();
   if (!auth) return false;
   try {
     await auth.updateUser(uid, { emailVerified: true });
+    if (db) {
+      await db
+        .collection("users")
+        .doc(uid)
+        .set(
+          {
+            emailVerifiedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true },
+        )
+        .catch(() => undefined);
+    }
     return true;
   } catch {
     console.error("Failed to mark email verified.");
@@ -69,14 +83,34 @@ export async function markEmailVerified(uid: string): Promise<boolean> {
 
 /**
  * True when the signed-in user may use the desk without a fresh OTP.
- * Grandfathers accounts that already existed before email verify shipped.
+ * One-time only: Firebase emailVerified, Firestore emailVerifiedAt, admin, or pre-cutover accounts.
  */
 export async function ensureEmailVerifiedOrGrandfather(input: {
   uid: string;
   email: string;
   emailVerified: boolean;
 }): Promise<{ verified: boolean }> {
-  if (input.emailVerified) return { verified: true };
+  if (input.emailVerified) {
+    // Keep Firestore in sync so later logins skip OTP even if the client token is stale.
+    const db = await getAdminDb();
+    if (db) {
+      const snap = await db.collection("users").doc(input.uid).get().catch(() => null);
+      if (snap && snap.exists && !snap.data()?.emailVerifiedAt) {
+        await db
+          .collection("users")
+          .doc(input.uid)
+          .set(
+            {
+              emailVerifiedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true },
+          )
+          .catch(() => undefined);
+      }
+    }
+    return { verified: true };
+  }
   if (isAdminEmail(input.email)) {
     await markEmailVerified(input.uid);
     return { verified: true };
@@ -89,6 +123,13 @@ export async function ensureEmailVerifiedOrGrandfather(input: {
     const snap = await db.collection("users").doc(input.uid).get();
     if (!snap.exists) return { verified: false };
     const data = snap.data() || {};
+
+    // Already completed the one-time email proof — never ask again.
+    if (typeof data.emailVerifiedAt === "string" && data.emailVerifiedAt) {
+      await markEmailVerified(input.uid);
+      return { verified: true };
+    }
+
     const createdRaw = data.createdAt;
     let createdMs = 0;
     if (typeof createdRaw === "string") createdMs = Date.parse(createdRaw);
@@ -105,6 +146,25 @@ export async function ensureEmailVerifiedOrGrandfather(input: {
   }
 
   return { verified: false };
+}
+
+/** Status-only: never sends mail. Used so later logins skip the OTP UI. */
+export async function checkEmailVerificationStatus(input: {
+  uid: string;
+  email: string;
+}): Promise<{ verified: boolean }> {
+  const auth = await getAdminAuth();
+  if (!auth) return { verified: false };
+  try {
+    const record = await auth.getUser(input.uid);
+    return ensureEmailVerifiedOrGrandfather({
+      uid: input.uid,
+      email: input.email,
+      emailVerified: Boolean(record.emailVerified),
+    });
+  } catch {
+    return { verified: false };
+  }
 }
 
 export async function issueEmailOtp(input: {

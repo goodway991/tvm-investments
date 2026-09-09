@@ -16,6 +16,7 @@ export function EmailVerifyPanel({
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [sentOnce, setSentOnce] = useState(false);
@@ -27,6 +28,15 @@ export function EmailVerifyPanel({
     await user.reload();
     await user.getIdToken(true);
     return user.emailVerified;
+  }
+
+  async function finishIfVerified() {
+    const ok = await refreshAuthUser();
+    if (ok) {
+      await onVerified();
+      return true;
+    }
+    return false;
   }
 
   async function sendCode(auto = false) {
@@ -46,14 +56,11 @@ export function EmailVerifyPanel({
         return;
       }
       if (payload.alreadyVerified) {
-        const ok = await refreshAuthUser();
-        if (ok) {
-          await onVerified();
-          return;
-        }
+        await finishIfVerified();
+        return;
       }
       setSentOnce(true);
-      setMessage(`We sent a 6-digit code to ${email}.`);
+      setMessage(`We sent a one-time code to ${email}. You will not need this again after you verify.`);
     } catch {
       setError("Could not send a verification code.");
     } finally {
@@ -62,8 +69,32 @@ export function EmailVerifyPanel({
   }
 
   useEffect(() => {
-    void sendCode(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- send once on mount
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await authedFetch("/api/auth/email-status", {
+          method: "POST",
+        });
+        const payload = (await response.json().catch(() => ({}))) as {
+          verified?: boolean;
+        };
+        if (cancelled) return;
+        if (response.ok && payload.verified) {
+          await finishIfVerified();
+          return;
+        }
+        // First-time proof only — send a single code when the account is not verified yet.
+        await sendCode(true);
+      } catch {
+        if (!cancelled) setError("Could not check email verification status.");
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time mount check
   }, []);
 
   async function verify(event: FormEvent) {
@@ -84,12 +115,10 @@ export function EmailVerifyPanel({
         setError(payload.error || "Incorrect code.");
         return;
       }
-      const ok = await refreshAuthUser();
+      const ok = await finishIfVerified();
       if (!ok) {
         setError("Verified on the server, but the session did not refresh. Try signing in again.");
-        return;
       }
-      await onVerified();
     } catch {
       setError("Could not verify that code.");
     } finally {
@@ -97,13 +126,24 @@ export function EmailVerifyPanel({
     }
   }
 
+  if (checking) {
+    return (
+      <div className="space-y-3 text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet/20 border-t-violet" />
+        <p className="text-sm text-ink-soft">Checking your email…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl font-bold text-ink">Verify your email</h1>
         <p className="mt-1.5 text-sm text-ink-soft">
-          Enter the one-time code we sent to <span className="font-medium text-ink">{email}</span>.
-          This keeps fake and spam addresses off TVM.
+          Enter the one-time code we sent to{" "}
+          <span className="font-medium text-ink">{email}</span>. This is only
+          required the first time you create an account or sign in — not on later
+          logins.
         </p>
       </div>
 

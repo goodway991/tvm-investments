@@ -18,6 +18,7 @@ service cloud.firestore {
     //     (New badges hide 3 calendar days after first login that sees them)
     //   tosVersion, tosAcceptedAt, privacyAcceptedAt (required on create)
     //   createdAt: timestamp (immutable), updatedAt: timestamp
+    //   emailVerifiedAt: optional ISO string — set after one-time email OTP
     //
     // api_usage/{uid}
     //   uid, date (YYYY-MM-DD ET), market, research, updatedAt

@@ -91,6 +91,25 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
       router.push("/dashboard");
       return;
     }
+
+    // One-time proof only — if the server already trusts this account, skip the code UI.
+    try {
+      const { authedFetch } = await import("@/lib/authed-fetch");
+      const response = await authedFetch("/api/auth/email-status", { method: "POST" });
+      const payload = (await response.json().catch(() => ({}))) as {
+        verified?: boolean;
+      };
+      if (response.ok && payload.verified) {
+        await user.reload();
+        await user.getIdToken(true);
+        await linkPendingDiscordAccount();
+        router.push("/dashboard");
+        return;
+      }
+    } catch {
+      /* fall through to one-time verify UI */
+    }
+
     setVerifyEmail(user.email || email.trim());
     setStep("verify");
     setMessage("");
@@ -364,7 +383,7 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                         : "Sign in to your TVM workspace."
                       : SHOW_BETA_WAITLIST
                         ? "Create an account first. You'll join the waitlist on the next screen."
-                        : "Start screening the market in minutes. We'll email a one-time code to confirm your address."}
+                        : "Start screening the market in minutes. We'll email a one-time code the first time only."}
                   </p>
 
                   {!firebaseConfigured && (
