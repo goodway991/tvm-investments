@@ -256,6 +256,7 @@ type YahooQuote = {
   trailingPE?: unknown;
   forwardPE?: unknown;
   beta?: unknown;
+  quoteType?: string;
   epsTrailingTwelveMonths?: unknown;
   marketCap?: unknown;
   averageDailyVolume3Month?: unknown;
@@ -263,15 +264,6 @@ type YahooQuote = {
   sharesOutstanding?: unknown;
   fiftyTwoWeekHigh?: unknown;
   fiftyTwoWeekLow?: unknown;
-};
-
-type YahooFundPatch = {
-  peRatio: number | null;
-  beta: number | null;
-  eps: number | null;
-  marketCap: number | null;
-  avgVolume: number | null;
-  shortInterestPct: number | null;
 };
 
 /** Prefer trailing P/E; fall back to positive forward P/E (skip loss-maker negatives). */
@@ -284,6 +276,40 @@ function peFromFields(
   const fwd = num(forward);
   if (fwd != null && fwd > 0) return fwd;
   return null;
+}
+
+function peFromPriceAndEps(price: number, eps: number | null): number | null {
+  if (!(price > 0) || !(eps != null && eps > 0)) return null;
+  const pe = price / eps;
+  if (!Number.isFinite(pe) || pe <= 0 || pe > 5_000) return null;
+  return pe;
+}
+
+function yahooFailReason(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/status code\s*:\s*502/i.test(message) || /Could Not Connect/i.test(message)) {
+    return "Yahoo 502";
+  }
+  if (/\b429\b/.test(message) || /too many requests/i.test(message)) {
+    return "Yahoo 429";
+  }
+  return message.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+}
+
+async function withYahooRetry<T>(
+  run: () => Promise<T>,
+  attempts = 4,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      lastError = error;
+      await sleep(350 * 2 ** attempt);
+    }
+  }
+  throw lastError;
 }
 
 function asQuoteList(result: unknown): YahooQuote[] {
@@ -306,11 +332,35 @@ function yahooSymbol(symbol: string) {
   return symbol.trim().toUpperCase().replace(/\./g, "-");
 }
 
+const QUOTE_BATCH_FIELDS = [
+  "symbol",
+  "shortName",
+  "longName",
+  "quoteType",
+  "sector",
+  "industry",
+  "regularMarketPrice",
+  "regularMarketChange",
+  "regularMarketChangePercent",
+  "regularMarketPreviousClose",
+  "regularMarketVolume",
+  "trailingPE",
+  "forwardPE",
+  "epsTrailingTwelveMonths",
+  "marketCap",
+  "averageDailyVolume3Month",
+  "fiftyTwoWeekHigh",
+  "fiftyTwoWeekLow",
+  "sharesShort",
+  "sharesOutstanding",
+  "beta",
+] as const;
+
 export async function fetchYahooQuotesBatch(symbols: string[]) {
   const yahooFinance = getYahoo();
   const quotes = new Map<string, YahooQuote>();
   const chunkSize = 50;
-  const concurrency = 5;
+  const concurrency = 3;
   const chunks: string[][] = [];
   for (let index = 0; index < symbols.length; index += chunkSize) {
     chunks.push(symbols.slice(index, index + chunkSize));
@@ -320,17 +370,23 @@ export async function fetchYahooQuotesBatch(symbols: string[]) {
     await Promise.all(
       wave.map(async (chunk) => {
         try {
-          const result = await yahooFinance.quote(chunk.map(yahooSymbol));
+          const result = await withYahooRetry(() =>
+            yahooFinance.quote(chunk.map(yahooSymbol), {
+              fields: [...QUOTE_BATCH_FIELDS],
+            }),
+          );
           for (const quote of asQuoteList(result)) {
             const symbol = String(quote.symbol ?? "").toUpperCase();
             if (symbol) quotes.set(symbol, quote);
           }
         } catch (error) {
-          console.warn(`Yahoo quote batch failed at ${chunk[0]}:`, error);
+          console.warn(
+            `Yahoo quote batch failed at ${chunk[0]}: ${yahooFailReason(error)}`,
+          );
         }
       }),
     );
-    await sleep(40);
+    await sleep(50);
   }
   for (const requested of symbols) {
     const key = requested.trim().toUpperCase();
@@ -344,52 +400,6 @@ export async function fetchYahooQuotesBatch(symbols: string[]) {
     if (hit) quotes.set(key, hit);
   }
   return quotes;
-}
-
-/**
- * Yahoo's batch quote endpoint never ships beta. Pull defaultKeyStatistics /
- * summaryDetail so the desk scan has P/E + beta for filters and cards.
- */
-async function fetchYahooFundamentalsBatch(symbols: string[]) {
-  const yahooFinance = getYahoo();
-  const patches = new Map<string, YahooFundPatch>();
-  if (symbols.length === 0) return patches;
-
-  const concurrency = Math.min(28, Math.max(8, symbols.length));
-  let cursor = 0;
-
-  async function worker() {
-    while (cursor < symbols.length) {
-      const index = cursor++;
-      const symbol = symbols[index];
-      if (!symbol) continue;
-      try {
-        const summary = await yahooFinance.quoteSummary(yahooSymbol(symbol), {
-          modules: ["defaultKeyStatistics", "summaryDetail"],
-        });
-        const stats = summary?.defaultKeyStatistics as
-          | Record<string, unknown>
-          | undefined;
-        const detail = summary?.summaryDetail as
-          | Record<string, unknown>
-          | undefined;
-        patches.set(symbol.toUpperCase(), {
-          peRatio: peFromFields(detail?.trailingPE, detail?.forwardPE),
-          beta: num(stats?.beta) ?? num(detail?.beta),
-          eps: num(stats?.trailingEps),
-          marketCap: num(detail?.marketCap),
-          avgVolume: num(detail?.averageVolume),
-          shortInterestPct: num(stats?.shortPercentOfFloat),
-        });
-      } catch (error) {
-        console.warn(`Yahoo fundamentals missed ${symbol}:`, error);
-      }
-      await sleep(4);
-    }
-  }
-
-  await Promise.all(Array.from({ length: concurrency }, () => worker()));
-  return patches;
 }
 
 async function fetchYahooDailyBars(symbol: string): Promise<{
@@ -417,7 +427,6 @@ function candidateFromQuote(
   ohlcv: OHLCVBar[],
   yearCloses: OHLCVBar[],
   headlines: NewsHeadline[],
-  fund?: YahooFundPatch | null,
 ): StockCandidate {
   const lastClose = ohlcv.at(-1)?.close ?? 0;
   const prevClose =
@@ -452,20 +461,16 @@ function candidateFromQuote(
     fundamentals: {
       peRatio:
         peFromFields(quote?.trailingPE, quote?.forwardPE) ??
-        fund?.peRatio ??
-        null,
-      beta: num(quote?.beta) ?? fund?.beta ?? null,
-      eps: num(quote?.epsTrailingTwelveMonths) ?? fund?.eps ?? null,
-      marketCap:
-        num(quote?.marketCap) ?? fund?.marketCap ?? nasdaq?.marketCap ?? null,
-      avgVolume:
-        num(quote?.averageDailyVolume3Month) ?? fund?.avgVolume ?? null,
+        peFromPriceAndEps(price, num(quote?.epsTrailingTwelveMonths)),
+      beta: num(quote?.beta),
+      eps: num(quote?.epsTrailingTwelveMonths),
+      marketCap: num(quote?.marketCap) ?? nasdaq?.marketCap ?? null,
+      avgVolume: num(quote?.averageDailyVolume3Month),
       shortInterestPct:
-        fund?.shortInterestPct ??
-        (num(quote?.sharesShort) && num(quote?.sharesOutstanding)
+        num(quote?.sharesShort) && num(quote?.sharesOutstanding)
           ? (num(quote?.sharesShort) as number) /
             (num(quote?.sharesOutstanding) as number)
-          : null),
+          : null,
     },
     ohlcv,
     yearCloses,
@@ -609,7 +614,13 @@ export async function fetchYahooCandidate(symbol: string): Promise<StockCandidat
     changePercent,
     volume: num(quote.regularMarketVolume) ?? ohlcv.at(-1)?.volume ?? 0,
     fundamentals: {
-      peRatio: peFromFields(quote.trailingPE, quote.forwardPE) ?? peFromFields(detail?.trailingPE, detail?.forwardPE),
+      peRatio:
+        peFromFields(quote.trailingPE, quote.forwardPE) ??
+        peFromFields(detail?.trailingPE, detail?.forwardPE) ??
+        peFromPriceAndEps(
+          price,
+          num(quote.epsTrailingTwelveMonths) ?? num(stats?.trailingEps),
+        ),
       beta: num(stats?.beta) ?? num(detail?.beta),
       eps: num(quote.epsTrailingTwelveMonths) ?? num(stats?.trailingEps),
       marketCap: num(quote.marketCap) ?? num(detail?.marketCap),
@@ -776,8 +787,7 @@ export async function fetchYahooUniverse(): Promise<StockCandidate[]> {
   }
 
   const quotes = await fetchYahooQuotesBatch(symbols);
-  const fundamentals = await fetchYahooFundamentalsBatch(symbols);
-  return symbols
+  const candidates = symbols
     .map((symbol) => {
       const quote = quotes.get(symbol) ?? quotes.get(yahooSymbol(symbol));
       const nasdaq = nasdaqMap.get(symbol);
@@ -785,13 +795,15 @@ export async function fetchYahooUniverse(): Promise<StockCandidate[]> {
       const price =
         num(quote?.regularMarketPrice) ?? nasdaq?.price ?? 0;
       if (!(price > 0)) return null;
-      const fund =
-        fundamentals.get(symbol) ??
-        fundamentals.get(yahooSymbol(symbol)) ??
-        null;
-      return candidateFromQuote(symbol, quote, nasdaq, [], [], [], fund);
+      return candidateFromQuote(symbol, quote, nasdaq, [], [], []);
     })
     .filter((candidate): candidate is StockCandidate => candidate != null);
+  const withPe = candidates.filter((row) => row.fundamentals.peRatio != null).length;
+  const withBeta = candidates.filter((row) => row.fundamentals.beta != null).length;
+  console.warn(
+    `Yahoo scan fundamentals: pe ${withPe}/${candidates.length}, beta ${withBeta}/${candidates.length}`,
+  );
+  return candidates;
 }
 
 export async function hydrateYahooCandidates(
@@ -873,7 +885,9 @@ export function quoteCardFromYahoo(symbol: string, quote: YahooQuote | undefined
     change: num(quote?.regularMarketChange) ?? 0,
     changePercent: num(quote?.regularMarketChangePercent) ?? 0,
     volume: num(quote?.regularMarketVolume) ?? 0,
-    peRatio: peFromFields(quote?.trailingPE, quote?.forwardPE),
+    peRatio:
+      peFromFields(quote?.trailingPE, quote?.forwardPE) ??
+      peFromPriceAndEps(price, num(quote?.epsTrailingTwelveMonths)),
   };
 }
 
@@ -889,7 +903,11 @@ async function fillMissingQuotes(
   await Promise.all(
     missing.map(async (symbol) => {
       try {
-        const result = await yahooFinance.quote(yahooSymbol(symbol));
+        const result = await withYahooRetry(() =>
+          yahooFinance.quote(yahooSymbol(symbol), {
+            fields: [...QUOTE_BATCH_FIELDS],
+          }),
+        );
         const quote = asQuoteList(result)[0];
         if (quote) quotes.set(symbol.toUpperCase(), quote);
       } catch (error) {
