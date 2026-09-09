@@ -26,7 +26,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const points = await fetchYahooChartSeries(symbol, range, asOf);
-    return NextResponse.json({ symbol, range, points });
+    return NextResponse.json(
+      { symbol, range, points },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      },
+    );
   } catch (error) {
     console.error("Yahoo chart error:", error);
     return NextResponse.json({ symbol, range, points: [] }, { status: 200 });
