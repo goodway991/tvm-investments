@@ -1,7 +1,7 @@
 import YahooFinance from "yahoo-finance2";
 import type { ChartPoint, ChartRange } from "@/lib/chart-series";
 import type { MarketEvent, NewsHeadline, OHLCVBar, StockCandidate } from "@/types";
-import { YAHOO_SCAN_UNIVERSE, SCAN_UNIVERSE_LIMIT } from "@/lib/watchlist-symbols";
+import { YAHOO_SCAN_UNIVERSE, SCAN_UNIVERSE_LIMIT, SCAN_ETF_LIMIT } from "@/lib/watchlist-symbols";
 import {
   fetchNasdaqEtfs,
   fetchNasdaqScreener,
@@ -674,8 +674,8 @@ export async function fetchYahooUniverse(): Promise<StockCandidate[]> {
   let nasdaqRows: NasdaqQuote[] = [];
   try {
     const [stocks, etfs] = await Promise.all([
-      fetchNasdaqScreener(12_000),
-      fetchNasdaqEtfs(8_000),
+      fetchNasdaqScreener(SCAN_UNIVERSE_LIMIT),
+      fetchNasdaqEtfs(Math.max(SCAN_ETF_LIMIT, 8_000)),
     ]);
     nasdaqRows = mixScanUniverse(stocks, etfs, SCAN_UNIVERSE_LIMIT);
   } catch (error) {

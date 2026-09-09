@@ -197,9 +197,9 @@ export function mixScanUniverse(
   const tradable = [...stocks]
     .filter((row) => row.price >= 0.25)
     .sort(byMarketCapDesc);
-  const rankedEtfs = [...etfs].sort(byMarketCapDesc);
-  const etfBudget = Math.min(SCAN_ETF_LIMIT, rankedEtfs.length, Math.max(0, limit - 1));
-  const stockBudget = Math.max(0, limit - etfBudget);
+  const rankedEtfs = [...etfs]
+    .filter((row) => row.price >= 0.25)
+    .sort(byMarketCapDesc);
   const seed = new Map(
     LIBRARY_BROWSE.map((row) => [row.symbol, row.name] as const),
   );
@@ -215,15 +215,11 @@ export function mixScanUniverse(
   const bySymbol = new Map(
     [...stocks, ...etfs].map((row) => [row.symbol, row] as const),
   );
-  // Library seeds first, then nearly the full stock screener, then liquid ETFs.
+  // Seeds → all tradable stocks → fill remaining slots with liquid ETFs up to 12k.
   for (const symbol of seed.keys()) add(bySymbol.get(symbol));
-  for (const row of tradable) {
-    if (mixed.length >= stockBudget) break;
-    add(row);
-  }
-  for (const row of rankedEtfs.slice(0, etfBudget)) add(row);
-  // Fill any leftover slots with remaining stocks (under the overall limit).
   for (const row of tradable) add(row);
+  const etfSlots = Math.min(SCAN_ETF_LIMIT, Math.max(0, limit - mixed.length));
+  for (const row of rankedEtfs.slice(0, etfSlots)) add(row);
   return mixed;
 }
 
