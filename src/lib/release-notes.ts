@@ -2,7 +2,7 @@ import { showTvm10Labs } from "@/lib/beta-labs";
 
 export const CURRENT_RELEASE_ID = showTvm10Labs() ? "tvm-1" : "beta-3";
 /** Bump when What’s New should re-open for signed-in desks. */
-export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-v8" : "beta-3-reopen";
+export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-v9" : "beta-3-reopen";
 
 const RELEASE_ACK_ORDER = [
   "beta-1",
@@ -22,6 +22,7 @@ const RELEASE_ACK_ORDER = [
   "tvm-1",
   "tvm-1-launch",
   "tvm-1-v8",
+  "tvm-1-v9",
 ];
 
 const RELEASE_ACK_ALIASES: Record<string, string> = {
@@ -75,7 +76,8 @@ export type ReleaseFeatureVisualId =
   | "accuracy"
   | "discord"
   | "market-timer"
-  | "ultra-algorithm";
+  | "ultra-algorithm"
+  | "universe";
 
 export type ReleaseFeature = {
   title: string;
@@ -177,6 +179,11 @@ export const RELEASES: ReleaseNote[] = [
     summary:
       "Builds on Beta v3.0. Country and time zone for every account. Ultra gets a 6am good morning, Portfolio 2.0, and a workstation. Predictions split by plan. Sector deep dives updated from 6 to all 11 market sectors.",
     features: [
+      {
+        title: "Research universe: ~600 → 12,000+ names",
+        visual: "universe",
+        body: "The weekday close now screens the full Nasdaq-listed pool — about 12,000+ stocks and liquid ETFs — instead of the old ~600-name static list. Watchlists can add any valid ticker from that universe.",
+      },
       {
         title: "Discord verification",
         visual: "discord",

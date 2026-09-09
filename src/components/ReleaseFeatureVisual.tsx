@@ -694,6 +694,35 @@ function UltraAlgorithmVisual() {
   );
 }
 
+function UniverseVisual() {
+  return (
+    <MiniWindow title="Daily scan · Universe">
+      <div className="space-y-3 bg-surface p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-soft">
+          Research universe
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-ink/[0.08] bg-white p-3">
+            <p className="text-[10px] text-ink-soft">Before</p>
+            <p className="mt-1 font-display text-2xl font-bold tabular-nums text-ink-soft line-through decoration-ink/30">
+              ~600
+            </p>
+          </div>
+          <div className="rounded-2xl border border-violet/25 bg-violet/[0.08] p-3">
+            <p className="text-[10px] text-violet">Now</p>
+            <p className="mt-1 font-display text-2xl font-bold tabular-nums text-ink">
+              12,000+
+            </p>
+          </div>
+        </div>
+        <p className="text-[11px] leading-snug text-ink-soft">
+          Weekday close now screens the full Nasdaq-listed pool — stocks and liquid ETFs.
+        </p>
+      </div>
+    </MiniWindow>
+  );
+}
+
 const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   bogen: BogenVisual,
   events: EventsVisual,
@@ -708,6 +737,7 @@ const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   discord: DiscordVisual,
   "market-timer": MarketTimerVisual,
   "ultra-algorithm": UltraAlgorithmVisual,
+  universe: UniverseVisual,
 };
 
 export function ReleaseFeatureVisual({ id }: { id: ReleaseFeatureVisualId }) {
