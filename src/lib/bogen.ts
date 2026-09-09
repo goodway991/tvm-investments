@@ -14,6 +14,7 @@ export type BogenId =
   | "nav-logo"
   | "top-pick"
   | "names-screened"
+  | "market-timer"
   | "daily-movers-card"
   | "composite"
   | "ticker-search"
@@ -140,6 +141,11 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     title: "Names screened",
     what: "How many liquid US names went through today’s eight-signal scan.",
     how: "Tap to open the Screener and filter that universe.",
+  },
+  "market-timer": {
+    title: "Market timer",
+    what: "A live countdown to the next US cash open (9:30 ET) or close (4:00 ET).",
+    how: "Before the bell it shows Market opens in HH:MM:SS. During the session it flips to Market closes in HH:MM:SS.",
   },
   "daily-movers-card": {
     title: "Daily movers",

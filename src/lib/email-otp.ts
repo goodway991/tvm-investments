@@ -10,14 +10,6 @@ const MAX_SENDS_PER_HOUR = 5;
 const MAX_ATTEMPTS = 5;
 const COLLECTION = "email_otps";
 
-/** Accounts created before this instant are trusted (existing desk users). */
-function emailVerifySinceMs() {
-  const raw =
-    process.env.TVM_EMAIL_VERIFY_SINCE?.trim() || "2026-09-08T00:00:00.000Z";
-  const ms = Date.parse(raw);
-  return Number.isFinite(ms) ? ms : Date.parse("2026-09-08T00:00:00.000Z");
-}
-
 function otpPepper() {
   return (
     process.env.TVM_FEEDBACK_UNLOCK?.trim() ||
@@ -82,35 +74,15 @@ export async function markEmailVerified(uid: string): Promise<boolean> {
 }
 
 /**
- * True when the signed-in user may use the desk without a fresh OTP.
- * One-time only: Firebase emailVerified, Firestore emailVerifiedAt, admin, or pre-cutover accounts.
+ * One-time email proof for every non-admin account.
+ * Only Firestore emailVerifiedAt (set after OTP) or admin skips the code UI.
+ * Previously grandfathered Auth flags do not count — those users get one OTP on next login.
  */
 export async function ensureEmailVerifiedOrGrandfather(input: {
   uid: string;
   email: string;
   emailVerified: boolean;
 }): Promise<{ verified: boolean }> {
-  if (input.emailVerified) {
-    // Keep Firestore in sync so later logins skip OTP even if the client token is stale.
-    const db = await getAdminDb();
-    if (db) {
-      const snap = await db.collection("users").doc(input.uid).get().catch(() => null);
-      if (snap && snap.exists && !snap.data()?.emailVerifiedAt) {
-        await db
-          .collection("users")
-          .doc(input.uid)
-          .set(
-            {
-              emailVerifiedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-            { merge: true },
-          )
-          .catch(() => undefined);
-      }
-    }
-    return { verified: true };
-  }
   if (isAdminEmail(input.email)) {
     await markEmailVerified(input.uid);
     return { verified: true };
@@ -121,28 +93,23 @@ export async function ensureEmailVerifiedOrGrandfather(input: {
 
   try {
     const snap = await db.collection("users").doc(input.uid).get();
-    if (!snap.exists) return { verified: false };
-    const data = snap.data() || {};
+    const data = snap.exists ? snap.data() || {} : {};
 
-    // Already completed the one-time email proof — never ask again.
     if (typeof data.emailVerifiedAt === "string" && data.emailVerifiedAt) {
-      await markEmailVerified(input.uid);
+      if (!input.emailVerified) await markEmailVerified(input.uid);
       return { verified: true };
     }
 
-    const createdRaw = data.createdAt;
-    let createdMs = 0;
-    if (typeof createdRaw === "string") createdMs = Date.parse(createdRaw);
-    else if (createdRaw?.toDate) createdMs = createdRaw.toDate().getTime();
-    else if (typeof createdRaw?.seconds === "number") {
-      createdMs = createdRaw.seconds * 1000;
-    }
-    if (createdMs > 0 && createdMs < emailVerifySinceMs()) {
-      await markEmailVerified(input.uid);
-      return { verified: true };
+    // Clear a stale Auth "verified" flag from the old grandfather path so the
+    // client shows the one-time code UI for existing accounts.
+    if (input.emailVerified) {
+      const auth = await getAdminAuth();
+      if (auth) {
+        await auth.updateUser(input.uid, { emailVerified: false }).catch(() => undefined);
+      }
     }
   } catch {
-    console.error("Email grandfather check failed.");
+    console.error("Email verification status check failed.");
   }
 
   return { verified: false };

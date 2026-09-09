@@ -110,3 +110,86 @@ export function nextCashSessionDays(fromTimestamp: number, count: number) {
   }
   return days;
 }
+
+function nextCashSessionYmd(fromYmd: string) {
+  let cursor = fromYmd;
+  for (let i = 0; i < 14; i += 1) {
+    if (isUsCashSessionDay(cursor)) return cursor;
+    cursor = shiftYmd(cursor, 1);
+  }
+  return shiftYmd(fromYmd, 1);
+}
+
+/** UTC ms for an America/New_York wall-clock time on a given YMD. */
+export function etWallClockToUtcMs(ymd: string, hour: number, minute: number) {
+  const [year, month, day] = ymd.split("-").map(Number);
+  let utc = Date.UTC(year, month - 1, day, 12, 0, 0);
+  for (let i = 0; i < 80; i += 1) {
+    const parts = etParts(new Date(utc));
+    const got = parts.hour * 60 + parts.minute;
+    const want = hour * 60 + minute;
+    if (parts.ymd === ymd && got === want) return utc - ((utc % 60_000) || 0);
+    if (parts.ymd < ymd) {
+      utc += 60 * 60_000;
+      continue;
+    }
+    if (parts.ymd > ymd) {
+      utc -= 60 * 60_000;
+      continue;
+    }
+    utc += (want - got) * 60_000;
+  }
+  return utc;
+}
+
+export type MarketCountdown = {
+  phase: "opens" | "closes";
+  targetMs: number;
+  /** Whole seconds remaining (>= 0). */
+  remainingSec: number;
+};
+
+/**
+ * Regular US cash session: 09:30–16:00 ET on trading days.
+ * Before open / on closed days → countdown to next open.
+ * During the session → countdown to close.
+ */
+export function getMarketCountdown(now = new Date()): MarketCountdown {
+  const { ymd, hour, minute } = etParts(now);
+  const mins = hour * 60 + minute;
+  const openMins = 9 * 60 + 30;
+  const closeMins = 16 * 60;
+  const nowMs = now.getTime();
+
+  if (isUsCashSessionDay(ymd) && mins >= openMins && mins < closeMins) {
+    const targetMs = etWallClockToUtcMs(ymd, 16, 0);
+    return {
+      phase: "closes",
+      targetMs,
+      remainingSec: Math.max(0, Math.ceil((targetMs - nowMs) / 1000)),
+    };
+  }
+
+  let openYmd = ymd;
+  if (!isUsCashSessionDay(ymd) || mins >= closeMins) {
+    openYmd = nextCashSessionYmd(shiftYmd(ymd, 1));
+  } else if (mins < openMins) {
+    openYmd = ymd;
+  }
+
+  const targetMs = etWallClockToUtcMs(openYmd, 9, 30);
+  return {
+    phase: "opens",
+    targetMs,
+    remainingSec: Math.max(0, Math.ceil((targetMs - nowMs) / 1000)),
+  };
+}
+
+export function formatCountdownHms(totalSec: number) {
+  const sec = Math.max(0, Math.floor(totalSec));
+  const hours = Math.floor(sec / 3600);
+  const minutes = Math.floor((sec % 3600) / 60);
+  const seconds = sec % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}

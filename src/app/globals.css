@@ -2797,6 +2797,69 @@ html.dark .stock-search-menu {
   }
 }
 
+.wn-market-timer-label {
+  position: relative;
+  display: inline-grid;
+}
+
+.wn-market-timer-opens,
+.wn-market-timer-closes {
+  grid-area: 1 / 1;
+}
+
+.wn-market-timer-opens {
+  animation: wn-market-timer-swap 8s ease-in-out infinite;
+}
+
+.wn-market-timer-closes {
+  opacity: 0;
+  animation: wn-market-timer-swap-alt 8s ease-in-out infinite;
+}
+
+.wn-market-timer-clock {
+  animation: wn-market-timer-tick 1s steps(1, end) infinite;
+}
+
+@keyframes wn-market-timer-swap {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  95% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes wn-market-timer-swap-alt {
+  0%,
+  45% {
+    opacity: 0;
+  }
+  50%,
+  95% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes wn-market-timer-tick {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.82;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 .wn-horizon-now,
 .wn-horizon-six,
 .wn-horizon-week,

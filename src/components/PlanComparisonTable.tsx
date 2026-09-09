@@ -83,12 +83,17 @@ export function PlanComparisonTable({
         (showUltra || feature.name !== "Portfolio book review"),
     )
     .sort((left, right) => {
-      const rank = (feature: (typeof features)[number]) => {
-        if (!feature.pro) return 0;
-        if (!feature.free) return 1;
-        return 2;
+      if (left.name === "Ultra Algorithm") return -1;
+      if (right.name === "Ultra Algorithm") return 1;
+      const markScore = (feature: (typeof features)[number]) => {
+        const free = planFeatureMark(feature, "free", PLAN_FEATURES);
+        const pro = planFeatureMark(feature, "pro", PLAN_FEATURES);
+        const score = (mark: "yes" | "better" | "no") =>
+          mark === "no" ? 0 : mark === "better" ? 1 : 2;
+        // Xs first, then blue "better" checks, then green included checks.
+        return score(free) * 10 + score(pro);
       };
-      return rank(left) - rank(right);
+      return markScore(left) - markScore(right) || left.name.localeCompare(right.name);
     });
 
   return (
@@ -201,7 +206,7 @@ export function PlanComparisonTable({
             *99% is an Ultra research-read target, not a guarantee. Free and Pro
             share the same single-equation path (Free 2 Pulse / 2 Horizon / week;
             Pro 5 Pulse, 3 Portfolio Score, 1 Portfolio Addition, 5 Horizon).
-            Ultra runs the multi-equation algorithm with higher weekly caps, plus
+            Ultra runs the Ultra Algorithm with higher weekly caps, plus
             Advanced Predictions on the workstation.
           </ProGlowText>
         </p>

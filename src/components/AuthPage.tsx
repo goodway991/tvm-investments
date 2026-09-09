@@ -83,16 +83,13 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
       return;
     }
     await user.reload();
-    if (
-      user.emailVerified ||
-      user.email?.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()
-    ) {
+    if (user.email?.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase()) {
       await linkPendingDiscordAccount();
       router.push("/dashboard");
       return;
     }
 
-    // One-time proof only — if the server already trusts this account, skip the code UI.
+    // One-time proof for every non-admin account (old or new).
     try {
       const { authedFetch } = await import("@/lib/authed-fetch");
       const response = await authedFetch("/api/auth/email-status", { method: "POST" });

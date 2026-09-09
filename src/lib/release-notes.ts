@@ -1,8 +1,8 @@
 import { showTvm10Labs } from "@/lib/beta-labs";
 
 export const CURRENT_RELEASE_ID = showTvm10Labs() ? "tvm-1" : "beta-3";
-/** Frozen for TVM 1.0. Do not bump this for copy edits — that re-opens What’s New. */
-export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-launch" : "beta-3-reopen";
+/** Bump when What’s New should re-open for signed-in desks. */
+export const RELEASE_ACK_ID = showTvm10Labs() ? "tvm-1-v8" : "beta-3-reopen";
 
 const RELEASE_ACK_ORDER = [
   "beta-1",
@@ -21,6 +21,7 @@ const RELEASE_ACK_ORDER = [
   "tvm-1-v7",
   "tvm-1",
   "tvm-1-launch",
+  "tvm-1-v8",
 ];
 
 const RELEASE_ACK_ALIASES: Record<string, string> = {
@@ -71,7 +72,10 @@ export type ReleaseFeatureVisualId =
   | "sectors"
   | "horizon"
   | "ultra"
-  | "accuracy";
+  | "accuracy"
+  | "discord"
+  | "market-timer"
+  | "ultra-algorithm";
 
 export type ReleaseFeature = {
   title: string;
@@ -173,6 +177,21 @@ export const RELEASES: ReleaseNote[] = [
     summary:
       "Builds on Beta v3.0. Country and time zone for every account. Ultra gets a 6am good morning, Portfolio 2.0, and a workstation. Predictions split by plan. Sector deep dives updated from 6 to all 11 market sectors.",
     features: [
+      {
+        title: "Discord verification",
+        visual: "discord",
+        body: "Link Discord in Settings and your profile shows Linked! with your avatar so community roles stay in sync with the desk.",
+      },
+      {
+        title: "Market timer",
+        visual: "market-timer",
+        body: "The dashboard card counts down to the US cash open, then flips to Market closes in HH:MM:SS once the session is live.",
+      },
+      {
+        title: "Ultra Algorithm",
+        visual: "ultra-algorithm",
+        body: "A masterclass multi-equation path built only for Ultra desks and Ultra predictions — Free and Pro keep the single-equation read.",
+      },
       {
         title: "99%* accurate predictions",
         visual: "accuracy",

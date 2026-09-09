@@ -6,6 +6,7 @@ import { type FormEvent, useMemo, useState } from "react";
 import type { DailySnapshot } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { MiniChart } from "@/components/MiniChart";
+import { MarketTimerCard } from "@/components/MarketTimerCard";
 import { MarketPulse } from "@/components/MarketPulse";
 import { MoveMark } from "@/components/MoversTable";
 import { StockDetailModal, FlaggedPickButton, compactCompanyName, screenedToCandidate } from "@/components/StockDetailModal";
@@ -177,11 +178,10 @@ export function DashboardOverview({
       href: "/dashboard/screener",
     },
     {
-      label: "Daily movers",
-      value: snapshot.topMovers.length.toLocaleString(),
-      badge: "ranked",
-      bogen: "daily-movers-card" as const,
-      href: "/dashboard/movers",
+      kind: "market-timer" as const,
+      label: "Market timer",
+      value: "",
+      bogen: "market-timer" as const,
     },
     era.features.accountScore
       ? {
@@ -270,6 +270,10 @@ export function DashboardOverview({
 
       <div className={`mt-7 grid gap-4 ${clean ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4"}`}>
         {visibleCards.map((card, index) => {
+          if ("kind" in card && card.kind === "market-timer") {
+            return <MarketTimerCard key="market-timer" />;
+          }
+
           const className = `rounded-[22px] p-5 text-left transition-transform ${
             card.gradient ? "glass-violet text-white" : "glass-strong"
           } ${
@@ -283,7 +287,7 @@ export function DashboardOverview({
                 <span className={`text-xs ${card.gradient ? "text-white/80" : "text-ink-soft"}`}>
                   {card.label}
                 </span>
-                {card.badge && (
+                {"badge" in card && card.badge && (
                   <span className="text-[11px] font-semibold text-emerald-600">{card.badge}</span>
                 )}
               </div>
@@ -294,7 +298,7 @@ export function DashboardOverview({
               >
                 {card.value}
               </div>
-              {card.chart && card.chart.length > 1 && (
+              {"chart" in card && card.chart && card.chart.length > 1 && (
                 <div className="-mb-1 mt-1">
                   <MiniChart
                     values={card.chart}

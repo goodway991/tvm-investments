@@ -618,6 +618,82 @@ function AccuracyVisual() {
   );
 }
 
+function DiscordVisual() {
+  return (
+    <MiniWindow title="Settings · Discord">
+      <div className="bg-surface p-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-[#5865F2]/25 bg-[#5865F2]/15 px-4 py-3">
+          <div className="relative shrink-0">
+            <div className="grid h-11 w-11 place-items-center rounded-full bg-[#5865F2] text-sm font-bold text-white">
+              TV
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] text-white">
+              ✓
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold text-ink">TVM Desk</p>
+            <p className="truncate text-xs text-ink-soft">@tvmdesk</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-500">
+            Linked!
+          </span>
+        </div>
+        <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">
+          Website Linked role syncs with your plan on Discord.
+        </p>
+      </div>
+    </MiniWindow>
+  );
+}
+
+function MarketTimerVisual() {
+  return (
+    <VideoWindow title="Dashboard · Market timer">
+      <div className="wn-market-timer-stage bg-surface p-4">
+        <article className="rounded-[18px] border border-ink/[0.08] bg-[#12161f] p-4 text-white shadow-[0_12px_24px_-18px_rgba(0,0,0,0.55)]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="wn-market-timer-label text-[11px] text-white/70">
+              <span className="wn-market-timer-opens">Market opens in</span>
+              <span className="wn-market-timer-closes">Market closes in</span>
+            </span>
+            <span className="text-[10px] font-semibold text-emerald-400">session</span>
+          </div>
+          <p className="wn-market-timer-clock mt-1 font-display text-3xl font-bold tabular-nums tracking-tight text-white">
+            02:14:37
+          </p>
+          <p className="mt-1 text-[10px] text-white/45">US cash hours · 9:30–4:00 ET</p>
+        </article>
+      </div>
+    </VideoWindow>
+  );
+}
+
+function UltraAlgorithmVisual() {
+  return (
+    <MiniWindow title="Ultra · Ultra Algorithm">
+      <div className="space-y-3 bg-surface p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-violet">
+          Ultra only
+        </p>
+        <p className="font-display text-2xl font-bold text-ink">Ultra Algorithm</p>
+        <p className="text-[11px] leading-relaxed text-ink-soft">
+          Masterclass multi-equation ensemble for Ultra Pulse, Portfolio, and Horizon
+          paths.
+        </p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {["Tape", "Vol", "Regime"].map((label) => (
+            <div key={label} className="rounded-xl bg-white px-2 py-2">
+              <p className="text-[9px] text-ink-soft">{label}</p>
+              <p className="font-display text-sm font-bold text-ink">blend</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </MiniWindow>
+  );
+}
+
 const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   bogen: BogenVisual,
   events: EventsVisual,
@@ -629,6 +705,9 @@ const VISUALS: Record<ReleaseFeatureVisualId, () => JSX.Element> = {
   horizon: HorizonVisual,
   ultra: UltraWelcomeVisual,
   accuracy: AccuracyVisual,
+  discord: DiscordVisual,
+  "market-timer": MarketTimerVisual,
+  "ultra-algorithm": UltraAlgorithmVisual,
 };
 
 export function ReleaseFeatureVisual({ id }: { id: ReleaseFeatureVisualId }) {

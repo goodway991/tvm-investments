@@ -116,6 +116,13 @@ export type PlanFeature = {
 };
 
 export const PLAN_FEATURES: PlanFeature[] = [
+  {
+    name: "Ultra Algorithm",
+    free: false,
+    pro: false,
+    ultra: true,
+    labsOnly: true,
+  },
   { name: "8-signal screener", free: true, pro: true },
   { name: "Top 10 daily movers", free: true, pro: true, family: "movers", rank: 1 },
   { name: "Top 20 daily movers", free: false, pro: true, family: "movers", rank: 2 },
@@ -292,15 +299,6 @@ export const PLAN_FEATURES: PlanFeature[] = [
     labsOnly: true,
     family: "prediction_quality",
     rank: 1,
-  },
-  {
-    name: "Multi-equation Ultra algorithm predictions (99%*)",
-    free: false,
-    pro: false,
-    ultra: true,
-    labsOnly: true,
-    family: "prediction_quality",
-    rank: 2,
   },
   {
     name: "Beta tester (features before public release)",
