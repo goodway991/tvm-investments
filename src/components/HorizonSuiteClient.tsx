@@ -253,6 +253,10 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
     if (!(bookValue > 0) || !(liveValue > 0)) return undefined;
     let drift = 0;
     let vol = 0;
+    let rho = 0;
+    let lastDelta = 0;
+    let thetaLog = 0;
+    let avgBlend = 0;
     positions.forEach((position) => {
       const forecast = forecasts[position.symbol];
       if (!forecast) return;
@@ -260,16 +264,22 @@ export function HorizonSuiteClient({ quotes }: { quotes: HorizonQuote[] }) {
       const weight = (position.shares * price) / liveValue;
       drift += weight * forecast.stats.dailyDrift;
       vol += weight * forecast.stats.dailyVol;
+      rho += weight * (forecast.stats.rho ?? 0);
+      lastDelta += weight * (forecast.stats.lastDelta ?? forecast.stats.dailyDrift);
+      thetaLog += weight * (forecast.stats.thetaLog ?? forecast.stats.dailyDrift);
+      avgBlend += weight * (forecast.stats.avgBlend ?? 0);
     });
     const equityShare = liveValue / bookValue;
+    // Cash dilutes drift; book return vol scales with equity weight (σ_book ≈ w·σ_eq).
     return {
       last: bookValue,
       dailyDrift: drift * equityShare,
       dailyVol: vol * equityShare,
-      kappa: 0,
-      thetaLog: drift * equityShare,
-      lastDelta: 0,
-      rho: 0,
+      kappa: rho > 0.04 ? Math.min(1.4, -Math.log(rho)) : 0,
+      thetaLog: thetaLog * equityShare,
+      lastDelta: lastDelta * equityShare,
+      rho,
+      avgBlend,
     };
   })();
   const chartNote =

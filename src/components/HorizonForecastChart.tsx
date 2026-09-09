@@ -103,6 +103,28 @@ export function HorizonForecastChart({
     () => buildHorizonChart(history, pathDays, statsOverride, windowDays),
     [history, pathDays, windowDays, statsOverride],
   );
+  const yDomain = useMemo((): [number, number] | ["auto", "auto"] => {
+    const values: number[] = [];
+    for (const point of points) {
+      if (point.actual != null && Number.isFinite(point.actual)) {
+        values.push(point.actual);
+      }
+      if (point.predicted != null && Number.isFinite(point.predicted)) {
+        values.push(point.predicted);
+        // Keep part of the cone in frame without letting it flatten the path.
+        if (point.low != null && point.high != null) {
+          const mid = point.predicted;
+          values.push(mid + (point.low - mid) * 0.42);
+          values.push(mid + (point.high - mid) * 0.42);
+        }
+      }
+    }
+    if (values.length < 2) return ["auto", "auto"];
+    const lo = Math.min(...values);
+    const hi = Math.max(...values);
+    const pad = Math.max((hi - lo) * 0.12, Math.abs(hi) * 0.012, 0.05);
+    return [lo - pad, hi + pad];
+  }, [points]);
   const lastForecast =
     pathDays > 0
       ? [...points].reverse().find((point) => point.predicted != null)
@@ -243,7 +265,7 @@ export function HorizonForecastChart({
               minTickGap={18}
             />
             <YAxis
-              domain={["auto", "auto"]}
+              domain={yDomain}
               width={58}
               tick={{ fill: palette.tick, fontSize: 11 }}
               tickLine={false}
@@ -353,7 +375,7 @@ export function HorizonForecastChart({
                 type="linear"
                 dataKey="predicted"
                 stroke={predictedStroke}
-                strokeWidth={5.5}
+                strokeWidth={3.2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 dot={false}
@@ -368,7 +390,7 @@ export function HorizonForecastChart({
               type="linear"
               dataKey="predicted"
               stroke={predictedStroke}
-              strokeWidth={2.4}
+              strokeWidth={2.6}
               strokeLinecap="round"
               strokeLinejoin="round"
               dot={false}

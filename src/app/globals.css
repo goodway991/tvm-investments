@@ -1420,21 +1420,21 @@ html.dark .plan-current-pane.plan-ultra-pane {
 }
 
 .horizon-path-ultra {
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.55))
-    drop-shadow(0 0 6px rgba(110, 162, 255, 0.45));
+  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.4))
+    drop-shadow(0 0 4px rgba(110, 162, 255, 0.35));
 }
 
 .horizon-path-ultra-halo,
 .horizon-path-pro-halo {
-  opacity: 0.32;
+  opacity: 0.22;
 }
 
 .horizon-path-ultra-halo {
-  filter: blur(2.4px);
+  filter: blur(1.1px);
 }
 
 .horizon-path-pro-halo {
-  filter: blur(2.4px);
+  filter: blur(1.1px);
 }
 
 .horizon-ultra-spark,

@@ -296,10 +296,18 @@ function formatDay(timestamp: number) {
   });
 }
 
+/** Deterministic ~N(0,1) shock from a seed (no Math.random — stable charts). */
+function unitShock(seed: number, index: number) {
+  const u1 = (Math.sin((index + 1) * 12.9898 + seed * 78.233) * 43758.5453) % 1;
+  const u2 = (Math.sin((index + 1) * 78.233 + seed * 12.9898) * 24634.6345) % 1;
+  const a = Math.abs(u1) < 1e-9 ? 1e-9 : Math.abs(u1);
+  return Math.sqrt(-2 * Math.log(a)) * Math.cos(2 * Math.PI * u2);
+}
+
 /**
- * Historical demeaned log-return path, scaled to forecast daily σ, then a
- * Brownian bridge so the tip still lands on the model mean. Amplitude matches
- * one trading day of residual per day (no dt shrink that flattened the path).
+ * One GBM residual realization over the horizon, Brownian-bridged so the tip
+ * still lands on the model mean. Increments use σ√Δt with tape-shaped unit
+ * shocks (standardized historical residuals, seeded fallback if tape is flat).
  */
 function pathWiggleSeries(
   closes: number[],
@@ -309,31 +317,34 @@ function pathWiggleSeries(
 ): number[] {
   const out = Array.from({ length: samples + 1 }, () => 0);
   const series = closes.filter((price) => price > 0);
-  if (series.length < 5 || horizon <= 0 || samples < 2) return out;
+  if (series.length < 5 || horizon <= 0 || samples < 2 || !(vol > 0)) return out;
   const diffs = firstDiff(series.map(Math.log));
   if (diffs.length < 3) return out;
   const mu = mean(diffs);
   const residuals = diffs.map((value) => value - mu);
-  const histVol = Math.sqrt(mean(residuals.map((value) => value * value))) || vol;
-  const scale = histVol > 1e-8 ? vol / histVol : 1;
-  const days = Math.max(1, Math.round(horizon));
-  const dayWalk = [0];
-  let acc = 0;
-  const start = Math.max(0, residuals.length - days);
-  for (let day = 0; day < days; day += 1) {
-    const residual = residuals[(start + day) % residuals.length] ?? 0;
-    acc += residual * scale;
-    dayWalk.push(acc);
+  const histVol = Math.sqrt(mean(residuals.map((value) => value * value)));
+  const seed = series[series.length - 1] ?? 1;
+  const dt = horizon / samples;
+  const sqrtDt = Math.sqrt(dt);
+  const walk = [0];
+  let level = 0;
+  for (let index = 1; index <= samples; index += 1) {
+    const phase = (Math.floor(seed * 17.13) + index * 3) % residuals.length;
+    const tape = residuals[phase] ?? 0;
+    const tape2 = residuals[(phase + 5) % residuals.length] ?? 0;
+    const mixed = 0.7 * tape + 0.3 * tape2;
+    const z =
+      histVol > vol * 0.25
+        ? mixed / histVol
+        : unitShock(seed, index);
+    // Correct diffusion step; mild gain so one realization reads on chart.
+    level += vol * z * sqrtDt * 1.85;
+    walk.push(level);
   }
-  const end = dayWalk[days] ?? 0;
+  const end = walk[samples] ?? 0;
   for (let index = 0; index <= samples; index += 1) {
     const u = index / samples;
-    const pos = u * days;
-    const i0 = Math.min(days, Math.floor(pos));
-    const i1 = Math.min(days, i0 + 1);
-    const frac = pos - Math.floor(pos);
-    const level = dayWalk[i0] * (1 - frac) + dayWalk[i1] * frac;
-    out[index] = level - end * u;
+    out[index] = walk[index] - end * u;
   }
   return out;
 }
