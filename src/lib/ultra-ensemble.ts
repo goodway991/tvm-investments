@@ -23,6 +23,12 @@ export type UltraEnsembleContext = {
   analystDailyDrift?: number;
   sectorChangePct?: number;
   marketChangePct?: number;
+  /** Daily σ from VIX/√252 or SPY realized. */
+  regimeDailyVol?: number | null;
+  /** Near ATM implied daily σ. */
+  impliedDailyVol?: number | null;
+  /** Extra database tag for notes (yahoo / finnhub / vix / iv). */
+  sources?: string[];
 };
 
 export type UltraEnsembleComponent = {
@@ -468,6 +474,31 @@ export function fitUltraEnsemble(
     MAX_SIGMA,
   );
 
+  if (context.regimeDailyVol != null && Number.isFinite(context.regimeDailyVol)) {
+    components.push(
+      component(
+        "regime_vix_spy",
+        "VIX/SPY regime vol",
+        0,
+        0.55,
+        0.8,
+        clamp(context.regimeDailyVol, MIN_SIGMA, MAX_SIGMA),
+      ),
+    );
+  }
+  if (context.impliedDailyVol != null && Number.isFinite(context.impliedDailyVol)) {
+    components.push(
+      component(
+        "atm_iv",
+        "Yahoo ATM implied vol",
+        0,
+        0.7,
+        0.85,
+        clamp(context.impliedDailyVol, MIN_SIGMA, MAX_SIGMA),
+      ),
+    );
+  }
+
   components.push(
     component("gbm_mle", "GBM MLE drift", mean(returns.slice(-21)), 1.1, 0.85, volSample),
   );
@@ -867,6 +898,18 @@ export function fitUltraEnsemble(
     MAX_SIGMA,
   );
 
+  // Fat-tail uplift when IV or VIX regime is hotter than realized tape.
+  const hotVol = Math.max(
+    context.impliedDailyVol ?? 0,
+    context.regimeDailyVol ?? 0,
+    blendedVol,
+  );
+  const regimeVol = clamp(
+    0.72 * blendedVol + 0.28 * hotVol,
+    MIN_SIGMA,
+    MAX_SIGMA,
+  );
+
   const advanced = fitAdvancedForecast(window, DEFAULT_ADVANCED_SETTINGS);
   const pro = horizonStats(closes);
   const arSource = advanced ?? pro;
@@ -881,19 +924,24 @@ export function fitUltraEnsemble(
   const stats: HorizonStats = {
     last,
     dailyDrift: clamp(nextDelta, -MAX_DAILY_DRIFT, MAX_DAILY_DRIFT),
-    dailyVol: blendedVol,
+    dailyVol: regimeVol,
     kappa,
     thetaLog: blendedDrift,
     lastDelta,
     rho,
-    avgBlend: 0.32,
+    avgBlend: 0.12,
   };
+
+  const sourceTag =
+    context.sources && context.sources.length
+      ? ` · feeds ${context.sources.join("+")}`
+      : "";
 
   return {
     stats,
     components,
     equationCount: components.length,
-    note: `Ultra algorithm ensemble · ${components.length} equations (GBM, OU, EWMA/GARCH, Parkinson/GK/YZ vols, AR, Kalman, Hull, RSI/MACD/CCI, research).`,
+    note: `Ultra SDE ensemble · ${components.length} eqs (GBM, OU, Merton jumps, Heston-lite vol, EWMA/GARCH, Parkinson/GK/YZ, AR, Kalman, RSI/MACD/CCI, research${sourceTag}).`,
   };
 }
 

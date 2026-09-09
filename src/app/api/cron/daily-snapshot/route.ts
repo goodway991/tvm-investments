@@ -4,7 +4,7 @@ import { runDailyAnalysis } from "@/lib/analysis-pipeline";
 import { persistSnapshot } from "@/lib/snapshot-cache";
 import { hasNewsLlm } from "@/lib/scoring";
 import { hasLiveSnapshotForDate } from "@/lib/firebase/admin";
-import { etDateString } from "@/lib/archive-window";
+import { etDateString, isUsCashSessionDay } from "@/lib/archive-window";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 800;
@@ -24,6 +24,16 @@ export async function GET(request: NextRequest) {
 
   const force = request.nextUrl.searchParams.get("force") === "1";
   const date = etDateString();
+
+  if (!force && !isUsCashSessionDay(date)) {
+    return NextResponse.json({
+      success: true,
+      skipped: true,
+      date,
+      reason: "US cash market holiday or weekend — keeping last live session.",
+    });
+  }
+
   if (!force && (await hasLiveSnapshotForDate(date))) {
     return NextResponse.json({
       success: true,
@@ -35,6 +45,18 @@ export async function GET(request: NextRequest) {
 
   try {
     const snapshot = await runDailyAnalysis(hasNewsLlm());
+    if (snapshot.dataMode !== "live" || snapshot.screenedStocks.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          saved: false,
+          date: snapshot.date,
+          dataMode: snapshot.dataMode,
+          reason: "Live universe empty — refused to overwrite desk with demo.",
+        },
+        { status: 503 },
+      );
+    }
     const saved = await persistSnapshot(snapshot);
     revalidatePath("/dashboard", "layout");
     revalidatePath("/dashboard/brief");

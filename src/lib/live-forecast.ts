@@ -21,14 +21,18 @@ import { fitUltraEnsemble } from "@/lib/ultra-ensemble";
 import { resolveSector } from "@/lib/sector-dives";
 import {
   fetchYahooAnalystView,
+  fetchYahooAtmIv,
   fetchYahooCandidate,
   fetchYahooChartSeries,
+  fetchYahooMarketRegime,
   fetchYahooNews,
   fetchYahooOhlcvSeries,
 } from "@/lib/providers/yahoo";
-import type { StockCandidate } from "@/types";
+import { fetchFinnhubCandles } from "@/lib/providers/finnhub";
+import { etDateString } from "@/lib/archive-window";
+import type { OHLCVBar, StockCandidate } from "@/types";
 
-const CACHE_MS = 15 * 60 * 1000;
+const CACHE_MS = 8 * 60 * 1000;
 const GEMINI_TIMEOUT_MS = 4000;
 const ANALYST_YEAR_DAYS = 252;
 
@@ -68,7 +72,30 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function cacheKey(symbol: string, asOf: string | undefined, plan: PlanId) {
-  return `${symbol}:${asOf ?? "live"}:${plan}`;
+  return `${symbol}:${asOf ?? etDateString()}:${plan}`;
+}
+
+function mergeOhlcv(primary: OHLCVBar[], secondary: OHLCVBar[]): OHLCVBar[] {
+  if (!secondary.length) return primary;
+  const byDate = new Map<string, OHLCVBar>();
+  for (const bar of primary) byDate.set(bar.date, bar);
+  for (const bar of secondary) {
+    const prior = byDate.get(bar.date);
+    if (!prior) {
+      byDate.set(bar.date, bar);
+      continue;
+    }
+    // Prefer the wider high-low range when a second feed confirms the session.
+    byDate.set(bar.date, {
+      date: bar.date,
+      open: prior.open || bar.open,
+      high: Math.max(prior.high, bar.high),
+      low: Math.min(prior.low || bar.low, bar.low),
+      close: bar.close || prior.close,
+      volume: Math.max(prior.volume || 0, bar.volume || 0),
+    });
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function analystDailyDrift(last: number, targetMean: number | null) {
@@ -178,13 +205,25 @@ async function loadCandidate(symbol: string, asOf?: string): Promise<StockCandid
     return emptyCandidate(ticker, bars);
   }
   try {
-    return await fetchYahooCandidate(ticker);
+    const candidate = await fetchYahooCandidate(ticker);
+    const finnhubBars = await fetchFinnhubCandles(ticker, 90).catch(() => []);
+    if (finnhubBars.length >= 8) {
+      return {
+        ...candidate,
+        ohlcv: mergeOhlcv(candidate.ohlcv, finnhubBars),
+      };
+    }
+    return candidate;
   } catch {
-    const [bars, headlines] = await Promise.all([
+    const [bars, headlines, finnhubBars] = await Promise.all([
       fetchYahooOhlcvSeries(ticker, 90),
       fetchYahooNews(ticker, 6).catch(() => []),
+      fetchFinnhubCandles(ticker, 90).catch(() => []),
     ]);
-    return { ...emptyCandidate(ticker, bars), headlines };
+    return {
+      ...emptyCandidate(ticker, mergeOhlcv(bars, finnhubBars)),
+      headlines,
+    };
   }
 }
 
@@ -272,11 +311,25 @@ export async function buildLiveForecast(
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
-  const [candidate, analyst] = await Promise.all([
+  const [candidate, analyst, regime, atmIv] = await Promise.all([
     loadCandidate(symbol, asOf),
     plan !== "free" && !asOf
       ? fetchYahooAnalystView(symbol).catch(() => EMPTY_ANALYST)
       : Promise.resolve(EMPTY_ANALYST),
+    plan === "ultra" && !asOf
+      ? fetchYahooMarketRegime().catch(() => ({
+          vix: null,
+          spyChangePct: null,
+          spyDailyVol: null,
+        }))
+      : Promise.resolve({
+          vix: null as number | null,
+          spyChangePct: null as number | null,
+          spyDailyVol: null as number | null,
+        }),
+    plan === "ultra" && !asOf
+      ? fetchYahooAtmIv(symbol).catch(() => null)
+      : Promise.resolve(null as number | null),
   ]);
 
   const history = ohlcvToHistory(candidate.ohlcv).slice(-90);
@@ -297,6 +350,14 @@ export async function buildLiveForecast(
   let equationCount = 0;
 
   if (plan === "ultra") {
+    const regimeDailyVol =
+      regime.vix != null && regime.vix > 0
+        ? regime.vix / 100 / Math.sqrt(252)
+        : regime.spyDailyVol;
+    const sources = ["yahoo"];
+    if (process.env.FINNHUB_API_KEY) sources.push("finnhub");
+    if (regime.vix != null) sources.push("vix");
+    if (atmIv != null) sources.push("iv");
     const ensemble = fitUltraEnsemble(candidate.ohlcv, {
       researchDrift: research.dailyDrift,
       analystDailyDrift: analystDailyDrift(
@@ -304,7 +365,10 @@ export async function buildLiveForecast(
         analyst.targetMean,
       ),
       sectorChangePct: peers.sectorChange,
-      marketChangePct: peers.marketChange,
+      marketChangePct: peers.marketChange ?? regime.spyChangePct ?? 0,
+      regimeDailyVol,
+      impliedDailyVol: atmIv,
+      sources,
     });
     if (!ensemble) {
       throw new Error("Not enough daily bars for the Ultra algorithm ensemble.");

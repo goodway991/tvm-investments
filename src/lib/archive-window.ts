@@ -1,4 +1,10 @@
 import { FREE_ARCHIVE_LOOKBACK_DAYS, type PlanId, planHasPro } from "@/lib/plans";
+import {
+  isUsCashHoliday,
+  isUsCashSessionDay,
+  lastCompletedCashSessionDate,
+  previousCashSession,
+} from "@/lib/market-calendar";
 
 export function etDateString(date = new Date()) {
   return date.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -10,46 +16,16 @@ export function shiftYmd(ymd: string, days: number) {
   return next.toISOString().slice(0, 10);
 }
 
-function etParts(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    weekday: "short",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-  return {
-    weekday: get("weekday"),
-    ymd: `${get("year")}-${get("month")}-${get("day")}`,
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-  };
-}
-
 export function previousWeekday(ymd: string) {
-  let cursor = ymd;
-  for (let i = 0; i < 7; i++) {
-    cursor = shiftYmd(cursor, -1);
-    const [year, month, day] = cursor.split("-").map(Number);
-    const dow = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-    if (dow !== 0 && dow !== 6) return cursor;
-  }
-  return ymd;
+  return previousCashSession(ymd);
 }
 
 /** Last US cash session we should have a snapshot for (weekdays after ~4:20pm ET). */
 export function lastCompletedSessionDate(date = new Date()) {
-  const { weekday, ymd, hour, minute } = etParts(date);
-  const weekend = weekday === "Sat" || weekday === "Sun";
-  const closed = hour * 60 + minute >= 16 * 60 + 20;
-  if (weekend || !closed) return previousWeekday(ymd);
-  return ymd;
+  return lastCompletedCashSessionDate(date);
 }
+
+export { isUsCashHoliday, isUsCashSessionDay };
 
 export function formatSessionLabel(ymd: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd;

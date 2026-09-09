@@ -952,6 +952,77 @@ export async function fetchYahooAnalystView(symbol: string): Promise<{
   }
 }
 
+/** VIX level + SPY 1d/ realized vol for Ultra regime blending. */
+export async function fetchYahooMarketRegime(): Promise<{
+  vix: number | null;
+  spyChangePct: number | null;
+  spyDailyVol: number | null;
+}> {
+  try {
+    const yahooFinance = getYahoo();
+    const [vixQuote, spyBars] = await Promise.all([
+      yahooFinance.quote("^VIX").catch(() => null),
+      fetchYahooOhlcvSeries("SPY", 40).catch(() => [] as OHLCVBar[]),
+    ]);
+    const vix = num(vixQuote?.regularMarketPrice);
+    let spyChangePct: number | null = null;
+    let spyDailyVol: number | null = null;
+    if (spyBars.length >= 8) {
+      const last = spyBars[spyBars.length - 1];
+      const prev = spyBars[spyBars.length - 2];
+      if (last?.close > 0 && prev?.close > 0) {
+        spyChangePct = ((last.close - prev.close) / prev.close) * 100;
+      }
+      const rets: number[] = [];
+      for (let i = 1; i < spyBars.length; i += 1) {
+        const a = spyBars[i - 1]?.close;
+        const b = spyBars[i]?.close;
+        if (a > 0 && b > 0) rets.push(Math.log(b / a));
+      }
+      if (rets.length >= 5) {
+        const mu = rets.reduce((s, r) => s + r, 0) / rets.length;
+        const variance =
+          rets.reduce((s, r) => s + (r - mu) ** 2, 0) / rets.length;
+        spyDailyVol = Math.sqrt(Math.max(variance, 0));
+      }
+    }
+    return { vix, spyChangePct, spyDailyVol };
+  } catch (error) {
+    console.warn("Yahoo market regime unavailable:", error);
+    return { vix: null, spyChangePct: null, spyDailyVol: null };
+  }
+}
+
+/** Near-term ATM implied vol from Yahoo options (daily σ). */
+export async function fetchYahooAtmIv(symbol: string): Promise<number | null> {
+  try {
+    const yahooFinance = getYahoo();
+    const chain = await yahooFinance.options(symbol.toUpperCase());
+    const quote = num(chain.quote?.regularMarketPrice) ?? 0;
+    if (!(quote > 0)) return null;
+    const calls = chain.options?.[0]?.calls ?? [];
+    if (!calls.length) return null;
+    let best: { dist: number; iv: number } | null = null;
+    for (const row of calls) {
+      const strike = num(row.strike);
+      const iv = num(row.impliedVolatility);
+      if (!(strike && iv && iv > 0)) continue;
+      const dist = Math.abs(strike - quote);
+      if (!best || dist < best.dist) best = { dist, iv };
+    }
+    if (!best) return null;
+    // Yahoo IV is annualized decimal → daily.
+    return clampSigma(best.iv / Math.sqrt(252));
+  } catch {
+    return null;
+  }
+}
+
+function clampSigma(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return Math.min(0.08, Math.max(0.006, value));
+}
+
 export async function fetchYahooTechAnalysis(): Promise<string> {
   try {
     const yahooFinance = getYahoo();

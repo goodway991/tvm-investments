@@ -208,15 +208,21 @@ export async function getLatestSnapshot(): Promise<DailySnapshot | null> {
 
   const snap = await db
     .collection("daily_snapshots")
-    .orderBy("generatedAt", "desc")
-    .limit(1)
+    .orderBy("date", "desc")
+    .limit(12)
     .get();
 
   if (snap.empty) return null;
-  return assembleSnapshot(
-    snap.docs[0].ref,
-    snap.docs[0].data() as DailySnapshot,
-  );
+
+  const liveDoc = snap.docs.find((doc) => {
+    const data = doc.data() as DailySnapshot & { screenedCount?: number };
+    const count =
+      Number(data.screenedCount || 0) ||
+      (Array.isArray(data.screenedStocks) ? data.screenedStocks.length : 0);
+    return data.dataMode === "live" && count > 0;
+  });
+  const chosen = liveDoc ?? snap.docs[0];
+  return assembleSnapshot(chosen.ref, chosen.data() as DailySnapshot);
 }
 
 export async function hasLiveSnapshotForDate(date: string): Promise<boolean> {

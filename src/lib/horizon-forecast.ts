@@ -1,4 +1,5 @@
 import type { ChartPoint } from "@/lib/chart-series";
+import { nextCashSessionDays } from "@/lib/market-calendar";
 
 export const HORIZON_STARTING_CASH = 10_000;
 export const MAX_HORIZON_TRADING_DAYS = 10;
@@ -83,16 +84,7 @@ function causalSmooth(values: number[], currentWeight: number) {
 }
 
 export function nextTradingDays(fromTimestamp: number, count: number) {
-  const days: Date[] = [];
-  const cursor = new Date(fromTimestamp);
-  while (days.length < count) {
-    cursor.setDate(cursor.getDate() + 1);
-    const weekday = cursor.getDay();
-    if (weekday !== 0 && weekday !== 6) {
-      days.push(new Date(cursor));
-    }
-  }
-  return days;
+  return nextCashSessionDays(fromTimestamp, count);
 }
 
 function ewmaVariance(returns: number[], lambda = EWMA_LAMBDA) {
@@ -296,7 +288,7 @@ function formatDay(timestamp: number) {
   });
 }
 
-/** Deterministic ~N(0,1) shock from a seed (no Math.random — stable charts). */
+/** Deterministic ~N(0,1) shock from a seed (stable charts, no Math.random). */
 function unitShock(seed: number, index: number) {
   const u1 = (Math.sin((index + 1) * 12.9898 + seed * 78.233) * 43758.5453) % 1;
   const u2 = (Math.sin((index + 1) * 78.233 + seed * 12.9898) * 24634.6345) % 1;
@@ -305,9 +297,9 @@ function unitShock(seed: number, index: number) {
 }
 
 /**
- * One GBM residual realization over the horizon, Brownian-bridged so the tip
- * still lands on the model mean. Increments use σ√Δt with tape-shaped unit
- * shocks (standardized historical residuals, seeded fallback if tape is flat).
+ * Merton jump-diffusion + Heston-lite stochastic vol residual path, bridged
+ * so the tip still lands on the model mean. Built day-by-day so Ultra paths
+ * kink like cash sessions instead of a ruler.
  */
 function pathWiggleSeries(
   closes: number[],
@@ -322,29 +314,63 @@ function pathWiggleSeries(
   if (diffs.length < 3) return out;
   const mu = mean(diffs);
   const residuals = diffs.map((value) => value - mu);
-  const histVol = Math.sqrt(mean(residuals.map((value) => value * value)));
+  const histVol = Math.sqrt(mean(residuals.map((value) => value * value))) || vol;
   const seed = series[series.length - 1] ?? 1;
-  const dt = horizon / samples;
-  const sqrtDt = Math.sqrt(dt);
-  const walk = [0];
+  const days = Math.max(1, Math.round(horizon));
+  const absRes = residuals.map((value) => Math.abs(value)).sort((a, b) => a - b);
+  const jumpThresh = absRes[Math.floor(absRes.length * 0.82)] ?? histVol * 1.8;
+  const jumpPool = residuals.filter((value) => Math.abs(value) >= jumpThresh);
+  const jumpProb = clamp(jumpPool.length / Math.max(1, residuals.length), 0.04, 0.22);
+
+  // CIR / Heston-lite variance path: dV = κ(θ − V)dt + ξ√V dW
+  let variance = vol * vol;
+  const theta = vol * vol;
+  const kappaVol = 2.4;
+  const xi = Math.max(0.35 * vol, 0.004);
+  const dayWalk = [0];
   let level = 0;
-  for (let index = 1; index <= samples; index += 1) {
-    const phase = (Math.floor(seed * 17.13) + index * 3) % residuals.length;
+  for (let day = 0; day < days; day += 1) {
+    const phase = (Math.floor(seed * 17.13) + day * 5) % residuals.length;
     const tape = residuals[phase] ?? 0;
-    const tape2 = residuals[(phase + 5) % residuals.length] ?? 0;
-    const mixed = 0.7 * tape + 0.3 * tape2;
-    const z =
-      histVol > vol * 0.25
-        ? mixed / histVol
-        : unitShock(seed, index);
-    // Correct diffusion step; mild gain so one realization reads on chart.
-    level += vol * z * sqrtDt * 1.85;
-    walk.push(level);
+    const tape2 = residuals[(phase + 7) % residuals.length] ?? 0;
+    const zTape =
+      histVol > vol * 0.2
+        ? (0.72 * tape + 0.28 * tape2) / histVol
+        : unitShock(seed, day + 3);
+    const zVol = unitShock(seed * 1.37, day + 11);
+    variance = Math.max(
+      MIN_SIGMA * MIN_SIGMA,
+      variance +
+        kappaVol * (theta - variance) +
+        xi * Math.sqrt(Math.max(variance, 1e-8)) * zVol,
+    );
+    const sigmaT = Math.sqrt(variance);
+    let jump = 0;
+    const uJump = Math.abs((Math.sin((day + 1) * 9.17 + seed) * 10000) % 1);
+    if (uJump < jumpProb && jumpPool.length) {
+      const pick = jumpPool[(phase + day) % jumpPool.length] ?? 0;
+      jump = pick * (vol / histVol) * 0.85;
+    }
+    // One cash-session residual (diffusion + jump).
+    level += sigmaT * zTape * 1.55 + jump;
+    dayWalk.push(level);
   }
-  const end = walk[samples] ?? 0;
+
+  const end = dayWalk[days] ?? 0;
   for (let index = 0; index <= samples; index += 1) {
     const u = index / samples;
-    out[index] = walk[index] - end * u;
+    const pos = u * days;
+    const i0 = Math.min(days, Math.floor(pos));
+    const i1 = Math.min(days, i0 + 1);
+    const frac = pos - Math.floor(pos);
+    // Smooth within the day with a small OU kink so the path isn't polygonal.
+    const base = dayWalk[i0] * (1 - frac) + dayWalk[i1] * frac;
+    const intra =
+      vol *
+      0.22 *
+      Math.sin(2 * Math.PI * (frac + seed * 0.01 + index * 0.017)) *
+      Math.sin(Math.PI * frac);
+    out[index] = base + intra - end * u;
   }
   return out;
 }

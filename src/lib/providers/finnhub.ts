@@ -102,6 +102,39 @@ function inferSector(industry: string): string {
   return "Other";
 }
 
+export async function fetchFinnhubCandles(symbol: string, lookbackDays = 90): Promise<OHLCVBar[]> {
+  if (!process.env.FINNHUB_API_KEY) return [];
+  try {
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - 86400 * Math.max(40, lookbackDays);
+    const candles = await finnhubGet<{
+      o: number[];
+      h: number[];
+      l: number[];
+      c: number[];
+      v: number[];
+      t: number[];
+      s?: string;
+    }>("/stock/candle", {
+      symbol: symbol.toUpperCase(),
+      resolution: "D",
+      from: String(from),
+      to: String(to),
+    });
+    if (candles.s === "no_data" || !candles.t?.length) return [];
+    return candles.t.map((t, i) => ({
+      date: new Date(t * 1000).toISOString().slice(0, 10),
+      open: candles.o[i],
+      high: candles.h[i],
+      low: candles.l[i],
+      close: candles.c[i],
+      volume: candles.v[i],
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchMarketEvents(): Promise<MarketEvent[]> {
   try {
     const news = await finnhubGet<Array<{ headline: string; summary: string; datetime: number }>>(
