@@ -37,6 +37,9 @@ export const FREE_WATCHLIST_LIMIT = 10;
 export const PRO_WATCHLIST_LIMIT = 100;
 export const ULTRA_WATCHLIST_LIMIT = 500;
 export const FREE_WEEKLY_PULSE_PREDICT_LIMIT = 2;
+export const FREE_WEEKLY_SCORE_PREDICT_LIMIT = 1;
+export const FREE_WEEKLY_ADDITION_PREDICT_LIMIT = 0;
+export const FREE_WEEKLY_HORIZON_PREDICT_LIMIT = 2;
 export const PRO_WEEKLY_PULSE_PREDICT_LIMIT = 5;
 export const PRO_WEEKLY_SCORE_PREDICT_LIMIT = 3;
 export const PRO_WEEKLY_ADDITION_PREDICT_LIMIT = 1;
@@ -180,6 +183,15 @@ export const PLAN_FEATURES: PlanFeature[] = [
     rank: 3,
   },
   {
+    name: "1 Portfolio Score Prediction / week",
+    free: true,
+    pro: false,
+    ultra: false,
+    labsOnly: true,
+    family: "score_predicts",
+    rank: 0,
+  },
+  {
     name: "3 Portfolio Score Predictions / week",
     free: false,
     pro: true,
@@ -215,13 +227,22 @@ export const PLAN_FEATURES: PlanFeature[] = [
     family: "addition_predicts",
     rank: 2,
   },
+  { name: "Horizon Suite", free: true, pro: true },
   {
     name: "Short-term path prediction",
-    free: false,
+    free: true,
     pro: true,
     hideInLabs: true,
   },
-  { name: "Horizon Suite", free: false, pro: true },
+  {
+    name: "2 Horizon Suite predictions / week",
+    free: true,
+    pro: false,
+    ultra: false,
+    labsOnly: true,
+    family: "horizon_predicts",
+    rank: 0,
+  },
   {
     name: "5 Horizon Suite predictions / week",
     free: false,
@@ -264,22 +285,13 @@ export const PLAN_FEATURES: PlanFeature[] = [
   { name: "Live weekday news-scored snapshot", free: false, pro: true },
   { name: "Full backtest track record", free: false, pro: true },
   {
-    name: "Decent short-term predictions",
+    name: "Single-equation short-term path",
     free: true,
-    pro: false,
-    ultra: false,
-    labsOnly: true,
-    family: "prediction_quality",
-    rank: 1,
-  },
-  {
-    name: "Non-algorithm based predictions",
-    free: false,
     pro: true,
     ultra: false,
     labsOnly: true,
     family: "prediction_quality",
-    rank: 2,
+    rank: 1,
   },
   {
     name: "Multi-equation Ultra algorithm predictions (99%*)",
@@ -288,7 +300,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
     ultra: true,
     labsOnly: true,
     family: "prediction_quality",
-    rank: 3,
+    rank: 2,
   },
   {
     name: "Beta tester (features before public release)",

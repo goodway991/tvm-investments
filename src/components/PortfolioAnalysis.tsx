@@ -377,7 +377,7 @@ export function PortfolioAnalysis({
         <p className="mt-4 text-center text-sm text-coral">{predictError}</p>
       ) : null}
 
-      {open && planHasPro(plan) && review ? (
+      {open && review ? (
         <div className="mt-6 space-y-4">
           <ScoreBar
             title="Overall score"
@@ -422,8 +422,9 @@ export function PortfolioAnalysis({
 
       {!planHasPro(plan) ? (
         <p className="mt-4 text-sm text-ink-soft">
-          <ProGlowPhrase>Pro</ProGlowPhrase> unlocks the full review. Free can
-          still log holdings above.
+          Free gets the same single-equation score path (1 / week).{" "}
+          <ProGlowPhrase>Pro</ProGlowPhrase> raises the weekly cap and unlocks
+          book addition reviews.
         </p>
       ) : null}
     </section>

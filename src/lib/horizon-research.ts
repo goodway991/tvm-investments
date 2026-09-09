@@ -103,7 +103,7 @@ export function walkResearchStats(
 }
 
 export function tapeWeightForPlan(plan: PlanId) {
+  // Free and Pro share the same single-equation tape weight.
   if (plan === "ultra") return 0.38;
-  if (plan === "pro") return 0.34;
-  return 0.42;
+  return 0.34;
 }

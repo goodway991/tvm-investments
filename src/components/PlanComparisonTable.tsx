@@ -198,12 +198,11 @@ export function PlanComparisonTable({
       {showUltra ? (
         <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">
           <ProGlowText>
-            *99% is an Ultra research-read target, not a guarantee. Free gets
-            decent short-term predictions (2 Pulse Predicts / week). Pro gets
-            non-algorithm based predictions with weekly caps: 5 Pulse, 3
-            Portfolio Score, 1 Portfolio Addition, 5 Horizon. Ultra gets
-            algorithm-based 99%* accuracy predictions with weekly caps, plus Advanced
-            Predictions on the workstation.
+            *99% is an Ultra research-read target, not a guarantee. Free and Pro
+            share the same single-equation path (Free 2 Pulse / 2 Horizon / week;
+            Pro 5 Pulse, 3 Portfolio Score, 1 Portfolio Addition, 5 Horizon).
+            Ultra runs the multi-equation algorithm with higher weekly caps, plus
+            Advanced Predictions on the workstation.
           </ProGlowText>
         </p>
       ) : null}

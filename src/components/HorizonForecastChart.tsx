@@ -77,6 +77,8 @@ export function HorizonForecastChart({
   statsOverride?: Partial<HorizonStats> | null;
   note?: string | null;
 }) {
+  // note kept in props for callers but intentionally not rendered on the chart.
+  void note;
   const palette = tone === "dark" ? DARK : LIGHT;
   const htmlDark = useHtmlDark();
   const tooltipInk =
@@ -434,11 +436,6 @@ export function HorizonForecastChart({
         />
       </label>
       {predictAction ? <div className="mt-4 flex justify-center">{predictAction}</div> : null}
-      {note && (
-        <p className={`mt-2 text-xs leading-relaxed ${muted}`}>
-          <BogenTerms text={note} />
-        </p>
-      )}
     </div>
   );
 }

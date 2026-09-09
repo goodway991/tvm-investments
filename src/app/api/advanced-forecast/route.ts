@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       rho: stats.rho,
       avgBlend: stats.avgBlend,
       equationCount: ensemble.equationCount,
-      note: `Ultra Advanced · ${ensemble.equationCount}-equation algorithm (sliders applied).`,
+      note: null,
       usage: gate.usage,
     });
   } catch (error) {

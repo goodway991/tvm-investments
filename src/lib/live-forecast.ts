@@ -6,7 +6,6 @@ import {
   MAX_SIGMA,
   MIN_SIGMA,
   horizonStats,
-  simpleHorizonStats,
   type HorizonStats,
 } from "@/lib/horizon-forecast";
 import {
@@ -279,27 +278,6 @@ async function loadPeerReturns(sector: string, asOf?: string) {
   }
 }
 
-function planNote(
-  plan: PlanId,
-  researchNote: string,
-  usedGemini: boolean,
-  equationCount?: number,
-) {
-  if (plan === "ultra") {
-    const stack =
-      equationCount && equationCount > 0
-        ? `Ultra algorithm · ${equationCount} equations`
-        : "Ultra algorithm ensemble";
-    return usedGemini
-      ? `${stack} + Gemini. ${researchNote}`
-      : `${stack}. ${researchNote}`;
-  }
-  if (plan === "pro") {
-    return `Non-algorithm path from tape, sector, and headlines. ${researchNote}`;
-  }
-  return `Decent short-term path from tape, sector, and headlines. ${researchNote}`;
-}
-
 export async function buildLiveForecast(
   symbol: string,
   asOf?: string,
@@ -347,7 +325,6 @@ export async function buildLiveForecast(
   });
 
   let walked: HorizonStats;
-  let equationCount = 0;
 
   if (plan === "ultra") {
     const regimeDailyVol =
@@ -374,12 +351,11 @@ export async function buildLiveForecast(
       throw new Error("Not enough daily bars for the Ultra algorithm ensemble.");
     }
     walked = ensemble.stats;
-    equationCount = ensemble.equationCount;
   } else {
-    const tape: HorizonStats | null =
-      plan === "pro"
-        ? horizonStats(history.map((point) => point.value))
-        : simpleHorizonStats(history.map((point) => point.value));
+    // Free + Pro share the same single log-differential equation on every
+    // Pulse / Horizon / Portfolio surface. Pro gets a light analyst tilt only.
+    const closes = history.map((point) => point.value);
+    const tape = horizonStats(closes);
     if (!tape) {
       throw new Error("Not enough daily closes to project this name.");
     }
@@ -388,24 +364,25 @@ export async function buildLiveForecast(
       research.dailyDrift,
       tapeWeightForPlan(plan),
     );
-    if (plan === "pro") {
+    if (plan === "pro" || plan === "free") {
       const analystDaily = analystDailyDrift(walked.last, analyst.targetMean);
-      const blended = clamp(
-        walked.dailyDrift * 0.88 + analystDaily * 0.12,
-        -MAX_DAILY_DRIFT,
-        MAX_DAILY_DRIFT,
-      );
-      walked = {
-        ...walked,
-        dailyDrift: blended,
-        thetaLog: blended,
-        lastDelta: blended,
-      };
+      // Free skips analyst; Pro keeps a small tilt for slightly tighter paths.
+      if (plan === "pro" && analystDaily !== 0) {
+        const blended = clamp(
+          walked.dailyDrift * 0.9 + analystDaily * 0.1,
+          -MAX_DAILY_DRIFT,
+          MAX_DAILY_DRIFT,
+        );
+        walked = {
+          ...walked,
+          dailyDrift: blended,
+          thetaLog: blended,
+        };
+      }
     }
   }
 
   let source: LiveForecast["source"] = "yahoo";
-  let note = research.note;
   if (useAi && plan === "ultra" && !asOf) {
     const gemini = await geminiShortTermDrift({
       symbol,
@@ -432,7 +409,6 @@ export async function buildLiveForecast(
         dailyDrift: blended,
         thetaLog: blended,
       };
-      note = gemini.note;
       source = "yahoo+gemini";
     }
   }
@@ -443,10 +419,10 @@ export async function buildLiveForecast(
     last: walked.last,
     dailyDrift: walked.dailyDrift,
     dailyVol: clamp(walked.dailyVol, MIN_SIGMA, MAX_SIGMA),
-    kappa: plan === "ultra" ? walked.kappa : 0,
+    kappa: walked.kappa,
     thetaLog: walked.thetaLog,
     lastDelta: walked.lastDelta,
-    rho: plan === "ultra" ? walked.rho : 0,
+    rho: walked.rho,
     avgBlend: plan === "ultra" ? walked.avgBlend ?? 0 : 0,
     source,
     targetMean: analyst.targetMean,
@@ -454,12 +430,7 @@ export async function buildLiveForecast(
     targetHigh: analyst.targetHigh,
     recommendation: analyst.recommendation,
     analystCount: analyst.analystCount,
-    note: planNote(
-      plan,
-      note,
-      source === "yahoo+gemini",
-      equationCount,
-    ).slice(0, 280),
+    note: null,
   };
   cache.set(key, { at: Date.now(), value });
   return value;
