@@ -287,8 +287,8 @@ function yahooSymbol(symbol: string) {
 export async function fetchYahooQuotesBatch(symbols: string[]) {
   const yahooFinance = getYahoo();
   const quotes = new Map<string, YahooQuote>();
-  const chunkSize = 40;
-  const concurrency = 3;
+  const chunkSize = 50;
+  const concurrency = 5;
   const chunks: string[][] = [];
   for (let index = 0; index < symbols.length; index += chunkSize) {
     chunks.push(symbols.slice(index, index + chunkSize));

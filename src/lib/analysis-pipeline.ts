@@ -277,7 +277,7 @@ async function runLiveAnalysis(useLLM: boolean): Promise<DailySnapshot> {
     marketEvents,
     sectorDives,
     techSectorAnalysis,
-    methodologyNote: `${METHODOLOGY_NOTE} Live snapshots scan about 2,800 US stocks and ETFs after the weekday close — large-caps, smaller and penny names, and liquid funds, including the S&P 500 and Dow 30. The daily brief and sector deep dives are rewritten from that session’s closes and headlines.`,
+    methodologyNote: `${METHODOLOGY_NOTE} Live snapshots scan about 12,000 US stocks and ETFs after the weekday close — the full Nasdaq-listed pool we can pull, including the S&P 500 and Dow 30. The daily brief and sector deep dives are rewritten from that session’s closes and headlines.`,
     disclaimer: DISCLAIMER,
   };
 }

@@ -61,7 +61,7 @@ export function LandingPage() {
               </div>
               <dl className="mt-10 grid max-w-lg grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
-                  ["2500+", "names screened"],
+                  ["12,000+", "names screened"],
                   ["8", "signal framework"],
                   ["Daily", "fresh picks"],
                 ].map(([value, label]) => (

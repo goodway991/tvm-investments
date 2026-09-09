@@ -79,7 +79,7 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
   },
   "nav-brief": {
     title: "Daily Brief",
-    what: "The session write-up: market headlines and sector notes from today’s scan of about 2,800 US stocks and ETFs.",
+    what: "The session write-up: market headlines and sector notes from today’s scan of about 12,000 US stocks and ETFs.",
     how: "Open Daily Brief in the sidebar. Tap a headline to open its sheet. Flip sector cards for the rest — all eleven sleeves are on every plan, each tagged cyclical or defensive.",
   },
   "nav-screener": {

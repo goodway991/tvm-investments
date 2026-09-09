@@ -153,11 +153,12 @@ export const LIBRARY_BROWSE = [
 
 export const LIBRARY_SEED_SYMBOLS = LIBRARY_BROWSE.map((row) => row.symbol);
 
-/** Target size for the weekday research scan. */
-export const SCAN_UNIVERSE_LIMIT = 2800;
-export const SCAN_LARGE_CAP = 1400;
-export const SCAN_SMALL_CAP = 700;
-export const SCAN_ETF_LIMIT = 400;
+/** Target size for the weekday research scan (full Nasdaq screener pull). */
+export const SCAN_UNIVERSE_LIMIT = 12_000;
+/** Soft mix targets — used when the screener returns more than the scan budget. */
+export const SCAN_LARGE_CAP = 8_000;
+export const SCAN_SMALL_CAP = 3_500;
+export const SCAN_ETF_LIMIT = 800;
 
 /** Fallback research scan: S&P 500 + Dow 30 + extras + ETFs. */
 export const YAHOO_SCAN_UNIVERSE: string[] = Array.from(

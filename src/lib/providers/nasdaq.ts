@@ -2,8 +2,6 @@ import { parseTicker } from "@/lib/ticker";
 import {
   LIBRARY_BROWSE,
   SCAN_ETF_LIMIT,
-  SCAN_LARGE_CAP,
-  SCAN_SMALL_CAP,
   SCAN_UNIVERSE_LIMIT,
 } from "@/lib/watchlist-symbols";
 
@@ -196,15 +194,12 @@ export function mixScanUniverse(
   etfs: NasdaqQuote[],
   limit = SCAN_UNIVERSE_LIMIT,
 ): NasdaqQuote[] {
-  const ranked = [...stocks].sort(byMarketCapDesc);
-  const large = ranked.filter((row) => (row.marketCap ?? 0) > 0).slice(0, SCAN_LARGE_CAP);
-  const pennies = [...stocks]
-    .filter((row) => row.price >= 0.25 && row.price < 5)
-    .sort(byMarketCapDesc)
-    .slice(0, SCAN_SMALL_CAP);
-  const small = ranked
-    .filter((row) => (row.marketCap ?? Infinity) < 2_000_000_000 && row.price >= 0.25)
-    .slice(0, SCAN_SMALL_CAP);
+  const tradable = [...stocks]
+    .filter((row) => row.price >= 0.25)
+    .sort(byMarketCapDesc);
+  const rankedEtfs = [...etfs].sort(byMarketCapDesc);
+  const etfBudget = Math.min(SCAN_ETF_LIMIT, rankedEtfs.length, Math.max(0, limit - 1));
+  const stockBudget = Math.max(0, limit - etfBudget);
   const seed = new Map(
     LIBRARY_BROWSE.map((row) => [row.symbol, row.name] as const),
   );
@@ -220,11 +215,15 @@ export function mixScanUniverse(
   const bySymbol = new Map(
     [...stocks, ...etfs].map((row) => [row.symbol, row] as const),
   );
+  // Library seeds first, then nearly the full stock screener, then liquid ETFs.
   for (const symbol of seed.keys()) add(bySymbol.get(symbol));
-  for (const row of large) add(row);
-  for (const row of etfs.slice(0, SCAN_ETF_LIMIT)) add(row);
-  for (const row of pennies) add(row);
-  for (const row of small) add(row);
+  for (const row of tradable) {
+    if (mixed.length >= stockBudget) break;
+    add(row);
+  }
+  for (const row of rankedEtfs.slice(0, etfBudget)) add(row);
+  // Fill any leftover slots with remaining stocks (under the overall limit).
+  for (const row of tradable) add(row);
   return mixed;
 }
 
