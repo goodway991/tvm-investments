@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MiniChart } from "@/components/MiniChart";
 import { PublicShell } from "@/components/PublicShell";
 import { TVMIcon } from "@/components/TVMBrand";
+import { LandingHeroStats } from "@/components/LandingHeroStats";
 import { ProGlowText } from "@/components/ProGlowText";
 import { SHOW_BETA_WAITLIST } from "@/lib/beta-waitlist";
 
@@ -59,18 +60,7 @@ export function LandingPage() {
                   Learn more about TVM
                 </Link>
               </div>
-              <dl className="mt-10 grid max-w-lg grid-cols-1 gap-4 sm:grid-cols-3">
-                {[
-                  ["12,000+", "names screened"],
-                  ["8", "signal framework"],
-                  ["Daily", "fresh picks"],
-                ].map(([value, label]) => (
-                  <div key={label}>
-                    <dt className="font-display text-xl font-bold text-ink">{value}</dt>
-                    <dd className="mt-0.5 text-xs text-ink-soft">{label}</dd>
-                  </div>
-                ))}
-              </dl>
+              <LandingHeroStats />
             </div>
 
             <div className="landing-hero-stage relative hidden h-[440px] sm:block" aria-label="Investment dashboard preview">

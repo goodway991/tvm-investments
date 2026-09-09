@@ -800,6 +800,20 @@ html.dark .glass-violet .on-white {
   }
 }
 
+.landing-stat-scramble[data-scramble="active"] {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 12px rgba(37, 90, 230, 0.35),
+    0 0 24px rgba(37, 90, 230, 0.12);
+  filter: brightness(1.08);
+}
+
+.landing-stat-scramble[data-scramble="done"] {
+  text-shadow: none;
+  filter: none;
+}
+
 @keyframes chart-draw-ltr {
   from {
     clip-path: inset(0 100% 0 0);
