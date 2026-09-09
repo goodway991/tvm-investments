@@ -169,4 +169,5 @@ export const YAHOO_SCAN_UNIVERSE: string[] = Array.from(
   ]),
 ).sort();
 
+/** @deprecated No longer gated — any valid ticker is accepted. Kept for backward compat. */
 export const WATCHLIST_ALLOWED_SYMBOLS = YAHOO_SCAN_UNIVERSE;

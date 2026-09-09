@@ -720,6 +720,86 @@ html.dark .glass-violet .on-white {
   }
 }
 
+/* Used by landing/auth float cards (inline animation: floaty …) */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
+@keyframes landing-float-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.4deg);
+  }
+  50% {
+    transform: translate3d(6px, -18px, 0) rotate(0.6deg);
+  }
+}
+
+@keyframes landing-float-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0.5deg);
+  }
+  50% {
+    transform: translate3d(-8px, -14px, 0) rotate(-0.5deg);
+  }
+}
+
+@keyframes landing-float-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(4px, -16px, 0);
+  }
+}
+
+@keyframes landing-float-d {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0.3deg);
+  }
+  50% {
+    transform: translate3d(-6px, -20px, 0) rotate(-0.7deg);
+  }
+}
+
+.landing-float-a {
+  animation: landing-float-a 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.landing-float-b {
+  animation: landing-float-b 7.2s ease-in-out 0.4s infinite;
+  will-change: transform;
+}
+
+.landing-float-c {
+  animation: landing-float-c 6.6s ease-in-out 0.9s infinite;
+  will-change: transform;
+}
+
+.landing-float-d {
+  animation: landing-float-d 7.8s ease-in-out 1.3s infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-float-a,
+  .landing-float-b,
+  .landing-float-c,
+  .landing-float-d {
+    animation: none;
+  }
+}
+
 @keyframes chart-draw-ltr {
   from {
     clip-path: inset(0 100% 0 0);

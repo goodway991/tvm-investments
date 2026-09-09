@@ -13,9 +13,7 @@ import { TVMIcon } from "@/components/TVMBrand";
 import { BogenHeading } from "@/components/BogenProvider";
 import { pageSlice, StockPager } from "@/components/StockPager";
 import { authedFetch } from "@/lib/authed-fetch";
-import { WATCHLIST_ALLOWED_SYMBOLS } from "@/lib/watchlist-symbols";
-
-const ALLOWED_WATCHLIST = new Set(WATCHLIST_ALLOWED_SYMBOLS);
+import { parseTicker } from "@/lib/ticker";
 
 type WatchlistStock = Pick<StockCandidate, "symbol" | "name">;
 
@@ -169,10 +167,8 @@ export function WatchlistPanel({
     setError("");
     setMessage("");
     if (draft.includes(stock.symbol)) return;
-    if (!ALLOWED_WATCHLIST.has(stock.symbol)) {
-      setError(
-        `${stock.symbol} isn't in TVM's research universe yet, so it can't go on your watchlist.`,
-      );
+    if (!parseTicker(stock.symbol)) {
+      setError(`${stock.symbol} doesn't look like a valid ticker.`);
       return;
     }
     if (draft.length >= entitlement.watchlistLimit) {

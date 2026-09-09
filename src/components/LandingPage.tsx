@@ -36,16 +36,14 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1180px] px-6 pb-28 pt-14">
           <section className="grid min-h-[min(72vh,640px)] items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
             <div className="max-w-xl">
-              <p className="text-sm font-semibold uppercase tracking-widest text-violet">
-                The problem
-              </p>
-              <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
-                TVM’s answer: a{" "}
-                <span className="text-violet">daily research desk.</span>
+              <h1 className="font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
+                Welcome to the next frontier of{" "}
+                <span className="text-violet">investing.</span>
               </h1>
-              <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-soft">
-                One workspace after the close — so you decide with a process,
-                not a blank screen.
+              <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft">
+                TVM Investments scans the market each day, flags the
+                highest-conviction movers, and hands you the research — all
+                wrapped in a calm, clear workspace.
               </p>
               <div className="mt-10 flex flex-wrap gap-3">
                 <Link
@@ -58,16 +56,25 @@ export function LandingPage() {
                   href="/about"
                   className="glass-strong inline-flex items-center justify-center rounded-full px-7 py-3.5 text-[15px] font-medium text-ink transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/[0.85] active:scale-[0.97]"
                 >
-                  How the desk works
+                  Learn more about TVM
                 </Link>
               </div>
+              <dl className="mt-10 grid max-w-lg grid-cols-1 gap-4 sm:grid-cols-3">
+                {[
+                  ["2500+", "names screened"],
+                  ["8", "signal framework"],
+                  ["Daily", "fresh picks"],
+                ].map(([value, label]) => (
+                  <div key={label}>
+                    <dt className="font-display text-xl font-bold text-ink">{value}</dt>
+                    <dd className="mt-0.5 text-xs text-ink-soft">{label}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
 
-            <div className="relative hidden h-[440px] sm:block" aria-label="Investment dashboard preview">
-              <div
-                className="glass-strong absolute right-2 top-0 w-64 rounded-[22px] p-4"
-                style={{ animation: "floaty 6s ease-in-out infinite" }}
-              >
+            <div className="landing-hero-stage relative hidden h-[440px] sm:block" aria-label="Investment dashboard preview">
+              <div className="glass-strong landing-float-a absolute right-2 top-0 w-64 rounded-[22px] p-4">
                 <div className="flex items-center justify-between text-xs text-ink-soft">
                   <span>Top pick today</span>
                   <span className="rounded-full bg-emerald-400/20 px-2.5 py-0.5 font-semibold text-emerald-600">
@@ -82,10 +89,7 @@ export function LandingPage() {
                 />
               </div>
 
-              <div
-                className="glass-strong absolute left-0 top-24 w-56 rounded-[22px] p-4"
-                style={{ animation: "floaty 7.2s ease-in-out 1.2s infinite" }}
-              >
+              <div className="glass-strong landing-float-b absolute left-0 top-24 w-56 rounded-[22px] p-4">
                 <p className="text-xs text-ink-soft">Composite score</p>
                 <div className="mt-1 flex items-end gap-2">
                   <span className="font-display text-3xl font-bold text-violet">92</span>
@@ -109,10 +113,7 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div
-                className="glass-strong absolute bottom-6 right-0 w-60 rounded-[22px] p-4"
-                style={{ animation: "floaty 6.6s ease-in-out .6s infinite" }}
-              >
+              <div className="glass-strong landing-float-c absolute bottom-6 right-0 w-60 rounded-[22px] p-4">
                 <p className="mb-2 text-xs font-semibold text-ink">Today&apos;s movers</p>
                 {[
                   ["AMD", "+4.1%", true],
@@ -134,10 +135,7 @@ export function LandingPage() {
                 ))}
               </div>
 
-              <div
-                className="glass-violet absolute bottom-0 left-6 w-44 rounded-[22px] p-4 text-white"
-                style={{ animation: "floaty 7.8s ease-in-out 1.8s infinite" }}
-              >
+              <div className="glass-violet landing-float-d absolute bottom-0 left-6 w-44 rounded-[22px] p-4 text-white">
                 <p className="text-xs text-white/80">Projected return</p>
                 <div className="font-display text-2xl font-bold">+$1,240</div>
                 <div className="mt-2 h-1.5 rounded-full bg-white/25">

@@ -45,7 +45,6 @@ import {
 } from "@/lib/person-name";
 import { isValidCountry, isValidTimeZone } from "@/lib/locales";
 import { parseTicker } from "@/lib/ticker";
-import { WATCHLIST_ALLOWED_SYMBOLS } from "@/lib/watchlist-symbols";
 import { friendlyFirestoreError } from "@/lib/firebase/client-errors";
 import { overlayLabsPlan, planHasPro, watchlistLimitForPlan, type PlanId } from "@/lib/plans";
 import {
@@ -72,7 +71,7 @@ import {
 /** Matches firestore.rules isBootstrapAdmin — not a secret; production admin is server-gated via TVM_ADMIN_EMAIL. */
 const BOOTSTRAP_ADMIN_EMAIL = "admin@tvm-investments.test";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const ALLOWED_WATCHLIST = new Set(WATCHLIST_ALLOWED_SYMBOLS);
+
 
 export interface AccountProfile {
   uid: string;
@@ -1012,12 +1011,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (normalized.length > entitlement.watchlistLimit) {
         throw new Error(
           `Your ${entitlement.plan} plan allows ${entitlement.watchlistLimit} watched stocks.`,
-        );
-      }
-      const disallowed = normalized.filter((symbol) => !ALLOWED_WATCHLIST.has(symbol));
-      if (disallowed.length) {
-        throw new Error(
-          `These tickers aren't in TVM's research universe yet: ${disallowed.join(", ")}. Remove them and try again.`,
         );
       }
       if (
