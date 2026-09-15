@@ -37,6 +37,10 @@ export function LegalDocument({
               Privacy Policy
             </Link>
             {" · "}
+            <Link href="/privacy#cookies" className="text-violet hover:underline">
+              Cookies
+            </Link>
+            {" · "}
             <Link href="/refunds" className="text-violet hover:underline">
               Refunds
             </Link>

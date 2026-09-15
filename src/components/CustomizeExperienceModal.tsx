@@ -10,6 +10,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useDeskAccess } from "@/components/BetaStatusProvider";
 import { useTour } from "@/components/TourProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
+import { useCookieConsent } from "@/components/CookieConsentProvider";
 import { showCustomizeExperience, showTvm10Labs } from "@/lib/beta-labs";
 import { customizeAutoAction } from "@/lib/customize-prompt";
 import { LocalePicker } from "@/components/LocalePicker";
@@ -117,6 +118,7 @@ export function CustomizeExperienceModal() {
   const { allowed: deskAllowed } = useDeskAccess();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
+  const { pending: cookiePending } = useCookieConsent();
   const [step, setStep] = useState(0);
   const guessed = guessLocale();
   const [country, setCountry] = useState(guessed.country);
@@ -139,7 +141,8 @@ export function CustomizeExperienceModal() {
       tourOpen ||
       rewind ||
       giftPending ||
-      releasePending
+      releasePending ||
+      cookiePending
     ) {
       return;
     }
@@ -164,6 +167,7 @@ export function CustomizeExperienceModal() {
     openCustomize();
   }, [
     acknowledgeCustomize,
+    cookiePending,
     customizeOpen,
     deskAllowed,
     entitlement.role,
@@ -182,7 +186,7 @@ export function CustomizeExperienceModal() {
     user?.uid,
   ]);
 
-  if (!customizeOpen || !deskAllowed || rewind || releasePending) return null;
+  if (!customizeOpen || !deskAllowed || rewind || releasePending || cookiePending) return null;
   if (!showCustomizeExperience(entitlement.role)) return null;
 
   const tvm10 = showTvm10Labs();

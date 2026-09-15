@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { DM_Sans, Sora } from "next/font/google";
-import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
@@ -45,7 +44,11 @@ export default function RootLayout({
             __html: `(function(){try{var f=localStorage.getItem("tvm-appearance-forced-dark");if(f!=="1"){localStorage.setItem("tvm-appearance-forced-dark","1");localStorage.setItem("tvm-appearance","dark");}var t=localStorage.getItem("tvm-appearance");var d=t!=="light"&&(t!=="system"||window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`,
           }}
         />
-        <GoogleAnalytics />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',functionality_storage:'granted',security_storage:'granted',wait_for_update:500});`,
+          }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

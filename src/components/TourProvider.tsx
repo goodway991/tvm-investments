@@ -13,6 +13,7 @@ import { VirtualTour } from "@/components/VirtualTour";
 import { useExperience } from "@/components/ExperienceProvider";
 import { showCustomizeExperience } from "@/lib/beta-labs";
 import { customizeAutoAction } from "@/lib/customize-prompt";
+import { useCookieConsent } from "@/components/CookieConsentProvider";
 
 interface TourContextValue {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export function useTour() {
 export function TourProvider({ children }: { children: ReactNode }) {
   const { completeTour, giftPending, entitlement, profile, user, loading } = useAuth();
   const { openCustomize } = useExperience();
+  const { pending: cookiePending } = useCookieConsent();
   const [open, setOpen] = useState(false);
   const [required, setRequired] = useState(false);
 
@@ -87,7 +89,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   return (
     <TourContext.Provider value={value}>
       {children}
-      {open ? (
+      {open && !cookiePending ? (
         <VirtualTour
           required={required}
           onFinish={() => void finish()}

@@ -1,9 +1,9 @@
-export const TOS_VERSION = "2026-08-26";
-export const PRIVACY_VERSION = "2026-08-26";
+export const TOS_VERSION = "2026-09-15";
+export const PRIVACY_VERSION = "2026-09-15";
 export const EULA_VERSION = "2026-09-07";
 export const LEGAL_STORAGE_KEY = "tvm-legal-acceptance";
-export const LEGAL_EFFECTIVE_DATE = "August 26, 2026";
-export const PRIVACY_EFFECTIVE_DATE = "August 26, 2026";
+export const LEGAL_EFFECTIVE_DATE = "September 15, 2026";
+export const PRIVACY_EFFECTIVE_DATE = "September 15, 2026";
 export const EULA_EFFECTIVE_DATE = "September 7, 2026";
 
 export const LEGAL_ENTITY = "TVM Investments";

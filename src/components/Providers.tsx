@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { AuthProvider } from "@/components/AuthProvider";
+import { CookieConsentProvider } from "@/components/CookieConsentProvider";
 import { BetaStatusProvider } from "@/components/BetaStatusProvider";
 import { GiftedProModal } from "@/components/GiftedProModal";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
@@ -22,24 +23,26 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <SiteEraProvider>
         <ThemeProvider>
           <AuthProvider>
-            <BetaStatusProvider>
-              <ExperienceProvider>
-                <BogenProvider>
-                  <UpgradeProvider>
-                    <TourProvider>
-                      <MaintenanceGate>
-                        <MotionPauseRoot />
-                        {children}
-                        <GiftedProModal />
-                        <CustomizeExperienceModal />
-                        <WhatsNewModal />
-                        <GoodMorningModal />
-                      </MaintenanceGate>
-                    </TourProvider>
-                  </UpgradeProvider>
-                </BogenProvider>
-              </ExperienceProvider>
-            </BetaStatusProvider>
+            <CookieConsentProvider>
+              <BetaStatusProvider>
+                <ExperienceProvider>
+                  <BogenProvider>
+                    <UpgradeProvider>
+                      <TourProvider>
+                        <MaintenanceGate>
+                          <MotionPauseRoot />
+                          {children}
+                          <GiftedProModal />
+                          <CustomizeExperienceModal />
+                          <WhatsNewModal />
+                          <GoodMorningModal />
+                        </MaintenanceGate>
+                      </TourProvider>
+                    </UpgradeProvider>
+                  </BogenProvider>
+                </ExperienceProvider>
+              </BetaStatusProvider>
+            </CookieConsentProvider>
           </AuthProvider>
         </ThemeProvider>
       </SiteEraProvider>

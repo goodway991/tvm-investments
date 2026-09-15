@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useExperience } from "@/components/ExperienceProvider";
 import { useTour } from "@/components/TourProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
+import { useCookieConsent } from "@/components/CookieConsentProvider";
 import { showUltraDesk } from "@/lib/beta-labs";
 import { guessLocale, isValidTimeZone, zoneClock } from "@/lib/locales";
 import { UltraShinePhrase } from "@/components/UltraText";
@@ -41,6 +42,7 @@ export function GoodMorningModal() {
   const { customizeOpen } = useExperience();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
+  const { pending: cookiePending } = useCookieConsent();
   const [open, setOpen] = useState(false);
   const [stamp, setStamp] = useState("");
   const [brief, setBrief] = useState<MorningBrief | null>(null);
@@ -56,7 +58,8 @@ export function GoodMorningModal() {
       customizeOpen ||
       tourOpen ||
       rewind ||
-      giftPending
+      giftPending ||
+      cookiePending
     ) {
       setOpen(false);
       return;
@@ -87,6 +90,7 @@ export function GoodMorningModal() {
     return () => window.clearInterval(timer);
   }, [
     accountReady,
+    cookiePending,
     customizeOpen,
     entitlement.plan,
     giftPending,

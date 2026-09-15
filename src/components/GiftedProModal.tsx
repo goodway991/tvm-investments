@@ -7,6 +7,7 @@ import { OverlaySheet } from "@/components/OverlaySheet";
 import { PlanComparisonTable } from "@/components/PlanComparisonTable";
 import { useTour } from "@/components/TourProvider";
 import { useExperience } from "@/components/ExperienceProvider";
+import { useCookieConsent } from "@/components/CookieConsentProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { ProGlowText } from "@/components/ProGlowText";
 
@@ -16,9 +17,10 @@ export function GiftedProModal() {
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
   const { customizeOpen } = useExperience();
+  const { pending: cookiePending } = useCookieConsent();
   const [busy, setBusy] = useState(false);
 
-  if (!giftPending || !allowed || tourOpen || rewind || customizeOpen) return null;
+  if (!giftPending || !allowed || tourOpen || rewind || customizeOpen || cookiePending) return null;
 
   async function continueOn() {
     if (busy) return;

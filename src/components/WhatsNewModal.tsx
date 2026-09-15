@@ -9,6 +9,7 @@ import { useMaintenance } from "@/components/MaintenanceGate";
 import { useTour } from "@/components/TourProvider";
 import { CURRENT_RELEASE } from "@/lib/release-notes";
 import { useSiteEra } from "@/components/SiteEraProvider";
+import { useCookieConsent } from "@/components/CookieConsentProvider";
 
 export function WhatsNewModal() {
   const { giftPending, releasePending, acknowledgeRelease } = useAuth();
@@ -16,6 +17,7 @@ export function WhatsNewModal() {
   const { lock: maintenanceLock } = useMaintenance();
   const { isOpen: tourOpen } = useTour();
   const { rewind } = useSiteEra();
+  const { pending: cookiePending } = useCookieConsent();
 
   if (
     !releasePending ||
@@ -23,7 +25,8 @@ export function WhatsNewModal() {
     tourOpen ||
     rewind ||
     maintenanceLock ||
-    giftPending
+    giftPending ||
+    cookiePending
   ) {
     return null;
   }

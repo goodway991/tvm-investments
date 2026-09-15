@@ -36,6 +36,10 @@ export default function TermsPage() {
         use the Service.
       </p>
       <p>Document version {TOS_VERSION}.</p>
+      <p>
+        This September 15, 2026 revision adds Section 24 on cookies and similar
+        technologies, including in-product cookie consent after sign-in.
+      </p>
 
       <h2>1. Who we are and what this Service is</h2>
       <p>
@@ -419,7 +423,7 @@ export default function TermsPage() {
         in the Privacy Policy. We may suspend or terminate access immediately if
         you breach these Terms, if required by law, or if we shut down the
         Service. Sections that by their nature should survive (including 2, 3,
-        7–17, 19–23) survive termination.
+        7–17, 19–25) survive termination.
       </p>
       <p>
         Upon termination, your license ends. We may delete workspace data in
@@ -491,7 +495,31 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>24. Contact</h2>
+      <h2 id="cookies">24. Cookies and similar technologies</h2>
+      <p>
+        The Service uses cookies, local storage, and similar technologies on
+        your device. Some are strictly necessary to authenticate you, keep the
+        session secure, and deliver the site through our host. Others are
+        functional (for example, remembering appearance or that you dismissed
+        What’s New) or analytics (Google Analytics 4, with advertising signals
+        off) so we can understand how the Service is used.
+      </p>
+      <p>
+        We do not use third-party advertising cookies or sell personal
+        information. After you sign in — including accounts that already exist —
+        we will show a cookie policy and a customization tool the next time you
+        reach the signed-in desk until you make a choice. Necessary cookies
+        remain on. You may accept all optional cookies, reject non-essential
+        cookies, or save a custom mix. You can change that choice later in
+        Settings → Cookie preferences.
+      </p>
+      <p>
+        Details, categories, and how to block cookies in your browser are in the{" "}
+        <a href="/privacy#cookies">Privacy Policy</a>. If you block necessary
+        cookies, sign-in and account features may not work.
+      </p>
+
+      <h2>25. Contact</h2>
       <p>
         <LegalContact purpose="Legal notices" />
       </p>

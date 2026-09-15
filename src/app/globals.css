@@ -509,7 +509,7 @@ html.dark .tour-cursor path {
 }
 
 .prose-tvm h2 {
-  @apply mb-3 mt-10 font-display text-lg font-semibold text-ink first:mt-0;
+  @apply mb-3 mt-10 scroll-mt-28 font-display text-lg font-semibold text-ink first:mt-0;
 }
 
 .prose-tvm h3 {

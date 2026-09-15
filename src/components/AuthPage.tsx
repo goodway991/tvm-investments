@@ -531,6 +531,10 @@ export function AuthPage({ initialMode }: { initialMode: AuthMode }) {
                           <Link href="/privacy" className="font-semibold text-violet hover:underline">
                             Privacy Policy
                           </Link>
+                          ,{" "}
+                          <Link href="/privacy#cookies" className="font-semibold text-violet hover:underline">
+                            cookie policy
+                          </Link>
                           , and{" "}
                           <Link href="/disclaimer" className="font-semibold text-violet hover:underline">
                             Risk Disclaimer

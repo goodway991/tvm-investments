@@ -27,6 +27,9 @@ export function LegalFooter() {
               <Link href="/privacy" className="hover:text-violet">
                 Privacy Policy
               </Link>
+              <Link href="/privacy#cookies" className="hover:text-violet">
+                Cookies
+              </Link>
               <Link href="/terms" className="hover:text-violet">
                 Terms of Service
               </Link>

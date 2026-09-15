@@ -57,14 +57,17 @@ export default function PrivacyPage() {
         <a href="/disclaimer">Risk Disclaimer</a>.
       </p>
       <p>
-        <strong>What changed in this revision.</strong> On August 26, 2026 we
-        added Support as a Settings note type next to bug reports and feature
-        requests. On August 25, 2026 we updated this Policy so it matches how
-        the live Service actually works: research tools now require a signed-in
-        account; we store daily request counts to enforce plan limits; Settings
-        notes are saved in our database and emailed through Google’s mail
-        servers; and we spell out each category of data, why we collect it, and
-        where it is processed.
+        <strong>What changed in this revision.</strong> On September 15, 2026 we
+        added an in-product cookie consent sheet after sign-in (including for
+        existing accounts on their next signed-in visit), a cookie customization
+        tool, and we stopped loading Google Analytics until you allow it. On
+        August 26, 2026 we added Support as a Settings note type next to bug
+        reports and feature requests. On August 25, 2026 we updated this Policy
+        so it matches how the live Service actually works: research tools now
+        require a signed-in account; we store daily request counts to enforce
+        plan limits; Settings notes are saved in our database and emailed
+        through Google’s mail servers; and we spell out each category of data,
+        why we collect it, and where it is processed.
       </p>
 
       <h2>1. Who we are</h2>
@@ -361,8 +364,10 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Consent:</strong> where we ask for it, including acceptance of
-          this Policy at sign-up. You may withdraw consent by closing the
-          account, subject to information we must keep for legal reasons.
+          this Policy at sign-up and optional analytics cookies after sign-in.
+          You may withdraw analytics consent in Settings → Cookie preferences,
+          or withdraw consent more broadly by closing the account, subject to
+          information we must keep for legal reasons.
         </li>
         <li>
           <strong>Legal obligation:</strong> when we must retain or disclose
@@ -370,36 +375,44 @@ export default function PrivacyPage() {
         </li>
       </ul>
 
-      <h2>7. Cookies and similar technologies</h2>
+      <h2 id="cookies">7. Cookies and similar technologies</h2>
       <p>We use cookies, local storage, and similar technologies that are:</p>
       <ul>
         <li>
           <strong>Strictly necessary:</strong> Firebase Authentication session
           cookies or tokens so the dashboard can recognize you; security and
-          load-balancing cookies from Vercel.
+          load-balancing cookies from Vercel. These stay on because the Service
+          cannot operate without them.
         </li>
         <li>
           <strong>Functional:</strong> local or session storage for legal
           acceptance version, tour/release acknowledgements, appearance, and
-          interface state (for example, a collapsed menu).
+          interface state (for example, a collapsed menu). You can turn this
+          category off in the cookie tool; the desk still works, but those
+          on-device reminders may repeat.
         </li>
         <li>
           <strong>Analytics:</strong> Google Analytics 4 (via Google Tag) to
           count visits and which pages are used. Advertising signals and ads
-          personalization are turned off. Google still sets an Analytics cookie
-          that identifies your browser over time. Google’s own privacy notice
-          applies to that processing.
+          personalization are turned off. We do not load Analytics until you
+          allow it in the cookie tool (or a prior allow on this browser for
+          signed-out pages). Google’s own privacy notice applies to that
+          processing.
         </li>
       </ul>
       <p>
-        We do not use third-party advertising cookies, cross-site behavioral
-        advertising pixels, or a marketing tag manager. If that changes, we will
-        update this Policy and, where required, request consent.
+        After you sign in, including on existing accounts, we present a cookie
+        policy and customization tool until you save a choice for the current
+        consent version. You can reopen it in Settings. We do not use
+        third-party advertising cookies, cross-site behavioral advertising
+        pixels, or a marketing tag manager. If that changes, we will update this
+        Policy and, where required, request consent.
       </p>
       <p>
-        You can block cookies in your browser. If you block necessary cookies,
-        sign-in and account features may not work. Blocking Analytics cookies
-        does not stop the account database from storing the workspace you save.
+        You can also block cookies in your browser. If you block necessary
+        cookies, sign-in and account features may not work. Blocking Analytics
+        cookies does not stop the account database from storing the workspace
+        you save.
       </p>
 
       <h2>8. Signed-in research requests and usage limits</h2>
@@ -717,8 +730,8 @@ export default function PrivacyPage() {
       <p>
         Some browsers send a “Do Not Track” signal. There is no consistent
         industry standard for responding to it. We treat necessary cookies as
-        described above and do not use advertising trackers at this time.
-        Google Analytics still runs on production pages unless you block it.
+        described above and do not use advertising trackers. Google Analytics
+        runs on production pages only after you allow analytics cookies.
       </p>
 
       <h2>19. Changes</h2>
@@ -730,10 +743,12 @@ export default function PrivacyPage() {
         where the law allows. Where consent is required, we will ask for it.
       </p>
       <p>
-        This August 26, 2026 revision adds Support notes in Settings. The
-        August 25, 2026 revision added usage counters, signed-in API tokens,
-        Firestore copies of Settings notes, and mail delivery of those notes,
-        and it names each processor and location we actually use.
+        This September 15, 2026 revision adds cookie consent after sign-in and
+        holds Analytics until you allow it. This August 26, 2026 revision adds
+        Support notes in Settings. The August 25, 2026 revision added usage
+        counters, signed-in API tokens, Firestore copies of Settings notes, and
+        mail delivery of those notes, and it names each processor and location
+        we actually use.
       </p>
 
       <h2>20. Contact</h2>

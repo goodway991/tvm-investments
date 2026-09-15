@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { StockCandidate } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
+import { useCookieConsent } from "@/components/CookieConsentProvider";
 import { TVMIcon } from "@/components/TVMBrand";
 import { TvmSwitch } from "@/components/TvmSwitch";
 import { useTheme } from "@/components/ThemeProvider";
@@ -377,6 +378,7 @@ export function SettingsPanel() {
     updateDisplayName,
     updateLocale,
   } = useAuth();
+  const { openCookiePreferences } = useCookieConsent();
   const router = useRouter();
   const { openUpgrade } = useUpgrade();
   const { openTour } = useTour();
@@ -642,9 +644,17 @@ export function SettingsPanel() {
                 <Link href="/terms">Terms of Service</Link>
                 <Link href="/eula">EULA</Link>
                 <Link href="/privacy">Privacy Policy</Link>
+                <Link href="/privacy#cookies">Cookie policy</Link>
                 <Link href="/refunds">Refunds</Link>
                 <Link href="/disclaimer">Risk Disclaimer</Link>
               </nav>
+              <button
+                type="button"
+                onClick={openCookiePreferences}
+                className="mt-3 text-sm font-semibold text-violet hover:underline"
+              >
+                Cookie preferences
+              </button>
             </div>
 
             <button
