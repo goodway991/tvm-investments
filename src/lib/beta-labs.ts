@@ -18,3 +18,13 @@ export function showCustomizeExperience(_role?: string) {
 export function showUltraDesk(plan?: string) {
   return showTvm10Labs() && plan === "ultra";
 }
+
+/** 72-hour hour-by-hour desk — admin lab now; Ultra unlock planned October. */
+export function showHour72AdminLab(role?: string) {
+  return showTvm10Labs() && role === "admin";
+}
+
+/** Workstation nav / page for Ultra members or admin (lab tools). */
+export function showWorkstationAccess(plan?: string, role?: string) {
+  return showUltraDesk(plan) || showHour72AdminLab(role);
+}

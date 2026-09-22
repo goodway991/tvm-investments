@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DailySnapshot, ScreenedStock, StrategyId } from "@/types";
+import { showHour72AdminLab, showUltraDesk, showWorkstationAccess } from "@/lib/beta-labs";
+import { Hour72Predictor } from "@/components/Hour72Predictor";
 import { AdvancedPredictions } from "@/components/AdvancedPredictions";
 import { MorningBriefArchive } from "@/components/MorningBriefArchive";
 import { useAuth } from "@/components/AuthProvider";
@@ -10,7 +12,6 @@ import { useRouter } from "next/navigation";
 import { BogenHeading } from "@/components/BogenProvider";
 import { NewBadge } from "@/components/NewBadge";
 import { BogenTerms } from "@/components/BogenTerms";
-import { showUltraDesk } from "@/lib/beta-labs";
 import { authedFetch } from "@/lib/authed-fetch";
 import { StockSearchField, type SearchHit } from "@/components/StockSearchField";
 import { parseTicker } from "@/lib/ticker";
@@ -144,7 +145,7 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (!showUltraDesk(entitlement.plan)) return;
+      if (!showWorkstationAccess(entitlement.plan, entitlement.role)) return;
       const target = event.target as HTMLElement | null;
       if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) {
         return;
@@ -166,7 +167,7 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [entitlement.plan, router]);
+  }, [entitlement.plan, entitlement.role, router]);
 
   const cells = useMemo(
     () =>
@@ -283,7 +284,7 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
           .sort((left, right) => buyScore(right) - buyScore(left))[0]
       : null;
 
-  if (!showUltraDesk(entitlement.plan)) {
+  if (!showWorkstationAccess(entitlement.plan, entitlement.role)) {
     return (
       <div className="glass-strong max-w-lg rounded-[24px] p-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-violet">
@@ -365,6 +366,18 @@ export function WorkstationClient({ snapshot }: { snapshot: DailySnapshot }) {
           Compact terminal
         </label>
       </div>
+
+      {user && showHour72AdminLab(entitlement.role) ? (
+        <Hour72Predictor
+          symbol={tapeSymbol || noteSymbol || watchlist.symbols[0] || ""}
+          universe={universe}
+          watchlist={watchlist.symbols}
+          onSymbol={(next) => {
+            setTapeSymbol(next);
+            setNoteSymbol(next);
+          }}
+        />
+      ) : null}
 
       {user && showUltraDesk(entitlement.plan) ? (
         <AdvancedPredictions

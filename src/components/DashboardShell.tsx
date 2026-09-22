@@ -18,7 +18,7 @@ import { EmailVerifyPanel } from "@/components/EmailVerifyPanel";
 import { useTour } from "@/components/TourProvider";
 import { useUpgrade } from "@/components/UpgradeProvider";
 import { canUsePreviewFeature } from "@/lib/plans";
-import { showUltraDesk } from "@/lib/beta-labs";
+import { showWorkstationAccess } from "@/lib/beta-labs";
 import { resolveAccountName } from "@/lib/person-name";
 import { BogenHit } from "@/components/BogenProvider";
 import { ProGlowPhrase, ProGlowText } from "@/components/ProGlowText";
@@ -539,7 +539,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           )
             .filter(
               (item) =>
-                item.label !== "Workstation" || showUltraDesk(entitlement.plan),
+                item.label !== "Workstation" || showWorkstationAccess(entitlement.plan, entitlement.role),
             )
             .map((item) => {
             const active = navIsActive(pathname, item.href);
@@ -662,7 +662,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           )
             .filter(
               (item) =>
-                item.label !== "Workstation" || showUltraDesk(entitlement.plan),
+                item.label !== "Workstation" || showWorkstationAccess(entitlement.plan, entitlement.role),
             )
             .map((item) => {
                   const active = navIsActive(pathname, item.href);

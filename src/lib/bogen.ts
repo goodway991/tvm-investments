@@ -58,6 +58,7 @@ export type BogenId =
   | "workstation-notes"
   | "workstation-recipes"
   | "advanced-predict"
+  | "hour72-predict"
   | "good-morning"
   | "morning-brief-archive"
   | "settings"
@@ -361,6 +362,11 @@ export const BOGEN_TIPS: Record<BogenId, BogenTipCopy> = {
     title: "Advanced Predictions",
     what: "Ultra-only algorithm-based 99%* reads on the workstation. Tune the knobs, then Predict.",
     how: "Search a name the same way as Watchlist, or tap a heatmap tile. Quiet / Balanced / Push sets a starting mix. Slide the horizon, then Advanced Predict. Hide clears the path.",
+  },
+  "hour72-predict": {
+    title: "72-hour desk",
+    what: "Admin-lab hour-by-hour path for the next 72 hours. Hundreds of equations on hourly tape. Ultra unlock is planned for October.",
+    how: "Open Workstation as ADMIN, search a name, then Run 72h path. Read the walk-forward fidelity card — it is research calibration, not a guarantee.",
   },
   "good-morning": {
     title: "Good morning",

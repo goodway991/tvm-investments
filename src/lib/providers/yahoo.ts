@@ -714,6 +714,72 @@ export async function fetchYahooChartSeries(
   });
 }
 
+/** Hourly OHLCV for the 72-hour research desk (Yahoo 1h chart). */
+export async function fetchYahooHourlyOhlcv(
+  symbol: string,
+  lookbackDays = 60,
+): Promise<
+  Array<{
+    timestamp: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+  }>
+> {
+  const yahooFinance = getYahoo();
+  const ticker = symbol.toUpperCase();
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - Math.max(20, Math.min(90, lookbackDays)));
+  try {
+    const result = await yahooFinance.chart(ticker, {
+      period1: start,
+      period2: end,
+      interval: "1h",
+      includePrePost: false,
+    });
+    const live = num(result.meta?.regularMarketPrice);
+    const out: Array<{
+      timestamp: number;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+    }> = [];
+    const quotes = result.quotes ?? [];
+    for (let index = 0; index < quotes.length; index += 1) {
+      const bar = quotes[index];
+      const isLast = index === quotes.length - 1;
+      let close =
+        bar.close != null && Number.isFinite(bar.close) ? (bar.close as number) : null;
+      if (close == null && isLast && live != null && Number.isFinite(live)) {
+        close = live;
+      }
+      if (!(close != null && close > 0)) continue;
+      const stamp =
+        bar.date instanceof Date
+          ? bar.date.getTime()
+          : new Date(bar.date as string | number).getTime();
+      if (!Number.isFinite(stamp)) continue;
+      out.push({
+        timestamp: stamp,
+        open: num(bar.open) ?? close,
+        high: num(bar.high) ?? close,
+        low: num(bar.low) ?? close,
+        close,
+        volume: num(bar.volume) ?? 0,
+      });
+    }
+    return out;
+  } catch (error) {
+    console.warn(`Yahoo hourly chart failed for ${ticker}:`, error);
+    return [];
+  }
+}
+
 export async function fetchYahooOhlcvSeries(
   symbol: string,
   lookbackDays = 90,
