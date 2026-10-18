@@ -51,11 +51,20 @@ const LEGACY_PRO_PRICE_IDS = [
   "price_1U8tSgJhvXEbbFik712ReGSl",
 ];
 
+/** Archived live Ultra prices ($35 / $300) so existing subscribers still map after the cut. */
+const LEGACY_ULTRA_PRICE_IDS = [
+  "price_1U9p6iJhvXEbbFikqovTnHXy",
+  "price_1U9p6IJhvXEbbFikrLA7ywwW",
+  "price_1U9omtRqqWdFS021PHQIBnJi",
+  "price_1U9omtRqqWdFS021qPfroh7W",
+];
+
 export function planFromPriceId(priceId: string | null | undefined): PaidPlanId | null {
   if (!priceId) return null;
   const ultra = [
     process.env.STRIPE_PRICE_ULTRA_MONTHLY,
     process.env.STRIPE_PRICE_ULTRA_YEARLY,
+    ...LEGACY_ULTRA_PRICE_IDS,
   ];
   if (ultra.includes(priceId)) return "ultra";
   const pro = [

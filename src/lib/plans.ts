@@ -6,8 +6,8 @@ export const PLAN_PRICES = {
     yearly: { perMonth: 8, billed: 96 },
   },
   ultra: {
-    monthly: { perMonth: 35, billed: 35 },
-    yearly: { perMonth: 25, billed: 300 },
+    monthly: { perMonth: 25, billed: 25 },
+    yearly: { perMonth: 18, billed: 216 },
   },
 } as const;
 
