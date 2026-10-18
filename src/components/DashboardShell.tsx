@@ -28,6 +28,7 @@ import { useExperience } from "@/components/ExperienceProvider";
 import { useSiteEra } from "@/components/SiteEraProvider";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { planHasPro, type PlanId } from "@/lib/plans";
+import { UltraSaleBanner } from "@/components/UltraSale";
 
 export const dashboardNav = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" as const, bogen: "nav-dashboard" as const },
@@ -582,6 +583,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <PreviewSidebar compact={sidebarMode !== "expanded"} />
 
         <div className="mt-auto space-y-2 pt-4">
+          <UltraSaleBanner
+            compact={sidebarMode !== "expanded"}
+            onUpgrade={() => openUpgrade("ultra")}
+          />
           {era.features.maintenanceNav ? (
             <MaintenanceNavCard compact={sidebarMode !== "expanded"} />
           ) : null}
@@ -696,6 +701,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </nav>
               <PreviewSidebar onNavigate={() => setMobileMenuOpen(false)} />
               <div className="mt-auto space-y-2 pt-4">
+                <UltraSaleBanner onUpgrade={() => {
+                  setMobileMenuOpen(false);
+                  openUpgrade("ultra");
+                }} />
                 {era.features.maintenanceNav ? <MaintenanceNavCard /> : null}
                 {showPlanChip ? (
                   <UpgradeNavCard

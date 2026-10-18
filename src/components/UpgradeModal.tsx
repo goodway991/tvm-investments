@@ -9,10 +9,12 @@ import { TVMIcon } from "@/components/TVMBrand";
 import { showTvm10Labs } from "@/lib/beta-labs";
 import {
   priceFor,
+  ULTRA_WAS_PRICES,
   yearlySavingsPercent,
   type BillingInterval,
   type PlanId,
 } from "@/lib/plans";
+import { UltraSalePrice, ultraSaleLive } from "@/components/UltraSale";
 import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { authedFetch } from "@/lib/authed-fetch";
@@ -299,10 +301,14 @@ export function UpgradeModal({
             <div>
               <p className="font-display text-3xl font-bold text-ink">
                 {price ? (
-                  <>
-                    ${price.perMonth}
-                    <span className="text-lg font-medium text-ink-soft">/mo</span>
-                  </>
+                  pickedPlan === "ultra" && ultraSaleLive() ? (
+                    <UltraSalePrice interval={billing} />
+                  ) : (
+                    <>
+                      ${price.perMonth}
+                      <span className="text-lg font-medium text-ink-soft">/mo</span>
+                    </>
+                  )
                 ) : (
                   <>
                     $0
@@ -322,8 +328,22 @@ export function UpgradeModal({
                     : pendingPlan && until
                     ? `Scheduled change takes effect ${until}. You keep the current plan until then.`
                     : billing === "yearly"
-                    ? `$${price?.billed} billed once a year · $${price?.perMonth}/month effective`
-                    : `$${price?.billed} billed each month`}
+                    ? pickedPlan === "ultra" && ultraSaleLive()
+                      ? (
+                          <>
+                            <span className="ultra-sale-was">${ULTRA_WAS_PRICES.yearly.billed}</span>{" "}
+                            ${price?.billed} billed once a year · ${price?.perMonth}/month effective
+                          </>
+                        )
+                      : `$${price?.billed} billed once a year · $${price?.perMonth}/month effective`
+                    : pickedPlan === "ultra" && ultraSaleLive()
+                      ? (
+                          <>
+                            <span className="ultra-sale-was">${ULTRA_WAS_PRICES.monthly.billed}</span>{" "}
+                            ${price?.billed} billed each month
+                          </>
+                        )
+                      : `$${price?.billed} billed each month`}
               </p>
             </div>
 

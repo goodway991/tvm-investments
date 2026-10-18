@@ -3,9 +3,11 @@
 import {
   PLAN_FEATURES,
   planFeatureMark,
+  ultraSalePercent,
   type PlanId,
 } from "@/lib/plans";
 import { showTvm10Labs } from "@/lib/beta-labs";
+import { ultraSaleLive } from "@/components/UltraSale";
 import { BogenTerms } from "@/components/BogenTerms";
 import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
@@ -169,6 +171,11 @@ export function PlanComparisonTable({
             }`}
           >
             <UltraShinePhrase>Ultra</UltraShinePhrase>
+            {ultraSaleLive() ? (
+              <span className="ultra-sale-gold mt-1 block text-[10px] font-bold uppercase tracking-[0.14em]">
+                {ultraSalePercent("monthly")}% off
+              </span>
+            ) : null}
             {alreadyUltra ? (
               <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
                 Current

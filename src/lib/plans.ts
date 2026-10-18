@@ -14,6 +14,18 @@ export const PLAN_PRICES = {
 export type PaidPlanId = keyof typeof PLAN_PRICES;
 export type BillingInterval = "monthly" | "yearly";
 
+/** Pre-cut Ultra list prices — shown struck through during the sale. */
+export const ULTRA_WAS_PRICES = {
+  monthly: { perMonth: 35, billed: 35 },
+  yearly: { perMonth: 25, billed: 300 },
+} as const;
+
+export function ultraSalePercent(interval: BillingInterval) {
+  const was = ULTRA_WAS_PRICES[interval].perMonth;
+  const now = PLAN_PRICES.ultra[interval].perMonth;
+  return Math.round((1 - now / was) * 100);
+}
+
 export function priceFor(plan: PaidPlanId, interval: BillingInterval) {
   const prices = PLAN_PRICES[plan] ?? PLAN_PRICES.pro;
   return prices[interval] ?? prices.monthly;

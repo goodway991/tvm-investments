@@ -33,6 +33,7 @@ import { ReleaseFeatureList } from "@/components/ReleaseFeatureList";
 import { DiscordConnectPanel } from "@/components/DiscordConnectPanel";
 import { authedFetch } from "@/lib/authed-fetch";
 import { ULTRA_BETA_EXPIRES_LABEL } from "@/lib/beta-codes";
+import { UltraSaleBang } from "@/components/UltraSale";
 
 export function PortfolioPanel({ stocks }: { stocks: StockCandidate[] }) {
   const {
@@ -503,13 +504,14 @@ export function SettingsPanel() {
               role="tab"
               aria-selected={active}
               onClick={() => selectTab(item.id)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                 active
                   ? "glass-violet text-white"
                   : "bg-surface text-ink-soft hover:text-ink"
               }`}
             >
               {item.label}
+              {item.id === "plan" ? <UltraSaleBang /> : null}
             </button>
           );
         })}
@@ -912,7 +914,10 @@ export function SettingsPanel() {
         {tab === "plan" ? (
           <div className="space-y-6">
             <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed text-ink-soft">
-              <p className="font-semibold text-ink">Plan</p>
+              <p className="inline-flex items-center font-semibold text-ink">
+                Plan
+                <UltraSaleBang />
+              </p>
               <p className="mt-1">
                 You are on{" "}
                 {entitlement.plan === "ultra" ? (

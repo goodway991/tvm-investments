@@ -12,6 +12,7 @@ import { TVMBrand } from "@/components/TVMBrand";
 import { UltraShinePhrase } from "@/components/UltraText";
 import { authedFetch } from "@/lib/authed-fetch";
 import { priceFor, yearlySavingsPercent, type BillingInterval, type PaidPlanId } from "@/lib/plans";
+import { UltraSalePrice, ultraSaleLive } from "@/components/UltraSale";
 import { showTvm10Labs } from "@/lib/beta-labs";
 import { useState } from "react";
 
@@ -166,8 +167,14 @@ function Paywall() {
             </button>
           </div>
           <p className="mt-4 text-center font-display text-2xl font-bold text-ink">
-            ${price.perMonth}
-            <span className="text-sm font-medium text-ink-soft"> / month</span>
+            {plan === "ultra" && ultraSaleLive() ? (
+              <UltraSalePrice interval={interval} />
+            ) : (
+              <>
+                ${price.perMonth}
+                <span className="text-sm font-medium text-ink-soft"> / month</span>
+              </>
+            )}
           </p>
           {interval === "yearly" ? (
             <p className="text-center text-xs text-ink-soft">

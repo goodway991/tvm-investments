@@ -7,10 +7,12 @@ import { ProGlowText } from "@/components/ProGlowText";
 import { UltraShinePhrase } from "@/components/UltraText";
 import {
   priceFor,
+  ULTRA_WAS_PRICES,
   yearlySavingsPercent,
   type BillingInterval,
   type PaidPlanId,
 } from "@/lib/plans";
+import { UltraSalePrice, ultraSaleLive } from "@/components/UltraSale";
 
 export function stripePricingTableConfigured() {
   return Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -165,17 +167,35 @@ function PlanCard({
           {isUltra ? <UltraShinePhrase>TVM Ultra</UltraShinePhrase> : <ProGlowText>TVM Pro</ProGlowText>}
         </h3>
         <p className="stripe-plan-price">
-          <span className="stripe-plan-amount">${price.perMonth}</span>
-          <span className="stripe-plan-period">/mo</span>
+          {isUltra && ultraSaleLive() ? (
+            <UltraSalePrice interval={interval} size="md" />
+          ) : (
+            <>
+              <span className="stripe-plan-amount">${price.perMonth}</span>
+              <span className="stripe-plan-period">/mo</span>
+            </>
+          )}
         </p>
         <p className="stripe-plan-billed">
           {interval === "yearly" ? (
             <>
+              {isUltra && ultraSaleLive() ? (
+                <>
+                  <span className="ultra-sale-was">${ULTRA_WAS_PRICES.yearly.billed}</span>{" "}
+                </>
+              ) : null}
               ${price.billed} billed yearly
               <span className="stripe-plan-save-inline"> · save {savePercent}%</span>
             </>
           ) : (
-            <>${price.billed} billed monthly</>
+            <>
+              {isUltra && ultraSaleLive() ? (
+                <>
+                  <span className="ultra-sale-was">${ULTRA_WAS_PRICES.monthly.billed}</span>{" "}
+                </>
+              ) : null}
+              ${price.billed} billed monthly
+            </>
           )}
         </p>
       </header>
